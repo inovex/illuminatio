@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: illuminatio-runner
+    illuminatio-cleanup: on-request
+    illuminatio-role: ds_runner-set
+  name: illuminatio-runner
+  namespace: illuminatio
+spec:
+  selector:
+    matchLabels:
+      illuminatio-role: ds_runner
+  template:
+    metadata:
+      generateName: illuminatio-ds-runner
+      labels:
+        illuminatio-cleanup: on-request
+        illuminatio-role: ds_runner
+    spec:
+      containers:
+      - env:
+        - name: RUNNER_MODE
+          value: daemon
+        - name: RUNNER_NODE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: RUNNER_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: RUNNER_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: CONTAINER_RUNTIME_NAME
+          value: containerd
+        image: localhost:5000/illuminatio-runner:dev
+        imagePullPolicy: Always
+        name: runner
+        securityContext:
+          allowPrivilegeEscalation: true
+          procMount: Default
+          runAsUser: 0
+          capabilities:
+            add:
+              - SYS_ADMIN
+        volumeMounts:
+        - mountPath: /etc/config/
+          name: cases-volume
+        - mountPath: /var/run/dockershim.sock
+          name: cri-socket
+          readOnly: true
+        - mountPath: /var/run/netns
+          name: net-ns
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      hostPID: true
+      serviceAccount: illuminatio-runner
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: illuminatio-cases-cfgmap
+        name: cases-volume
+      - hostPath:
+          path: /run/containerd/containerd.sock
+          type: Socket
+        name: cri-socket
+      - hostPath:
+          path: /var/run/netns
+          type: Directory
+        name: net-ns
+        

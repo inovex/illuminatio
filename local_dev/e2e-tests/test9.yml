@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  generation: 1
+  labels:
+    app: apiserver
+  name: apiserver
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: apiserver
+  template:
+    metadata:
+      labels:
+        app: apiserver
+    spec:
+      containers:
+      - image: ahmet/app-on-two-ports
+        imagePullPolicy: Always
+        name: apiserver
+        resources: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: apiserver
+  name: apiserver
+spec:
+  ports:
+  - name: 8001-8000
+    port: 8001
+    protocol: TCP
+    targetPort: 8000
+  - name: 5001-5000
+    port: 5001
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: apiserver
+  type: ClusterIP
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: api-allow-5000
+spec:
+  podSelector:
+    matchLabels:
+      app: apiserver
+  ingress:
+  - ports:
+    - port: 5000
+    from:
+    - podSelector:
+        matchLabels:
+          role: monitoring
