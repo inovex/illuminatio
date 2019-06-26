@@ -296,5 +296,9 @@ In order to run the unit tests:
 python3 setup.py test --addopts --runslow
 ```
 
+## References
+Example Network Policies are inspired by:
+https://github.com/ahmetb/kubernetes-network-policy-recipes
+
 ## Contributing
 We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
