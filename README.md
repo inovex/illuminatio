@@ -1,7 +1,7 @@
 # Illuminatio - The kubernetes network policy validator
 
 Illuminatio is an tool for automatically testing kubernetes network policies.
-Simply execute `illuminatio run clean`
+Simply execute `illuminatio clean run`
 and Illuminatio will scan your kubernetes cluster for network policies, build test cases accordingly and execute them
 to determine if the policies are in effect.
 
