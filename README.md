@@ -1,5 +1,7 @@
 # Illuminatio - The kubernetes network policy validator
 
+<img src="/logo/logo.png" width="250px">
+
 Illuminatio is a tool for automatically testing kubernetes network policies.
 Simply execute `illuminatio clean run`
 and Illuminatio will scan your kubernetes cluster for network policies, build test cases accordingly and execute them
@@ -84,7 +86,7 @@ Starting test generation and run.
 Got cases: [NetworkTestCase(from=ClusterHost(namespace=default, podLabels={'app': 'web'}), to=ClusterHost(namespace=default, podLabels={'app': 'web'}), port=-*)]
 Generated 1 cases in 0.0701 seconds
 FROM             TO               PORT
-default:app=web  default:app=web  -*  
+default:app=web  default:app=web  -*
 
 Using existing cluster role
 Creating cluster role binding
@@ -116,7 +118,7 @@ Starting test generation and run.
 Got cases: [NetworkTestCase(from=ClusterHost(namespace=default, podLabels={'app': 'web'}), to=ClusterHost(namespace=default, podLabels={'app': 'web'}), port=-*)]
 Generated 1 cases in 0.0902 seconds
 FROM             TO               PORT
-default:app=web  default:app=web  -*  
+default:app=web  default:app=web  -*
 
 Skipping test execution as --dry was set
 ```
@@ -140,6 +142,9 @@ Commands:
 ```
 
 ## References
+
+The logo was created by Pia Blum.
+
 Example Network Policies are inspired by:
 https://github.com/ahmetb/kubernetes-network-policy-recipes
 
@@ -147,3 +152,8 @@ https://github.com/ahmetb/kubernetes-network-policy-recipes
 We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
 
 For more information on developing illuminatio refer to [the development docs](docs/developing.md).
+
+## License
+
+This project excluding the logo is licensed under the terms of the Apache 2.0 license.
+The logo is licensed under the terms of the CC BY-NC-ND 4.0 license.
