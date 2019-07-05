@@ -152,3 +152,8 @@ https://github.com/ahmetb/kubernetes-network-policy-recipes
 We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
 
 For more information on developing illuminatio refer to [the development docs](docs/developing.md).
+
+## License
+
+This project excluding the logo is licensed under the terms of the Apache 2.0 license.
+The logo is licensed under the terms of the CC BY-NC-ND 4.0 license.
