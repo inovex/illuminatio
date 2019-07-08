@@ -1,7 +1,6 @@
 import logging
 import time
 
-import kubernetes as k8s
 from illuminatio.k8s_util import labels_to_string
 from illuminatio.util import CLEANUP_LABEL
 
@@ -26,8 +25,7 @@ class Cleaner:
             resps = []
             svcs = self.core_api.list_namespaced_service(namespace, label_selector=label_selector)
             for svc in svcs.items:
-                resps.append(self.core_api.delete_namespaced_service(svc.metadata.name, namespace,
-                                                                     k8s.client.V1DeleteOptions()))
+                resps.append(self.core_api.delete_namespaced_service(svc.metadata.name, namespace))
             return resps
 
         return self.delete_res_using(namespaces, cleanup_policy, delete_collection_namespaced_serivce, "svc")
@@ -37,7 +35,7 @@ class Cleaner:
                                      self.core_api.delete_collection_namespaced_config_map, "CfgMap")
 
     def clean_up_cluster_role_binding(self, cleanup_policy):
-        self.logger.info("Deleting CRBs  with cleanup policy " + cleanup_policy + " globally")
+        self.logger.info("Deleting CRBs  with cleanup policy %s globally", cleanup_policy)
         res = self.rbac_api.delete_collection_cluster_role_binding(
             label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy}))
         self.logger.debug(res)
@@ -56,7 +54,7 @@ class Cleaner:
         namespaces = self.core_api.list_namespace(
             label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy})).items
         namespace_names = [n.metadata.name for n in namespaces]
-        self.logger.info("Deleting namespacess " + str(namespace_names) + " with cleanup policy " + cleanup_policy)
+        self.logger.info("Deleting namespacess %s with cleanup policy %s", str(namespace_names), cleanup_policy)
         for namespace in namespaces:
             resp = self.core_api.delete_namespace(namespace.metadata.name, propagation_policy="Background")
             resps.append(resp)
