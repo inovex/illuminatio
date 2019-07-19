@@ -1,6 +1,6 @@
 # Illuminatio - The kubernetes network policy validator
 
-<img src="/logo/logo.png" width="250px">
+![alt text](/logo/logo_small.png)
 
 Illuminatio is a tool for automatically testing kubernetes network policies.
 Simply execute `illuminatio clean run`
@@ -9,7 +9,8 @@ to determine if the policies are in effect.
 
 An overview of the concept is visualized in [the concept doc](docs/concept.md).
 
-# Getting started
+## Getting started
+
 Follow these instructions to get Illuminatio up and running.
 
 ## Prerequisites
@@ -62,9 +63,7 @@ EOF
 Test your newly created NetworkPolicy:
 
 ```bash
-$ illuminatio clean run
-```
-```
+illuminatio clean run
 Starting cleaning resources with policies ['on-request', 'always']
 Deleting namespacess [] with cleanup policy on-request
 Deleting namespacess [] with cleanup policy always
@@ -112,8 +111,6 @@ To preview generated test cases without running tests use `illuminatio run`'s `-
 
 ```bash
 illuminatio run --dry
-```
-```
 Starting test generation and run.
 Got cases: [NetworkTestCase(from=ClusterHost(namespace=default, podLabels={'app': 'web'}), to=ClusterHost(namespace=default, podLabels={'app': 'web'}), port=-*)]
 Generated 1 cases in 0.0902 seconds
@@ -128,7 +125,8 @@ All options and further information can be found using the `--help` flag on any 
 ```bash
 illuminatio --help
 ```
-```
+
+```Bash
 Usage: illuminatio [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
 
 Options:
@@ -145,10 +143,12 @@ Commands:
 
 The logo was created by Pia Blum.
 
-Example Network Policies are inspired by:
-https://github.com/ahmetb/kubernetes-network-policy-recipes
+- Example Network Policies are inspired by:
+[kubernetes-network-policy-recipes](https://github.com/ahmetb/kubernetes-network-policy-recipes)
+- Presentation from [ContainerDays 2019](https://www.youtube.com/watch?v=eEkTvAez8HA&list=PLHhKcdBlprMdg-fwPD1b3IjBRR_Ga09H0&index=36), [slides](https://www.inovex.de/de/content-pool/vortraege/network-policies)
 
 ## Contributing
+
 We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
 
 For more information on developing illuminatio refer to [the development docs](docs/developing.md).

@@ -1,8 +1,10 @@
-# Initial author
+# Authors
+
+## Initial author
 
 * Maximilian Bischoff <mbischoff@inovex.de>
 
-# Contributors
+## Contributors
 
 * Johannes Scheuermann <jscheuermann@inovex.de>
 * Henning Häcker <hhaecker@inovex.de>

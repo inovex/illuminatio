@@ -21,6 +21,7 @@ python3 setup.py install
 ```
 
 ## Local development
+
 We will bootstrap a [Minikube VM](https://kubernetes.io/docs/setup/minikube/) for local development.
 
 ### [Docker](https://github.com/inovex/illuminatio/local_dev/startDocker.sh)
@@ -43,7 +44,7 @@ minikube addons enable registry
 
 ### [Containerd](https://github.com/inovex/illuminatio/local_dev/startContainerd.sh)
 
-See also: https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md
+See also: [alternative runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md)
 
 ```bash
 # See also: https://github.com/projectcalico/calico/issues/1013
@@ -97,7 +98,9 @@ We need to configure `containerd` to be able to pull images from our local regis
 ```bash
 minikube ssh
 ```
+
 The following commands are executed inside the minikube vm
+
 ```bash
 # Add the following lines -> see https://github.com/kubernetes/minikube/issues/3444
 sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml  
@@ -128,8 +131,6 @@ python3 setup.py install
 ```
 
 ## Manual testing
-
-<!-- TODO should be automated or atleast a script for CI -->
 
 ```bash
 kubectl create deployment web --image=nginx
