@@ -145,7 +145,7 @@ The logo was created by Pia Blum.
 
 - Example Network Policies are inspired by:
 [kubernetes-network-policy-recipes](https://github.com/ahmetb/kubernetes-network-policy-recipes)
-- Presentation from [ContainerDays 2019](https://www.inovex.de/de/content-pool/vortraege/network-policies/)
+- Presentation from [ContainerDays 2019](https://www.youtube.com/watch?v=eEkTvAez8HA&list=PLHhKcdBlprMdg-fwPD1b3IjBRR_Ga09H0&index=36), [slides](https://www.inovex.de/de/content-pool/vortraege/network-policies)
 
 ## Contributing
 
