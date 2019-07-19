@@ -1,5 +1,7 @@
 # Illuminatio - The kubernetes network policy validator
 
+[![Build Status](https://travis-ci.org/inovex/illuminatio.svg?branch=master)](https://travis-ci.org/inovex/illuminatio)
+
 ![alt text](/logo/logo_small.png)
 
 Illuminatio is a tool for automatically testing kubernetes network policies.

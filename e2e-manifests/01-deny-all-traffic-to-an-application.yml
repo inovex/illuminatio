@@ -1,33 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  generation: 1
   labels:
     app: web
   name: web
+  namespace: 01-deny-all
 spec:
   replicas: 1
-  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: web
   template:
     metadata:
+      namespace: 01-deny-all
       labels:
         app: web
     spec:
       containers:
       - image: nginx
-        imagePullPolicy: Always
         name: web
         ports:
         - containerPort: 80
           protocol: TCP
-        terminationMessagePath: /dev/termination-log
 ---
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: 01-deny-all
   labels:
     app: web
   name: web
@@ -43,6 +42,7 @@ spec:
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
+  namespace: 01-deny-all
   name: web-deny-all
 spec:
   podSelector:

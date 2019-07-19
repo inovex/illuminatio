@@ -9,7 +9,7 @@
 ## Setting up the development environment
 
 ```bash
-virtualenv -p python3 .venv
+virtualenv -p python3.7 .venv
 source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
@@ -44,7 +44,7 @@ minikube addons enable registry
 
 ### [Containerd](https://github.com/inovex/illuminatio/local_dev/startContainerd.sh)
 
-See also: [alternative runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md)
+See also [alternative runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md)
 
 ```bash
 # See also: https://github.com/projectcalico/calico/issues/1013

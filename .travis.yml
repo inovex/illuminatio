@@ -1,9 +1,10 @@
+dist: xenial
+
 jobs:
   include:
     - stage: "Check"
       name: "Validate"
       sudo: required
-      dist: trusty
       language: bash
       before_install:
       - sudo apt-get update
@@ -11,21 +12,43 @@ jobs:
       script: find . -name "*.sh" -print0 |  xargs -0 -n1  shellcheck
 
     - stage: "Test"
-      name: "test:pycodestyle"
+      name: "test:pycodestyle:3.5"
       sudo: required
-      dist: trusty
       language: python
       python:
-      - "3.6"
+       - "3.5"
       script:
       - pip3 freeze
-      - python3 setup.py test
+      - python setup.py test
       - make lint
 
-    - name: "test:pylint"
+    - stage: "Test"
+      name: "test:pycodestyle:3.6"
+      sudo: required
       language: python
       python:
-      - "3.6"
+       - "3.6"
+      script:
+      - pip3 freeze
+      - python setup.py test
+      - make lint
+
+    - stage: "Test"
+      name: "test:pycodestyle:3.7"
+      sudo: required
+      language: python
+      python:
+       - "3.7"
+      script:
+      - pip3 freeze
+      - python setup.py test
+      - make lint
+
+    - stage: "Test"
+      name: "test:pylint:3.5"
+      language: python
+      python:
+       - "3.5"
       script:
       - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
       - pip3 freeze
@@ -36,60 +59,95 @@ jobs:
       - mv pylint.txt public/pylint.txt
       - anybadge --value=$score --file=public/pylint.svg pylint
 
-    - name: "test:py35"
+    - stage: "Test"
+      name: "test:pylint:3.6"
+      language: python
+      python:
+       - "3.6"
+      script:
+      - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
+      - pip3 freeze
+      - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt || pylint-exit $?
+      - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
+      - echo "Pylint score was $score"
+      - mkdir -p public
+      - mv pylint.txt public/pylint.txt
+      - anybadge --value=$score --file=public/pylint.svg pylint
+
+    - stage: "Test"
+      name: "test:pylint:3.7"
+      language: python
+      python:
+       - "3.7"
+      script:
+      - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
+      - pip3 freeze
+      - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt || pylint-exit $?
+      - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
+      - echo "Pylint score was $score"
+      - mkdir -p public
+      - mv pylint.txt public/pylint.txt
+      - anybadge --value=$score --file=public/pylint.svg pylint
+
+    - stage: "Test"
+      name: "test:unittest:3.5"
       language: python
       python:
       - "3.5"
       script:
       - pip3 freeze
-      - python3 setup.py test --addopts --runslow
+      - python setup.py test --addopts --runslow
 
-    - name: "test:py36"
+    - stage: "Test"
+      name: "test:unittest:3.6"
       language: python
       python:
       - "3.6"
       script:
       - pip3 freeze
-      - python3 setup.py test --addopts --runslow
+      - python setup.py test --addopts --runslow
+
+    - stage: "Test"
+      name: "test:unittest:3.7"
+      language: python
+      python:
+      - "3.7"
+      script:
+      - pip3 freeze
+      - python setup.py test --addopts --runslow
 
     - stage: e2e
-      name: "docker e2e Test"
+      name: "docker - calico e2e Test"
       sudo: required
-      # We need the systemd for the kubeadm and it's default from 16.04+
-      dist: xenial
+      language: python
+      python:
+        - "3.7"
+      # ToDo implement multiple python versions?
       env:
         global:
           - KUBECONFIG=$HOME/.kube/config
-          - VERSION=1.2.4
+          - KUBERNETES_VERSION=1.15.0
 
       before_install:
       # install dependent libraries
       - sudo apt-get update 
       - sudo apt-get install libseccomp2 wget -y
-      # download release tarball
-      - wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${VERSION}.linux-amd64.tar.gz
-      - sha256sum cri-containerd-${VERSION}.linux-amd64.tar.gz
-      - curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${VERSION}.linux-amd64.tar.gz.sha256
       # install docker, kubeadm, kubelet, kubectl
       - sudo apt-get update && sudo apt-get install -y docker.io apt-transport-https curl
       - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
       - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
       - sudo apt-get update
-      - sudo apt-get install -y kubelet kubeadm kubectl
+      - sudo apt-get install -y kubelet=${KUBERNETES_VERSION}-00 kubeadm=${KUBERNETES_VERSION}-00 kubectl=${KUBERNETES_VERSION}-00
       - sudo apt-mark hold kubelet kubeadm kubectl
       - sudo mkdir -p /etc/systemd/system/kubelet.service.d/
       - sudo kubeadm init --pod-network-cidr=10.244.0.0/16
       - mkdir -p $HOME/.kube
       - sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       - sudo chown $(id -u):$(id -g) $HOME/.kube/config
-      #setup calico
-      - kubectl apply -f https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
-      # install python
-      - sudo apt-get install -y python3 python3-pip python3-setuptools
-      - pip3 install -r requirements.txt
-      - pip3 freeze
-      - sudo python3 setup.py install
-      - pip3 freeze
+      # setup calico
+      - kubectl apply -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+      - pip install -r requirements.txt
+      - python setup.py install
       before_script:
       # wait for cluster to be available
       - until kubectl get nodes | grep " Ready"; do kubectl get nodes -o wide; done
@@ -101,122 +159,38 @@ jobs:
       - until docker push "localhost:5000/illuminatio-runner:dev"; do sleep 1; done
 
       script:
-      # run illuminatio
-      # test1
-      - kubectl apply -f local_dev/e2e-tests/test1.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test1.yml
-      - illuminatio clean
-
-      # test2
-      - kubectl apply -f local_dev/e2e-tests/test2.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test2.yml
-      - illuminatio clean
-
-      # test 2a
-      - kubectl apply -f local_dev/e2e-tests/test2a.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test2a.yml
-      - illuminatio clean
-
-      # test 3
-      - kubectl apply -f local_dev/e2e-tests/test3.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test3.yml
-      - illuminatio clean
-
-      # test 4
-      - kubectl apply -f local_dev/e2e-tests/test4.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test4.yml
-      - illuminatio clean
-
-      # test 5
-      - kubectl apply -f local_dev/e2e-tests/test5.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test5.yml
-      - illuminatio clean
-
-      # test 6
-      - kubectl apply -f local_dev/e2e-tests/test6.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test6.yml
-      - illuminatio clean
-
-      # test 7
-      - kubectl apply -f local_dev/e2e-tests/test7.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test7.yml
-      - illuminatio clean
-
-      # test 8
-      - kubectl apply -f local_dev/e2e-tests/test8.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test8.yml
-      - illuminatio clean
-
-      # test 9
-      - kubectl apply -f local_dev/e2e-tests/test9.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test9.yml
-      - illuminatio clean
-
-      # test 10
-      # currently failing
-      - kubectl apply -f local_dev/e2e-tests/test10.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test10.yml
-      - illuminatio clean
-
-      # test 11
-      # currently failing
-      - kubectl apply -f local_dev/e2e-tests/test11.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test11.yml
-      - illuminatio clean
-
-      # test 12
-      # currently failing
-      - kubectl apply -f local_dev/e2e-tests/test12.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test12.yml
-      - illuminatio clean
-
-      # test 13
-      # currently crashing
-      - kubectl apply -f local_dev/e2e-tests/test13.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test13.yml
-      - illuminatio clean
+      # run illuminatio e2e tests
+      - python setup.py test --addopts="-m e2e"
 
     - stage: e2e
-      name: "containerd e2e Tests"
+      name: "containerd - calico e2e Tests"
       sudo: required
-      # We need the systemd for the kubeadm and it's default from 16.04+
-      dist: xenial
+      language: python
+      python:
+        - "3.7"
       env:
         global:
           - KUBECONFIG=$HOME/.kube/config
-          - VERSION=1.2.4
+          - CONTAINERD_VERSION=1.2.4
+          - KUBERNETES_VERSION=1.15.0
 
       before_install:
       # install dependent libraries
       - sudo apt-get update 
       - sudo apt-get install libseccomp2 wget -y
       # download release tarball
-      - wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${VERSION}.linux-amd64.tar.gz
-      - sha256sum cri-containerd-${VERSION}.linux-amd64.tar.gz
-      - curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${VERSION}.linux-amd64.tar.gz.sha256
+      - wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+      - sha256sum cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+      - curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz.sha256
       # install containerd
-      - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${VERSION}.linux-amd64.tar.gz
+      - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
       - sudo systemctl start containerd
       # install kubeadm, kubelet, kubectl
-      - sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+      - sudo apt-get update && sudo apt-get install -y docker.io apt-transport-https curl
       - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
       - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
       - sudo apt-get update
-      - sudo apt-get install -y kubelet kubeadm kubectl
+      - sudo apt-get install -y kubelet=${KUBERNETES_VERSION}-00 kubeadm=${KUBERNETES_VERSION}-00 kubectl=${KUBERNETES_VERSION}-00
       - sudo apt-mark hold kubelet kubeadm kubectl
       - sudo mkdir -p /etc/systemd/system/kubelet.service.d/
       # create systemd drop-in for containerd
@@ -229,14 +203,10 @@ jobs:
       - mkdir -p $HOME/.kube
       - sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       - sudo chown $(id -u):$(id -g) $HOME/.kube/config
-      #setup calico
-      - kubectl apply -f https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
-      # install docker and python
-      - sudo apt-get install -y docker.io python3 python3-pip python3-setuptools
-      - pip3 install -r requirements.txt
-      - pip3 freeze
-      - sudo python3 setup.py install
-      - pip3 freeze
+      # setup calico
+      - kubectl apply -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+      - pip install -r requirements.txt
+      - python setup.py install
       before_script:
       # wait for cluster to be available
       - until kubectl get nodes | grep " Ready"; do kubectl get nodes -o wide; done
@@ -248,90 +218,5 @@ jobs:
       - until docker push "localhost:5000/illuminatio-runner:dev"; do sleep 1; done
 
       script:
-      # run illuminatio
-      # test1
-      - kubectl apply -f local_dev/e2e-tests/test1.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test1.yml
-      - illuminatio clean
-
-      # test2
-      - kubectl apply -f local_dev/e2e-tests/test2.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test2.yml
-      - illuminatio clean
-
-      # test 2a
-      - kubectl apply -f local_dev/e2e-tests/test2a.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test2a.yml
-      - illuminatio clean
-
-      # test 3
-      - kubectl apply -f local_dev/e2e-tests/test3.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test3.yml
-      - illuminatio clean
-
-      # test 4
-      - kubectl apply -f local_dev/e2e-tests/test4.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test4.yml
-      - illuminatio clean
-
-      # test 5
-      - kubectl apply -f local_dev/e2e-tests/test5.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test5.yml
-      - illuminatio clean
-
-      # test 6
-      - kubectl apply -f local_dev/e2e-tests/test6.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test6.yml
-      - illuminatio clean
-
-      # test 7
-      - kubectl apply -f local_dev/e2e-tests/test7.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test7.yml
-      - illuminatio clean
-
-      # test 8
-      - kubectl apply -f local_dev/e2e-tests/test8.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test8.yml
-      - illuminatio clean
-
-      # test 9
-      - kubectl apply -f local_dev/e2e-tests/test9.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test9.yml
-      - illuminatio clean
-
-      # test 10
-      # currently failing
-      - kubectl apply -f local_dev/e2e-tests/test10.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test10.yml
-      - illuminatio clean
-
-      # test 11
-      # currently failing
-      - kubectl apply -f local_dev/e2e-tests/test11.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test11.yml
-      - illuminatio clean
-
-      # test 12
-      - kubectl apply -f local_dev/e2e-tests/test12.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test12.yml
-      - illuminatio clean
-
-      # test 13
-      # currently crashing
-      - kubectl apply -f local_dev/e2e-tests/test13.yml
-      - illuminatio clean run --runner-image='localhost:5000/illuminatio-runner:dev'
-      - kubectl delete -f local_dev/e2e-tests/test13.yml
-      - illuminatio clean
+      # run illuminatio e2e tests
+      - python setup.py test --addopts="-m e2e"

@@ -3,7 +3,7 @@ google-auth==1.5.1
 python-dateutil==2.7.3
 pyyaml==4.2b4
 oauthlib==3.0.0
-kubernetes==8.0.1
+kubernetes==10.0.0
 click==6.7
 click_log==0.3.2
 docker==3.7.0
@@ -12,4 +12,6 @@ attrs==19.1.0
 pluggy==0.11.0
 pytest==4.5.0
 urllib3>=1.24.2
-setuptools>38.3
+setuptools>=41.0.1
+coverage==4.5.3 
+pytest-cov==2.7.1
