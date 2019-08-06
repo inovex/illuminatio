@@ -220,30 +220,24 @@ jobs:
     #   script:
     #   # run illuminatio e2e tests
     #   - python setup.py test --addopts="-m e2e"
+    - stage: build
+      name: "build image"
+      sudo: required
+      services:
+        - docker
+      script:
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
 
     - stage: build
-      name: "build latest image"
-      on:
-        branch: master
+      name: "push latest image"
+      if: (branch = master AND NOT type = pull_request)
       sudo: required
-      on:
-        all_branches: true
       services:
         - docker
       script:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
-
-    - stage: build
-      name: "build tagged image"
-      on:
-        tags: true
-      sudo: required
-      services:
-        - docker
-      script:
-      - echo "tags is set, TRAVIS_TAG = ${TRAVIS_TAG}"
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
-      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      - if [ -z "$TRAVIS_TAG" ]; then exit 0; fi
+      - docker tag "${TRAVIS_REPO_SLUG}"-runner:latest "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
       - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
