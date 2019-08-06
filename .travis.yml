@@ -220,3 +220,25 @@ jobs:
       script:
       # run illuminatio e2e tests
       - python setup.py test --addopts="-m e2e"
+
+    - stage: build
+      name: "build latest image"
+      sudo: required
+      on:
+        all_branches: true
+      services:
+        - docker
+      script:
+      - docker build -t inovex/illuminatio-runner:latest -f illuminatio-runner.dockerfile .
+      - docker images
+
+    - stage: build
+      name: "build tagged image"
+      sudo: required
+      on:
+        tags: true
+      services:
+        - docker
+      script:
+      - docker build -t inovex/illuminatio-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
+      - docker images
