@@ -223,6 +223,8 @@ jobs:
 
     - stage: build
       name: "build latest image"
+      on:
+        branch: master
       sudo: required
       on:
         all_branches: true
@@ -230,17 +232,18 @@ jobs:
         - docker
       script:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
-      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
 
     - stage: build
       name: "build tagged image"
+      on:
+        tags: true
       sudo: required
       services:
         - docker
       script:
+      - echo "tags is set, TRAVIS_TAG = ${TRAVIS_TAG}"
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
-      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
-      on:
-        tags: true
