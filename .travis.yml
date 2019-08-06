@@ -229,8 +229,9 @@ jobs:
       services:
         - docker
       script:
-      - docker build -t inovex/illuminatio-runner:latest -f illuminatio-runner.dockerfile .
-      - docker images
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
+      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+      - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
 
     - stage: build
       name: "build tagged image"
@@ -240,5 +241,6 @@ jobs:
       services:
         - docker
       script:
-      - docker build -t inovex/illuminatio-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
-      - docker images
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
+      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+      - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
