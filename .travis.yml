@@ -236,11 +236,11 @@ jobs:
     - stage: build
       name: "build tagged image"
       sudo: required
-      on:
-        tags: true
       services:
         - docker
       script:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
       - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
       - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
+      on:
+        tags: true
