@@ -230,7 +230,8 @@ jobs:
 
     - stage: build
       name: "push latest image"
-      if: (branch = master AND NOT type = pull_request)
+      #if: (branch = master AND NOT type = pull_request)
+      if: branch = master
       sudo: required
       services:
         - docker
