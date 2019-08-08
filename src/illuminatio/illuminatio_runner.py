@@ -269,10 +269,15 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     cfg_map = init_test_output_config_map(namespace, name, data=yaml.dump(results))
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
-    config_map_in_cluster = api.read_namespaced_config_map(name, namespace)
-    if config_map_in_cluster:
-        api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
-        logger.info(api_response)
-    else:
+    try:
+      config_map_in_cluster = api.read_namespaced_config_map(name, namespace)
+      api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
+      logger.info(api_response)
+    except k8s.client.rest.ApiException as e:
+      if e.body.get("code") == 404:
+        logger.info("Creating new Config Map")
         api_response = api.create_namespaced_config_map(namespace, cfg_map)
         logger.info(api_response)
+      else:
+        logger.error("An Error occured while checking for an existing config map.")
+        raise e
