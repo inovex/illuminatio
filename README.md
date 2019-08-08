@@ -67,8 +67,8 @@ Test your newly created NetworkPolicy:
 ```bash
 illuminatio clean run
 Starting cleaning resources with policies ['on-request', 'always']
-Deleting namespacess [] with cleanup policy on-request
-Deleting namespacess [] with cleanup policy always
+Deleting namespaces [] with cleanup policy on-request
+Deleting namespaces [] with cleanup policy always
 Deleting DSs in default with cleanup policy on-request
 Deleting pods in default with cleanup policy on-request
 Deleting svcs in default with cleanup policy on-request
