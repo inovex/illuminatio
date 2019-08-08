@@ -223,6 +223,7 @@ jobs:
 
     - stage: build
       name: "build image"
+      if: (tag IS blank)
       sudo: required
       services:
         - docker
@@ -230,7 +231,7 @@ jobs:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
 
     - stage: build
-      name: "push image"
+      name: "push latest image"
       if: (branch = master AND NOT type = pull_request)
       sudo: required
       services:
@@ -239,12 +240,23 @@ jobs:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
-      - if [ -z "$TRAVIS_TAG" ]; then exit 0; fi
-      - docker tag "${TRAVIS_REPO_SLUG}"-runner:latest "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
+
+    - stage: build
+      name: "push tagged image"
+      if: (tag IS present)
+      sudo: required
+      services:
+        - docker
+      script:
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
+      - docker tag "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" "${TRAVIS_REPO_SLUG}"-runner:latest
+      - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
 
     - stage: build
       name: "build python package"
+      if: (tag IS blank)
       language: python
       python:
         - "3.7"
@@ -253,12 +265,11 @@ jobs:
 
     - stage: build
       name: "upload python package"
-      if: (branch = master AND NOT type = pull_request)
+      if: (tag IS present)
       language: python
       python:
         - "3.7"
       script:
-      - if [ -z "$TRAVIS_TAG" ]; then exit 0; fi
       - python setup.py bdist_wheel
       - pip install twine
       - twine upload -u "${PYPI_USERNAME}" -p "${PYPI_PASSWORD}" --repository-url https://upload.pypi.org/legacy/ dist/*
