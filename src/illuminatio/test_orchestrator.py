@@ -213,8 +213,6 @@ class NetworkTestOrchestrator:
                     "Test namespace " + resp.metadata.name + " created succesfully, adding it to namespace list")
                 self._current_namespaces.append(resp)
                 time.sleep(1)
-                # while not api.list_namespaced_service_account(resp.metadata.name,
-                #                                               field_selector="metadata.name=default").items:
                 while not api.read_namespaced_service_account("default", resp.metadata.name):
                     logger.debug(
                         "Waiting for kubernetes to create default service account for namespace " + resp.metadata.name)
