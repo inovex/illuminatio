@@ -274,7 +274,7 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
       api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
       logger.info(api_response)
     except k8s.client.rest.ApiException as e:
-      if e.body.get("code") == 404:
+      if e.body["code"] == 404:
         logger.info("Creating new Config Map")
         api_response = api.create_namespaced_config_map(namespace, cfg_map)
         logger.info(api_response)
