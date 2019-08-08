@@ -1,9 +1,9 @@
-import click
-import csv
-import locale
 import os
 import os.path
+import csv
+import locale
 import yaml
+import click
 
 
 @click.command()
@@ -16,15 +16,15 @@ import yaml
 def cli(directory, outfile, delimiter, quotechar, performance):
     locale.setlocale(locale.LC_ALL, '')
     if directory is None or not os.path.exists(directory):
-        click.echo("directory must be an exisiting directory")
+        click.echo("directory must be an existing directory")
         exit(1)
     if outfile is None:
         click.echo("outfile must be set")
         exit(1)
     found_files = {}
-    for dpath, _, fnames in os.walk(directory):
-        yaml_files = [os.path.join(dpath, fname) for fname in fnames if
-                      fname.endswith(".yaml") or fname.endswith(".yml")]
+    for dpath, _, file_names in os.walk(directory):
+        yaml_files = [os.path.join(dpath, file_name) for file_name in file_names if
+                      file_name.endswith(".yaml") or file_name.endswith(".yml")]
         for yaml_file in yaml_files:
             with open(yaml_file) as yam:
                 found_files[yaml_file] = yaml.safe_load(yam)
@@ -73,22 +73,30 @@ def cli(directory, outfile, delimiter, quotechar, performance):
                 writer.writerow(line)
 
 
-def extract_values_from(fname):
-    return [w.split("_")[0] if "_" in w else w for w in fname.split("/")]
+def extract_values_from(file_name):
+    """
+    extracts values from a 
+    """
+    return [w.split("_")[0] if "_" in w else w for w in file_name.split("/")]
 
 
-def extract_titles_from(fname):
-    return [w.split("_")[1].replace(".yaml", "") if "_" in w else str(i) for i, w in enumerate(fname.split("/"))]
+def extract_titles_from(file_name):
+    """
+    extracts titles from a file's name
+    """
+    return [w.split("_")[1].replace(".yaml", "") if "_" in w else str(i) for i, w in enumerate(file_name.split("/"))]
 
-
-def flatten(d, key_list=None):
+def flatten(dictionary, key_list=None):
+    """
+    retrieves the subdictionaries inside a dictionary to enable easy iteration
+    """
     if key_list is None:
         key_list = []
-    if isinstance(d, dict):
-        for k in d:
-            yield from flatten(d[k], key_list + [k])
+    if isinstance(dictionary, dict):
+        for key in dictionary:
+            yield from flatten(dictionary[key], key_list + [key])
     else:
-        yield key_list, d
+        yield key_list, dictionary
 
 
 # pylint: disable=E1120
