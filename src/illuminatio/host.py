@@ -1,14 +1,25 @@
+"""
+file for all kinds of hosts
+"""
 from abc import ABC
 
 import kubernetes as k8s
 
 
 class Host(ABC):
-
+    """
+    Class for all kinds of hosts
+    """
     def to_identifier(self):
-        pass
+        """
+        Abstract function returning the host identifier
+        """
+        return self
 
     def matches(self, obj):
+        """
+        Compares the Host with a given object
+        """
         if obj is None:
             raise ValueError("obj to match to cannot be None")
         return self == obj
@@ -31,7 +42,7 @@ class Host(ABC):
         if labels is not None:
             return ClusterHost(namespace, labels)
         return ConcreteClusterHost(namespace, pod_label_string)
-  
+
     @staticmethod
     def _labels_from_string(label_string):
         if label_string == "*":
@@ -154,7 +165,7 @@ class GenericClusterHost(Host):
             k8s.client.CoreV1Api().list_namespace(field_selector="metadata.name=" + obj.metadata.namespace).items[0]
         namespace_matches = (namespace.metadata.labels is not None and
                              all(item in namespace.metadata.labels.items() for item in
-                                  self.namespace_labels.items()))
+                                 self.namespace_labels.items()))
         if isinstance(obj, k8s.client.V1Pod):
             return (namespace_matches and obj.metadata.labels is not None
                     and all(item in obj.metadata.labels.items() for item in self.pod_labels.items()))
