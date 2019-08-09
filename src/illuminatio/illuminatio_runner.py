@@ -61,11 +61,11 @@ def run_all_tests():
         cases = yaml.safe_load(yamlFile)
         logger.debug("Cases: " + str(cases))
         test_runtimes = {}
-        all_from_pods = [Host.from_identifier(from_host_string) for from_host_string in cases]
-        from_pods_on_node = filter_from_hosts(all_from_pods, pods_on_node)
-        for from_pod in from_pods_on_node:
-            pod_identifier = from_pod.to_identifier()
-            results[pod_identifier], test_runtimes[pod_identifier] = run_tests_for_from_pod(from_pod, cases)
+        all_sender_pods = [Host.from_identifier(from_host_string) for from_host_string in cases]
+        sender_pods_on_node = filter_from_hosts(all_sender_pods, pods_on_node)
+        for sender_pod in sender_pods_on_node:
+            pod_identifier = sender_pod.to_identifier()
+            results[pod_identifier], test_runtimes[pod_identifier] = run_tests_for_sender_pod(sender_pod, cases)
     return results, test_runtimes
 
 
@@ -74,10 +74,10 @@ def filter_from_hosts(from_hosts, pods_on_node):
     return from_hosts_on_node
 
 
-def run_tests_for_from_pod(from_pod, cases):
-    from_host_string = from_pod.to_identifier()
+def run_tests_for_sender_pod(sender_pod, cases):
+    from_host_string = sender_pod.to_identifier()
     runtimes = {}
-    nsenter_cmd = build_nsenter_cmd_for_pod(from_pod.namespace, from_pod.name)
+    nsenter_cmd = build_nsenter_cmd_for_pod(sender_pod.namespace, sender_pod.name)
     results = {}
     for target, ports in cases[from_host_string].items():
         start_time = time.time()
