@@ -40,10 +40,10 @@ class NetworkTestOrchestrator:
     logger = None
 
     def __init__(self, test_cases, log):
-        self._test_cases = test_cases
+        self.test_cases = test_cases
         self._current_pods = []
         self._current_services = []
-        self._current_namespaces = []
+        self.current_namespaces = []
         self.runner_daemon_set = None
         self.runner_image = ""
         self.target_image = ""
@@ -68,7 +68,7 @@ class NetworkTestOrchestrator:
         logger.debug(format_string.format(len(namespaces), "namespaces", namespaces))
         self._current_pods = pods
         self._current_services = svcs
-        self._current_namespaces = namespaces
+        self.current_namespaces = namespaces
 
     def _rewrite_ports_for_host(self, port_list, services_for_host):
         logger.debug("Rewriting portList " + str(port_list))
@@ -191,7 +191,7 @@ class NetworkTestOrchestrator:
         return resolved_cases, from_host_mappings, to_host_mappings, port_mappings
 
     def _find_or_create_namespace_for_host(self, from_host, api):
-        namespaces_for_host = [ns for ns in self._current_namespaces if from_host.matches(ns)]
+        namespaces_for_host = [ns for ns in self.current_namespaces if from_host.matches(ns)]
         logger.debug("Found {} namespaces for host {}: {}".format(len(namespaces_for_host), from_host,
                                                                   [ns.metadata.name for ns in namespaces_for_host]))
         if namespaces_for_host:
@@ -211,7 +211,7 @@ class NetworkTestOrchestrator:
             if isinstance(resp, k8s.client.V1Namespace):
                 logger.debug(
                     "Test namespace " + resp.metadata.name + " created succesfully, adding it to namespace list")
-                self._current_namespaces.append(resp)
+                self.current_namespaces.append(resp)
                 time.sleep(1)
                 while not api.list_namespaced_service_account(resp.metadata.name,
                                                               field_selector="metadata.name=default").items:
@@ -234,8 +234,8 @@ class NetworkTestOrchestrator:
 
     def create_and_launch_daemon_set_runners(self, apps_api: k8s.client.AppsV1Api, core_api: k8s.client.CoreV1Api):
         """ Creates DaemonSet for testing pods that already in the cluster. """
-        supported_cases = [c for c in self._test_cases if self._hosts_are_in_cluster(c)]
-        filtered_cases = [c for c in self._test_cases if c not in supported_cases]
+        supported_cases = [c for c in self.test_cases if self._hosts_are_in_cluster(c)]
+        filtered_cases = [c for c in self.test_cases if c not in supported_cases]
         logger.debug("Filtered " + str(len(filtered_cases)) + " test cases: " + str(filtered_cases))
         cases_dict = merge_in_dict(supported_cases)
         logger.debug("Created casesDict: " + str(cases_dict) + " from " + str(supported_cases))
@@ -259,7 +259,7 @@ class NetworkTestOrchestrator:
                     for h in [c.from_host, c.to_host]])
 
     def _filter_cluster_cases(self):
-        return [c for c in self._test_cases if
+        return [c for c in self.test_cases if
                 isinstance(c.fromHost, ClusterHost) and isinstance(c.toHost, ClusterHost)]
 
     def collect_results(self, api: k8s.client.CoreV1Api):

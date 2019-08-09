@@ -1,3 +1,7 @@
+"""
+Heart of the illuminatio CLI
+"""
+
 import logging
 import time
 from os import path
@@ -16,7 +20,7 @@ logger = logging.getLogger(__name__)
 click_log.basic_config(logger)
 
 # ToDo do we really need here global variables?
-orch = None
+ORCH = None
 gen = None
 
 
@@ -24,9 +28,9 @@ gen = None
 @click_log.simple_verbosity_option(logger, default="INFO")
 @click.option('--incluster', default=False, is_flag=True)
 def cli(incluster):
-    # global orch
-    orch = NetworkTestOrchestrator([], logger)
-    # global gen
+    global ORCH
+    ORCH = NetworkTestOrchestrator([], logger)
+    global gen
     gen = NetworkTestCaseGenerator(logger)
     if incluster:
         k8s.config.load_incluster_config()
@@ -46,31 +50,32 @@ def cli(incluster):
 @click.option('-t', '--target-image', default="nginx:stable",
               help='Target image that is used to generate pods (should have a webserver inside listening on port 80)')
 def run(outfile, brief, dry, runner_image, target_image):
+    """
+    Runs illuminatio with given names for docker images of runner and target pod
+    """
     click.echo()
     runtimes = {}
     start_time = time.time()
     logger.info("Starting test generation and run.")
     core_api = k8s.client.CoreV1Api()
     # Fetch all pods, namespaces, services
-    orch.set_runner_image(runner_image)
-    orch.set_target_image(target_image)
-    orch.refresh_cluster_resources(core_api)
+    ORCH.set_runner_image(runner_image)
+    ORCH.set_target_image(target_image)
+    ORCH.refresh_cluster_resources(core_api)
     # Fetch all network policies
     v1net = k8s.client.NetworkingV1Api()
     net_pols = v1net.list_network_policy_for_all_namespaces()
-    resource_pull_time = time.time()
-    runtimes["resource-pull"] = resource_pull_time - start_time
+    runtimes["resource-pull"] = time.time() - start_time
 
     # Generate Test cases
-    cases, gen_run_times = gen.generate_test_cases(net_pols.items, orch._current_namespaces)
+    cases, gen_run_times = gen.generate_test_cases(net_pols.items, ORCH.current_namespaces)
     logger.info("Got cases: %s", str(cases))
     case_time = time.time()
-    case_duration = case_time - start_time
-    runtimes["generate"] = case_duration
-    render_cases(cases, case_duration)
+    runtimes["generate"] = case_time - start_time
+    render_cases(cases, case_time - start_time)
     click.echo()
     if dry:
-        logger.info("Skipping test exection as --dry was set")
+        logger.info("Skipping test execution as --dry was set")
         click.echo()
         return
     results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases)
@@ -81,7 +86,7 @@ def run(outfile, brief, dry, runner_image, target_image):
     runtimes["execute"] = result_duration
     runtimes["run"] = result_time - start_time
     if brief:
-        simplyfy_successful_results(results)
+        simplify_successful_results(results)
     logger.info("TestResults: %s", str(results))
     if outfile:
         # write output
@@ -106,15 +111,18 @@ def run(outfile, brief, dry, runner_image, target_image):
 
 
 def execute_tests(cases):
+    """
+    Executes all tests with given test cases
+    """
     # TODO: add a setter, initially the orchestrator was meant to be instantiated at this point,
     # but to pass click_logging's logger it was changed to be instantiated earlier
-    orch._test_cases = cases
+    ORCH.test_cases = cases
     core_api = k8s.client.CoreV1Api()
-    from_host_mappings, to_host_mappings, port_mappings = orch.create_and_launch_daemon_set_runners(
+    from_host_mappings, to_host_mappings, port_mappings = ORCH.create_and_launch_daemon_set_runners(
         k8s.client.AppsV1Api(),
         core_api)
     resource_creation_time = time.time()
-    raw_results, runtimes = orch.collect_results(core_api)
+    raw_results, runtimes = ORCH.collect_results(core_api)
     result_collection_time = time.time()
     additional_data = {"raw-results": raw_results,
                        "mappings": {"fromHost": from_host_mappings, "toHost": to_host_mappings, "ports": port_mappings}}
@@ -122,35 +130,46 @@ def execute_tests(cases):
     return results, runtimes, additional_data, resource_creation_time, result_collection_time
 
 
-def transform_results(raw_results, from_host_mappings, to_host_mappings, port_mappings):
+def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, port_mappings):
+    """
+    transforms all requests from raw into a more convenient format
+    """
     transformed = {}
     logger.debug("Raw results: %s", str(raw_results))
-    logger.debug("fromHostMappings: %s", str(from_host_mappings))
-    logger.debug("toHostMappings: %s", str(to_host_mappings))
+    logger.debug("fromHostMappings: %s", str(sender_pod_mappings))
+    logger.debug("toHostMappings: %s", str(receiver_pod_mappings))
     logger.debug("portMappings: %s", str(port_mappings))
-    for from_host, mapped_from_host in from_host_mappings.items():
-        transformed[from_host] = {}
-        for to_host, mapped_to_host in to_host_mappings[from_host].items():
-            transformed[from_host][to_host] = {}
-            for port, mapped_port in port_mappings[from_host][to_host].items():
+
+    #iterate over all requests
+    for sender_pod, mapped_sender_pod in sender_pod_mappings.items():
+        transformed[sender_pod] = {}
+        for receiver_pod, mapped_receiver_pod in receiver_pod_mappings[sender_pod].items():
+            transformed[sender_pod][receiver_pod] = {}
+            for port, mapped_port in port_mappings[sender_pod][receiver_pod].items():
+                #fetch and print metadata for each request
                 logger.debug("port: %s", port)
                 logger.debug("mapped_port: %s", str(mapped_port))
-                logger.debug("from_host: %s", str(from_host))
-                logger.debug("to_host: %s", str(to_host))
-                logger.debug("mapped_from_host: %s", str(mapped_from_host))
-                logger.debug("mapped_to_host: %s", str(mapped_to_host))
+                logger.debug("sender_pod: %s", str(sender_pod))
+                logger.debug("receiver_pod: %s", str(receiver_pod))
+                logger.debug("mapped_sender_pod: %s", str(mapped_sender_pod))
+                logger.debug("mapped_receiver_pod: %s", str(mapped_receiver_pod))
                 logger.debug("raw_results: %s", str(raw_results))
                 # ToDo review here!
-                if mapped_port in raw_results[mapped_from_host][mapped_to_host]:
-                    transformed[from_host][to_host][port] = raw_results[mapped_from_host][mapped_to_host][mapped_port]
+                if mapped_port in raw_results[mapped_sender_pod][mapped_receiver_pod]:
+                    # fetch all requests from desired ports
+                    transformed[sender_pod][receiver_pod][port] = \
+                        raw_results[mapped_sender_pod][mapped_receiver_pod][mapped_port]
                 else:
-                    # handle missing ports when an error occurs by putting raw results with adjusted hosts
-                    transformed[from_host][to_host] = raw_results[mapped_from_host][mapped_to_host]
+                    # handle missing ports when an error occurs by putting raw results with adjusted pods
+                    transformed[sender_pod][receiver_pod] = raw_results[mapped_sender_pod][mapped_receiver_pod]
                     break
     return transformed
 
 
 def render_results(results, run_time, trailing_spaces=2):
+    """
+    Prints test results in a beautiful way
+    """
     num_tests = len([p for f in results for t in results[f] for p in results[f][t]])
     logger.info("Finished running %s tests in %.4f seconds", str(num_tests), run_time)
     if num_tests > 0:
@@ -175,11 +194,14 @@ def render_results(results, run_time, trailing_spaces=2):
 
 
 def render_cases(cases, run_time, trailing_spaces=2):
+    """
+    Prints test cases in a beautiful way
+    """
     # convert into tuples for character counting and printing
     case_string_tuples = [(c.from_host.to_identifier(), c.to_host.to_identifier(), c.port_string) for c in cases]
     # computes width (=max string length per column + trailingSpaces)
     widths = [max([len(el) for el in l]) + trailing_spaces for l in zip(*case_string_tuples)]
-    # formats string to choose each elemt of the given tuple or array with the according width element
+    # formats string to choose each element of the given tuple or array with the according width element
     line_format = '{0[0]:{w[0]}}{0[1]:{w[1]}}{0[2]:{w[2]}}'
     logger.info("Generated %s cases in %.4f seconds", str(len(cases)), run_time)
     if cases:
@@ -188,7 +210,10 @@ def render_cases(cases, run_time, trailing_spaces=2):
             logger.info(line_format.format(case, w=widths))
 
 
-def simplyfy_successful_results(results):
+def simplify_successful_results(results):
+    """
+    removes all information besides whether the run was successful from given results
+    """
     for from_host in results:
         for to_host in results[from_host]:
             for port in results[from_host][to_host]:
@@ -203,6 +228,9 @@ def simplyfy_successful_results(results):
 @click.option('--hard/--soft', default=True,
               help='Whether to delete all resources or only those with cleanup policy \'on_request\'.')
 def clean(hard):
+    """
+    deletes all or only specific resources created by illuminatio
+    """
     clean_up_policies = [CLEANUP_ON_REQUEST, CLEANUP_ALWAYS] if hard else [CLEANUP_ALWAYS]
     logger.info("Starting cleaning resources with policies %s", clean_up_policies)
     core_api = k8s.client.CoreV1Api()
