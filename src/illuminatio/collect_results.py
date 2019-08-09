@@ -1,5 +1,6 @@
 """
-This module collects the test results of an illuminatio run.
+Contains CLI functionalities to configure the collection of
+either performance or test results
 """
 import os
 import os.path

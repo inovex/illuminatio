@@ -74,7 +74,9 @@ class ConcreteClusterHost(Host):
 
 
 class ClusterHost(Host):
-
+    """
+    
+    """
     def __init__(self, namespace, pod_labels):
         if namespace is None:
             raise ValueError("namespace may not be None")
@@ -87,8 +89,7 @@ class ClusterHost(Host):
         if isinstance(other, ClusterHost):
             return (self.namespace == other.namespace
                     and self.pod_labels == other.pod_labels)
-        else:
-            return False
+        return False
 
     def __hash__(self):
         return hash(str(self))
@@ -101,19 +102,17 @@ class ClusterHost(Host):
     def matches(self, obj):
         if obj is None:
             raise ValueError("obj to match to cannot be None")
-        else:
-            if isinstance(obj, k8s.client.V1Pod):
-                return (obj.metadata.namespace == self.namespace
-                        and obj.metadata.labels is not None
-                        and all(item in obj.metadata.labels.items() for item in self.pod_labels.items()))
-            elif isinstance(obj, k8s.client.V1Service):
-                return (obj.metadata.namespace == self.namespace
-                        and obj.spec.selector is not None
-                        and all(item in obj.spec.selector.items() for item in self.pod_labels.items()))
-            elif isinstance(obj, k8s.client.V1Namespace):
-                return obj.metadata.name == self.namespace
-            else:
-                raise ValueError("Cannot match object of type " + type(obj))
+        if isinstance(obj, k8s.client.V1Pod):
+            return (obj.metadata.namespace == self.namespace
+                    and obj.metadata.labels is not None
+                    and all(item in obj.metadata.labels.items() for item in self.pod_labels.items()))
+        if isinstance(obj, k8s.client.V1Service):
+            return (obj.metadata.namespace == self.namespace
+                    and obj.spec.selector is not None
+                    and all(item in obj.spec.selector.items() for item in self.pod_labels.items()))
+        if isinstance(obj, k8s.client.V1Namespace):
+            return obj.metadata.name == self.namespace
+        raise ValueError("Cannot match object of type " + type(obj))
 
     def __str__(self):
         return "ClusterHost(namespace=" + str(self.namespace) + ", podLabels=" + str(self.pod_labels) + ")"
@@ -123,7 +122,9 @@ class ClusterHost(Host):
 
 
 class GenericClusterHost(Host):
-
+    """
+    Abstract class for cluster hosts
+    """
     def __init__(self, namespace_labels, pod_labels):
         if namespace_labels is None:
             raise ValueError("namespaceLabels may not be None")
@@ -136,8 +137,7 @@ class GenericClusterHost(Host):
         if isinstance(other, GenericClusterHost):
             return (self.namespace_labels == other.namespace_labels
                     and self.pod_labels == other.pod_labels)
-        else:
-            return False
+        return False
 
     def __hash__(self):
         return hash(str(self))
@@ -145,22 +145,22 @@ class GenericClusterHost(Host):
     def matches(self, obj):
         if obj is None:
             raise ValueError("obj to match to cannot be None")
-        elif isinstance(obj, k8s.client.V1Namespace):
+        if isinstance(obj, k8s.client.V1Namespace):
             return (obj.metadata.labels is not None
                     and all(item in obj.metadata.labels.items() for item in self.namespace_labels.items()))
-        else:
-            # we need to request the namepsace from the cluster to match the labels TODO: find better solution
-            namespace = \
-                k8s.client.CoreV1Api().list_namespace(field_selector="metadata.name=" + obj.metadata.namespace).items[0]
-            namespace_matches = (namespace.metadata.labels is not None and
-                                 all(item in namespace.metadata.labels.items() for item in
-                                     self.namespace_labels.items()))
-            if isinstance(obj, k8s.client.V1Pod):
-                return (namespace_matches and obj.metadata.labels is not None
-                        and all(item in obj.metadata.labels.items() for item in self.pod_labels.items()))
-            elif isinstance(obj, k8s.client.V1Service):
-                return (namespace_matches and obj.spec.selector is not None
-                        and all(item in obj.spec.selector.items() for item in self.pod_labels.items()))
+        # we need to request the namespace from the cluster to match the labels TODO: find better solution
+        namespace = \
+            k8s.client.CoreV1Api().list_namespace(field_selector="metadata.name=" + obj.metadata.namespace).items[0]
+        namespace_matches = (namespace.metadata.labels is not None and
+                              all(item in namespace.metadata.labels.items() for item in
+                                  self.namespace_labels.items()))
+        if isinstance(obj, k8s.client.V1Pod):
+            return (namespace_matches and obj.metadata.labels is not None
+                    and all(item in obj.metadata.labels.items() for item in self.pod_labels.items()))
+        if isinstance(obj, k8s.client.V1Service):
+            return (namespace_matches and obj.spec.selector is not None
+                    and all(item in obj.spec.selector.items() for item in self.pod_labels.items()))
+        raise TypeError("obj is neither a pod nor a service")
 
     def to_identifier(self):
         return (("*" if not self.namespace_labels else ",".join(
@@ -177,7 +177,9 @@ class GenericClusterHost(Host):
 
 
 class ExternalHost(Host):
-
+    """
+    Class for execution on an external host
+    """
     def __init__(self, ip_address):
         self.ip_address = ip_address
 
@@ -188,17 +190,18 @@ class ExternalHost(Host):
         return self.__str__()
 
     def __eq__(self, other):
-        if isinstance(other, ExternalHost):
-            return self.ip_address == other.ip_address
-        else:
+        if not isinstance(other, ExternalHost):
             return False
+        return self.ip_address == other.ip_address
 
     def to_identifier(self):
         return str(self.ip_address)
 
 
 class LocalHost(Host):
-
+    """
+    Class for execution on localhost
+    """
     def __str__(self):
         return "LocalHost()"
 
