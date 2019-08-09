@@ -79,7 +79,7 @@ def test_NetworkTestCase_in_sameFieldsVariousHosts_returnsTrue():
 
 # Below: ClusterHost.matches tests
 
-def test_ClusterHost_matches_pod_given_and_from_host_is_cluster_hosts_with_different_namespace_same_labels_returns_false():
+def test_ClusterHost_matches_pod_given_and_from_pod_is_cluster_pod_with_different_namespace_same_labels_returns_false():
     meta = k8s.client.V1ObjectMeta(namespace="other-ns", labels=test_host1.pod_labels)
     non_matching_pod = k8s.client.V1Pod(metadata=meta)
     assert test_host1.matches(non_matching_pod) is False

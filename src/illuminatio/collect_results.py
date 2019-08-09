@@ -30,8 +30,8 @@ def cli(directory, outfile, delimiter, quotechar, performance):
         exit(1)
     found_files = {}
     for dpath, _, file_names in os.walk(directory):
-        for yaml_file in [os.path.join(dpath, file_name) for file_name in file_names if \
-                      file_name.endswith(".yaml") or file_name.endswith(".yml")]:
+        for yaml_file in [os.path.join(dpath, file_name) for file_name in file_names if
+                          file_name.endswith(".yaml") or file_name.endswith(".yml")]:
             with open(yaml_file) as yam:
                 found_files[yaml_file] = yaml.safe_load(yam)
     os.makedirs(os.path.abspath(os.path.join(outfile, os.pardir)), exist_ok=True)
@@ -41,6 +41,7 @@ def cli(directory, outfile, delimiter, quotechar, performance):
             collect_performance_results(found_files, writer, directory)
         else:
             collect_test_results(found_files, writer, directory)
+
 
 def collect_test_results(found_files, writer, directory):
     """
@@ -59,6 +60,7 @@ def collect_test_results(found_files, writer, directory):
     writer.writerow(title_line + value_titles)
     for line in lines:
         writer.writerow(line)
+
 
 def collect_performance_results(found_files, writer, directory):
     """
@@ -103,6 +105,7 @@ def extract_titles_from(file_name):
     extracts titles from a file's name
     """
     return [w.split("_")[1].replace(".yaml", "") if "_" in w else str(i) for i, w in enumerate(file_name.split("/"))]
+
 
 def flatten(dictionary, key_list=None):
     """
