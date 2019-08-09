@@ -11,7 +11,7 @@ class Host(ABC):
     def matches(self, obj):
         if obj is None:
             raise ValueError("obj to match to cannot be None")
-        return False
+        return self == obj
 
     @classmethod
     def from_identifier(cls, identifier: str):
