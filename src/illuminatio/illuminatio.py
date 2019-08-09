@@ -1,10 +1,10 @@
 import logging
 import time
 from os import path
+import json
 
 import click
 import click_log
-import json
 import kubernetes as k8s
 import yaml
 from illuminatio.cleaner import Cleaner
@@ -24,9 +24,9 @@ gen = None
 @click_log.simple_verbosity_option(logger, default="INFO")
 @click.option('--incluster', default=False, is_flag=True)
 def cli(incluster):
-    global orch
+    # global orch
     orch = NetworkTestOrchestrator([], logger)
-    global gen
+    # global gen
     gen = NetworkTestCaseGenerator(logger)
     if incluster:
         k8s.config.load_incluster_config()
@@ -63,14 +63,14 @@ def run(outfile, brief, dry, runner_image, target_image):
 
     # Generate Test cases
     cases, gen_run_times = gen.generate_test_cases(net_pols.items, orch._current_namespaces)
-    logger.info("Got cases: " + str(cases))
+    logger.info("Got cases: %s", str(cases))
     case_time = time.time()
     case_duration = case_time - start_time
     runtimes["generate"] = case_duration
     render_cases(cases, case_duration)
     click.echo()
     if dry:
-        click.echo("Skipping test exection as --dry was set")
+        logger.info("Skipping test exection as --dry was set")
         click.echo()
         return
     results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases)
@@ -82,10 +82,10 @@ def run(outfile, brief, dry, runner_image, target_image):
     runtimes["run"] = result_time - start_time
     if brief:
         simplyfy_successful_results(results)
-    logger.info("TestResults: " + str(results))
+    logger.info("TestResults: %s", str(results))
     if outfile:
         # write output
-        click.echo("Writing results to file " + outfile)
+        logger.info("Writing results to file %s", outfile)
         _, extension = path.splitext(outfile)
         file_contents = {"cases": results, "runtimes": runtimes, "results": additional_data}
         file_contents["runtimes"]["runners"] = test_runtimes
@@ -97,7 +97,7 @@ def run(outfile, brief, dry, runner_image, target_image):
             with open(outfile, 'w') as out:
                 json.dump(file_contents, out)
         else:
-            logging.error("Output format " + extension + " not supported! Aborting write to file.")
+            logging.error("Output format %s not supported! Aborting write to file.", extension)
     # echo results, whether they have been saved or not
     result_duration = result_time - case_time
     render_results(results, result_duration)
@@ -124,22 +124,22 @@ def execute_tests(cases):
 
 def transform_results(raw_results, from_host_mappings, to_host_mappings, port_mappings):
     transformed = {}
-    logger.debug("Raw results:" + str(raw_results))
-    logger.debug("fromHostMappings:" + str(from_host_mappings))
-    logger.debug("toHostMappings:" + str(to_host_mappings))
-    logger.debug("portMappings:" + str(port_mappings))
+    logger.debug("Raw results: %s", str(raw_results))
+    logger.debug("fromHostMappings: %s", str(from_host_mappings))
+    logger.debug("toHostMappings: %s", str(to_host_mappings))
+    logger.debug("portMappings: %s", str(port_mappings))
     for from_host, mapped_from_host in from_host_mappings.items():
         transformed[from_host] = {}
         for to_host, mapped_to_host in to_host_mappings[from_host].items():
             transformed[from_host][to_host] = {}
             for port, mapped_port in port_mappings[from_host][to_host].items():
                 logger.debug("port: %s", port)
-                logger.debug("mapped_port: " + str(mapped_port))
-                logger.debug("from_host: " + str(from_host))
-                logger.debug("to_host: " + str(to_host))
-                logger.debug("mapped_from_host: " + str(mapped_from_host))
-                logger.debug("mapped_to_host: " + str(mapped_to_host))
-                logger.debug("raw_results: " + str(raw_results))
+                logger.debug("mapped_port: %s", str(mapped_port))
+                logger.debug("from_host: %s", str(from_host))
+                logger.debug("to_host: %s", str(to_host))
+                logger.debug("mapped_from_host: %s", str(mapped_from_host))
+                logger.debug("mapped_to_host: %s", str(mapped_to_host))
+                logger.debug("raw_results: %s", str(raw_results))
                 # ToDo review here!
                 if mapped_port in raw_results[mapped_from_host][mapped_to_host]:
                     transformed[from_host][to_host][port] = raw_results[mapped_from_host][mapped_to_host][mapped_port]
@@ -151,21 +151,19 @@ def transform_results(raw_results, from_host_mappings, to_host_mappings, port_ma
 
 
 def render_results(results, run_time, trailing_spaces=2):
-    # ToDo store as configmap
     num_tests = len([p for f in results for t in results[f] for p in results[f][t]])
-    # FIXME inconsistent use of log and click.echo
-    click.echo("Finished running " + str(num_tests) + " tests in %.4f seconds" % run_time)
+    logger.info("Finished running %s tests in %.4f seconds", str(num_tests), run_time)
     if num_tests > 0:
         # this format expects 4 positional argument and a keyword widths argument w
         line_format = '{0:{w[0]}}{1:{w[1]}}{2:{w[2]}}{3:{w[3]}}'
         # then we compute the max string lengths for each layer of the result map separately
-        w1 = max([len(f) for f in results])
-        w2 = max([len(t) for f in results for t in results[f]])
-        w3 = max([len(p) for f in results for t in results[f] for p in results[f][t]] + [len("PORT")])
-        w4 = [w1, w2, w3, max(len(el) for el in ["success", "failure"])]
+        width_1 = max([len(f) for f in results])
+        width_2 = max([len(t) for f in results for t in results[f]])
+        width_3 = max([len(p) for f in results for t in results[f] for p in results[f][t]] + [len("PORT")])
+        width_4 = [width_1, width_2, width_3, max(len(el) for el in ["success", "failure"])]
         # this is packed in our widths list, and trailingSpaces is added to each element
-        widths = [w + trailing_spaces for w in w4]
-        click.echo(line_format.format("FROM", "TO", "PORT", "RESULT", w=widths))
+        widths = [width + trailing_spaces for width in width_4]
+        logger.info(line_format.format("FROM", "TO", "PORT", "RESULT", w=widths))
         for from_host in results:
             for to_host in results[from_host]:
                 for port in results[from_host][to_host]:
@@ -173,7 +171,7 @@ def render_results(results, run_time, trailing_spaces=2):
                     success_string = "success" if success else "failure"
                     if not success and "error" in results[from_host][to_host][port]:
                         success_string = "ERR: " + results[from_host][to_host][port]["error"]
-                    click.echo(line_format.format(from_host, to_host, port, success_string, w=widths))
+                    logger.info(line_format.format(from_host, to_host, port, success_string, w=widths))
 
 
 def render_cases(cases, run_time, trailing_spaces=2):
@@ -183,11 +181,11 @@ def render_cases(cases, run_time, trailing_spaces=2):
     widths = [max([len(el) for el in l]) + trailing_spaces for l in zip(*case_string_tuples)]
     # formats string to choose each elemt of the given tuple or array with the according width element
     line_format = '{0[0]:{w[0]}}{0[1]:{w[1]}}{0[2]:{w[2]}}'
-    click.echo("Generated " + str(len(cases)) + " cases in %.4f seconds" % run_time)
-    if len(cases) > 0:
-        click.echo(line_format.format(("FROM", "TO", "PORT"), w=widths))
+    logger.info("Generated %s cases in %.4f seconds", str(len(cases)), run_time)
+    if cases:
+        logger.info(line_format.format(("FROM", "TO", "PORT"), w=widths))
         for case in case_string_tuples:
-            click.echo(line_format.format(case, w=widths))
+            logger.info(line_format.format(case, w=widths))
 
 
 def simplyfy_successful_results(results):
@@ -206,7 +204,7 @@ def simplyfy_successful_results(results):
               help='Whether to delete all resources or only those with cleanup policy \'on_request\'.')
 def clean(hard):
     clean_up_policies = [CLEANUP_ON_REQUEST, CLEANUP_ALWAYS] if hard else [CLEANUP_ALWAYS]
-    logger.info("Starting cleaning resources with policies %s" % clean_up_policies)
+    logger.info("Starting cleaning resources with policies %s", clean_up_policies)
     core_api = k8s.client.CoreV1Api()
     apps_api = k8s.client.AppsV1Api()
     rbac_api = k8s.client.RbacAuthorizationV1Api()
