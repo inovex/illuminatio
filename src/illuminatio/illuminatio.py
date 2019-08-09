@@ -213,16 +213,16 @@ def clean(hard):
     cleaner = Cleaner(core_api, apps_api, rbac_api, logger)
     # clean up project namespaces, as they cascasde resource deletion
     for cleanup_val in clean_up_policies:
-        cleaner.clean_up_namespaces(cleanup_val)
+        cleaner.clean_up_namespaces_with_cleanup_policy(cleanup_val)
     # clean up resources in remaining ns
     namespace_list = core_api.list_namespace()
     namespaces = [ns.metadata.name for ns in namespace_list.items if
                   ns.metadata.name not in ["kube-system", "kube-public"]]
     for cleanup_val in clean_up_policies:
-        cleaner.clean_up_daemon_sets_in_namespaces(namespaces, cleanup_val)
+        cleaner.clean_up_daemon_sets_in_namespaces_with_cleanup_policy(namespaces, cleanup_val)
         cleaner.clean_up_pods_in_namespaces(namespaces, cleanup_val)
         cleaner.clean_up_services_in_namespaces(namespaces, cleanup_val)
         cleaner.clean_up_cfg_maps_in_namespaces(namespaces, cleanup_val)
-        cleaner.clean_up_cluster_role_binding(cleanup_val)
-        cleaner.clean_up_service_accounts_in_namespaces(namespaces, cleanup_val)
+        cleaner.clean_up_cluster_role_binding_with_cleanup_policy(cleanup_val)
+        cleaner.clean_up_service_accounts_in_namespaces_with_cleanup_policy(namespaces, cleanup_val)
     logger.info("Finished cleanUp")
