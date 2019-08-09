@@ -15,36 +15,38 @@ class Host(ABC):
 
     @classmethod
     def from_identifier(cls, identifier: str):
+        """
+        Returns the host type of a given identifier.
+        """
         if identifier == LocalHost().to_identifier():
             return LocalHost()
-        elif '.' in identifier:
+        if '.' in identifier:
             return ExternalHost(identifier)
-        else:
-            split_ns = identifier.split(":")
-            pod_label_string = (split_ns[1] if len(split_ns) > 1 else split_ns[0])
-            labels = Host._labels_from_string(pod_label_string)
-            ns = split_ns[0] if len(split_ns) > 1 else "default"
-            if "=" in ns or "*" in ns:
-                return GenericClusterHost(Host._labels_from_string(ns), labels)
-            elif labels is not None:
-                return ClusterHost(ns, labels)
-            else:
-                return ConcreteClusterHost(ns, pod_label_string)
-
+        split_namespace = identifier.split(":")
+        pod_label_string = (split_namespace[1] if len(split_namespace) > 1 else split_namespace[0])
+        labels = Host._labels_from_string(pod_label_string)
+        namespace = split_namespace[0] if len(split_namespace) > 1 else "default"
+        if "=" in namespace or "*" in namespace:
+            return GenericClusterHost(Host._labels_from_string(namespace), labels)
+        if labels is not None:
+            return ClusterHost(namespace, labels)
+        return ConcreteClusterHost(namespace, pod_label_string)
+  
     @staticmethod
     def _labels_from_string(label_string):
         if label_string == "*":
             return {}
-        elif "=" in label_string:
+        if "=" in label_string:
             split_labels = label_string.split(",")
             labels = {sp.split("=")[0]: sp.split("=")[1] for sp in split_labels}
             return labels
-        else:
-            return None
+        return None
 
 
 class ConcreteClusterHost(Host):
-
+    """
+    Concrete class for cluster hosts
+    """
     def __init__(self, namespace, name):
         if namespace is None:
             raise ValueError("namespace may not be None")
@@ -57,8 +59,7 @@ class ConcreteClusterHost(Host):
         if isinstance(other, ConcreteClusterHost):
             return (self.namespace == other.namespace
                     and self.name == other.name)
-        else:
-            return False
+        return False
 
     def __hash__(self):
         return hash(str(self))
@@ -75,7 +76,7 @@ class ConcreteClusterHost(Host):
 
 class ClusterHost(Host):
     """
-    
+    Class for cluster hosts
     """
     def __init__(self, namespace, pod_labels):
         if namespace is None:
@@ -152,7 +153,7 @@ class GenericClusterHost(Host):
         namespace = \
             k8s.client.CoreV1Api().list_namespace(field_selector="metadata.name=" + obj.metadata.namespace).items[0]
         namespace_matches = (namespace.metadata.labels is not None and
-                              all(item in namespace.metadata.labels.items() for item in
+                             all(item in namespace.metadata.labels.items() for item in
                                   self.namespace_labels.items()))
         if isinstance(obj, k8s.client.V1Pod):
             return (namespace_matches and obj.metadata.labels is not None
