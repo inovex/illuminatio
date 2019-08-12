@@ -1,3 +1,8 @@
+"""
+This file contains the implementation of the illuminatio runner which
+actively executes network policy tests inside the kubernetes cluster itself
+"""
+
 import json
 import logging
 import os
@@ -21,6 +26,9 @@ CASE_FILE_PATH = "/etc/config/cases.yaml"
 
 
 def build_result_string(port, target, should_be_blocked, was_blocked):
+    """
+    builds and returns a test result string
+    """
     was_successful = should_be_blocked == was_blocked
     title = "Test " + target + ":" + ("-" if should_be_blocked else "") + port + (
         " succeeded" if was_successful else " failed")
@@ -32,6 +40,9 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
 @click.command()
 @click_log.simple_verbosity_option(LOGGER)
 def cli():
+    """
+    Command Line function which runs all tests and stores the results into a ConfigMap.
+    """
     run_times = {"overall": "error"}
     if not os.path.exists(CASE_FILE_PATH):
         raise RuntimeError("Could not find cases.yaml in %s!" % CASE_FILE_PATH)
@@ -42,7 +53,7 @@ def cli():
         namespace = os.environ["RUNNER_NAMESPACE"]
         name = os.environ["RUNNER_NAME"]
     except KeyError:
-        LOGGER.error("Cannot store output to disk, as env vars are not set")
+        LOGGER.error("Could not store output to ConfigMap, as env vars are not set")
     LOGGER.debug("Output EnvVars: RUNNER_NAMESPACE=%s, RUNNER_NAME=%s", namespace, name)
     if namespace is not None and name is not None:
         store_results_to_cfg_map(results, namespace, name + "-results",
@@ -54,6 +65,10 @@ def cli():
 
 
 def run_all_tests():
+    """
+    Runs all tests,
+    returns the results and measured execution times
+    """
     pods_on_node = [ConcreteClusterHost(p.metadata.namespace, p.metadata.name) for p in get_pods_on_node().items]
     results = {}
     with open(CASE_FILE_PATH, "r") as yaml_file:
@@ -61,19 +76,26 @@ def run_all_tests():
         LOGGER.debug("Cases: %s", str(cases))
         test_runtimes = {}
         all_sender_pods = [Host.from_identifier(from_host_string) for from_host_string in cases]
-        sender_pods_on_node = filter_from_hosts(all_sender_pods, pods_on_node)
+        sender_pods_on_node = get_pods_contained_in_both_lists(all_sender_pods, pods_on_node)
+        #execute tests for each sender pod
         for sender_pod in sender_pods_on_node:
             pod_identifier = sender_pod.to_identifier()
             results[pod_identifier], test_runtimes[pod_identifier] = run_tests_for_sender_pod(sender_pod, cases)
     return results, test_runtimes
 
 
-def filter_from_hosts(from_hosts, pods_on_node):
-    from_hosts_on_node = [host for host in from_hosts if host_on_node(host, pods_on_node)]
-    return from_hosts_on_node
+def get_pods_contained_in_both_lists(first_pod_list, second_pod_list):
+    """
+    Returns a list with pods contained in both given lists
+    """
+    sender_pods_on_node = [pod for pod in first_pod_list if pod_list_contains_pod(pod, second_pod_list)]
+    return sender_pods_on_node
 
 
 def run_tests_for_sender_pod(sender_pod, cases):
+    """
+    Runs a bunch of test cases from the network namespace of a given pod.
+    """
     from_host_string = sender_pod.to_identifier()
     runtimes = {}
     nsenter_cmd = build_nsenter_cmd_for_pod(sender_pod.namespace, sender_pod.name)
@@ -86,6 +108,11 @@ def run_tests_for_sender_pod(sender_pod, cases):
 
 
 def run_tests_for_target(enter_net_ns_cmd, ports, target):
+    """
+    This function executes the given command to jump into a desired network namespace
+    from which it then does an nmap scan on several ports against a target.
+    The results are converted from XML and returned as a dictionary.
+    """
     # resolve host directly here
     # https://stackoverflow.com/questions/2805231/how-can-i-do-dns-lookups-in-python-including-referring-to-etc-hosts
     LOGGER.info("Target: %s", target)
@@ -123,21 +150,27 @@ def run_tests_for_target(enter_net_ns_cmd, ports, target):
         return extract_results_from_nmap_xml_file(result_file, port_on_nums, target)
 
 
-def host_on_node(host, pods_on_node):
-    LOGGER.debug("Searching for host %s", host)
-    if isinstance(host, ConcreteClusterHost):
-        is_on_node = any([host == pod for pod in pods_on_node])
+def pod_list_contains_pod(pod, pod_list):
+    """
+    Checks whether a list of pods contains a given pod
+    """
+    LOGGER.debug("Searching for pod %s", pod)
+    if isinstance(pod, ConcreteClusterHost):
+        is_on_node = any([pod == pod_on_node for pod_on_node in pod_list])
         if is_on_node:
-            LOGGER.debug("Pod %s in namespace %s was found", str(host.name), str(host.namespace))
+            LOGGER.debug("Pod %s in namespace %s was found", str(pod.name), str(pod.namespace))
         else:
-            LOGGER.debug("Pod %s in namespace %s isn't on this node", str(host.name), str(host.namespace))
+            LOGGER.debug("Pod %s in namespace %s isn't on this node", str(pod.name), str(pod.namespace))
         return is_on_node
 
-    LOGGER.error("Found non-ConcreteClusterHost host in cases: %s", host)
+    LOGGER.error("Found non-ConcreteClusterHost host in cases: %s", pod)
     return False
 
 
 def extract_results_from_nmap_xml_file(result_file, port_on_nums, target):
+    """
+    Extracts the results of an nmap scan from an xml result file into a dictionary
+    """
     xml = ElementTree.parse(result_file.name)
     hosts = [h for h in xml.getroot().iter("host")]
     if len(hosts) != 1:
@@ -171,6 +204,10 @@ def get_domain_name_for(host_string):
 
 
 def get_docker_network_namespace(pod_namespace, pod_name):
+    """
+    Fetches and retrieves the network namespace information
+    of a docker container running inside a desired pod
+    """
     LOGGER.info("getting network namespace from docker")
     k8s.config.load_incluster_config()
     configuration = k8s.client.Configuration()
@@ -199,7 +236,11 @@ def get_docker_network_namespace(pod_namespace, pod_name):
     return net_ns
 
 
-def get_network_namespace_from(inspectp_result):
+def extract_network_namespace(inspectp_result):
+    """
+    Extracts the network namespace information from
+    a 'crictl inspectp' result
+    """
     json_object = json.loads(inspectp_result)
     net_ns = None
     for namespace in json_object["info"]["runtimeSpec"]["linux"]["namespaces"]:
@@ -212,7 +253,8 @@ def get_network_namespace_from(inspectp_result):
 
 def get_containerd_network_namespace(host_namespace, host_name):
     """
-    
+    Fetches and returns the path of the network namespace
+    This function only works for runtimes that are CRI compliant e.g. containerd
     """
     cmd1 = ["crictl", "pods", "--name=" + str(host_name), "--namespace=" + str(host_namespace), "-q", "--no-trunc"]
     prc1 = subprocess.run(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -227,7 +269,7 @@ def get_containerd_network_namespace(host_namespace, host_name):
     if prc2.returncode:
         LOGGER.error("Getting pods network namespace for pod %s failed! output:", str(pod_id))
         LOGGER.error(prc2.stderr)
-    net_ns = get_network_namespace_from(prc2.stdout)
+    net_ns = extract_network_namespace(prc2.stdout)
     return net_ns
 
 
