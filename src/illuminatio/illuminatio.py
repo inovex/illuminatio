@@ -58,12 +58,12 @@ def run(outfile, brief, dry, runner_image, target_image):
     start_time = time.time()
     logger.info("Starting test generation and run.")
     core_api = k8s.client.CoreV1Api()
-    # Fetch all pods, namespaces, services
     ORCH.set_runner_image(runner_image)
     ORCH.set_target_image(target_image)
+    # Fetch all pods, namespaces, services
     ORCH.refresh_cluster_resources(core_api)
-    # Fetch all network policies
     v1net = k8s.client.NetworkingV1Api()
+    # Fetch all network policies
     net_pols = v1net.list_network_policy_for_all_namespaces()
     runtimes["resource-pull"] = time.time() - start_time
 
