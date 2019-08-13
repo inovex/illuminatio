@@ -31,7 +31,14 @@ def cli(incluster):
     if incluster:
         k8s.config.load_incluster_config()
     else:
-        k8s.config.load_kube_config()
+        try:
+            k8s.config.load_kube_config()
+        except k8s.config.ConfigException as config_error:
+            logger.error(config_error)
+            exit(1)
+        except TypeError as type_error:
+            logger.error("Internal error: Couldn't load kubeconfig with error: %s", type_error)
+            exit(1)
 
 
 @cli.command()
