@@ -40,6 +40,7 @@ def cli(incluster):
             logger.error("Internal error: Couldn't load kubeconfig with error: %s", type_error)
             exit(1)
 
+
 @cli.command()
 @click.option('-o', '--outfile', default=None,
               help='Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON')
