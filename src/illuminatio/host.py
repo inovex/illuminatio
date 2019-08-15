@@ -1,5 +1,5 @@
 """
-file for all kinds of hosts
+file for all kinds of hosts on which network tests can be performed
 """
 from abc import ABC
 
@@ -8,7 +8,7 @@ import kubernetes as k8s
 
 class Host(ABC):
     """
-    Class for all kinds of hosts
+    Class for all kinds of hosts on which network tests can be performed
     """
     def to_identifier(self):
         """

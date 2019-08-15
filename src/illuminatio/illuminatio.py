@@ -19,22 +19,13 @@ from illuminatio.util import CLEANUP_ALWAYS, CLEANUP_ON_REQUEST
 LOGGER = logging.getLogger(__name__)
 click_log.basic_config(LOGGER)
 
-# ToDo do we really need here global variables?
-ORCH = None
-GENERATOR = None
-
-
 @click.group(chain=True)
 @click_log.simple_verbosity_option(LOGGER, default="INFO")
 @click.option('--incluster', default=False, is_flag=True)
 def cli(incluster):
     """
-    initializes global variables
+    load suitable kubeconfig
     """
-    global ORCH
-    ORCH = NetworkTestOrchestrator([], LOGGER)
-    global GENERATOR
-    GENERATOR = NetworkTestCaseGenerator(LOGGER)
     if incluster:
         k8s.config.load_incluster_config()
     else:
@@ -54,24 +45,26 @@ def cli(incluster):
               help='Target image that is used to generate pods (should have a webserver inside listening on port 80)')
 def run(outfile, brief, dry, runner_image, target_image):
     """
-    Runs illuminatio with given names for docker images of runner and target pod
+    Runs illuminatio with given docker images for the runner and target pod
     """
     click.echo()
     runtimes = {}
     start_time = time.time()
     LOGGER.info("Starting test generation and run.")
     core_api = k8s.client.CoreV1Api()
-    ORCH.set_runner_image(runner_image)
-    ORCH.set_target_image(target_image)
+    orch = NetworkTestOrchestrator([], LOGGER)
+    orch.set_runner_image(runner_image)
+    orch.set_target_image(target_image)
     # Fetch all pods, namespaces, services
-    ORCH.refresh_cluster_resources(core_api)
+    orch.refresh_cluster_resources(core_api)
     v1net = k8s.client.NetworkingV1Api()
     # Fetch all network policies
     net_pols = v1net.list_network_policy_for_all_namespaces()
     runtimes["resource-pull"] = time.time() - start_time
 
     # Generate Test cases
-    cases, gen_run_times = GENERATOR.generate_test_cases(net_pols.items, ORCH.current_namespaces)
+    generator = NetworkTestCaseGenerator(LOGGER)
+    cases, gen_run_times = generator.generate_test_cases(net_pols.items, orch.current_namespaces)
     LOGGER.info("Got cases: %s", str(cases))
     case_time = time.time()
     runtimes["generate"] = case_time - start_time
@@ -81,7 +74,7 @@ def run(outfile, brief, dry, runner_image, target_image):
         LOGGER.info("Skipping test execution as --dry was set")
         click.echo()
         return
-    results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases)
+    results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases, orch)
     runtimes["resource-creation"] = resource_creation_time - case_time
     runtimes["result-waiting"] = result_wait_time - resource_creation_time
     result_time = time.time()
@@ -113,19 +106,19 @@ def run(outfile, brief, dry, runner_image, target_image):
     click.echo()
 
 
-def execute_tests(cases):
+def execute_tests(cases, orch):
     """
     Executes all tests with given test cases
     """
     # TODO: add a setter, initially the orchestrator was meant to be instantiated at this point,
     # but to pass click_logging's logger it was changed to be instantiated earlier
-    ORCH.test_cases = cases
+    orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
-    from_host_mappings, to_host_mappings, port_mappings = ORCH.create_and_launch_daemon_set_runners(
+    from_host_mappings, to_host_mappings, port_mappings = orch.create_and_launch_daemon_set_runners(
         k8s.client.AppsV1Api(),
         core_api)
     resource_creation_time = time.time()
-    raw_results, runtimes = ORCH.collect_results(core_api)
+    raw_results, runtimes = orch.collect_results(core_api)
     result_collection_time = time.time()
     additional_data = {"raw-results": raw_results,
                        "mappings": {"fromHost": from_host_mappings, "toHost": to_host_mappings, "ports": port_mappings}}
