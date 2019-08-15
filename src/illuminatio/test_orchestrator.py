@@ -1,3 +1,7 @@
+"""
+file containing all utilities to interact with test case related kubernetes resources
+"""
+
 import time
 import json
 from pkgutil import get_data
@@ -14,6 +18,9 @@ from illuminatio.util import rand_port
 
 
 def get_container_runtime():
+    """
+    Fetches and retrieves the name of the container runtime used on kubernetes nodes
+    """
     api = k8s.client.CoreV1Api()
     node_list = api.list_node()
     if node_list.items:
@@ -26,6 +33,9 @@ def get_container_runtime():
 
 
 def get_manifest(yaml_filename):
+    """
+    Reads a manifest from the illuminatio installation directory into a dictionary
+    """
     manifests_path = 'manifests/'
     data = get_data('illuminatio', manifests_path + yaml_filename)
     daemonset_manifest = None
@@ -37,7 +47,9 @@ def get_manifest(yaml_filename):
 
 
 class NetworkTestOrchestrator:
-
+    """
+    Class for handling test case related kubernetes resources
+    """
     def __init__(self, test_cases, log):
         self.test_cases = test_cases
         self._current_pods = []
@@ -48,12 +60,21 @@ class NetworkTestOrchestrator:
         self.logger = log
 
     def set_runner_image(self, runner_image):
+        """
+        Updates the runner docker image
+        """
         self.docker_image["runner"] = runner_image
 
     def set_target_image(self, target_image):
+        """
+        Updates the target docker image
+        """
         self.docker_image["target"] = target_image
 
     def refresh_cluster_resources(self, api: k8s.client.CoreV1Api):
+        """
+        Fetches all pods, services and namespaces from the cluster and updates the corresponding class variables
+        """
         format_string = "Found {} {}: {}"
         self.logger.debug("Refreshing cluster resources")
         non_kube_namespace_selector = "metadata.namespace!=kube-system,metadata.namespace!=kube-public"
@@ -229,6 +250,9 @@ class NetworkTestOrchestrator:
             api.create_namespace(namespace)
 
     def create_and_launch_daemon_set_runners(self, apps_api: k8s.client.AppsV1Api, core_api: k8s.client.CoreV1Api):
+        """
+        Ensures that all required resources for illuminatio are created
+        """
         supported_cases = [case for case in self.test_cases if self._hosts_are_in_cluster(case)]
         filtered_cases = [case for case in self.test_cases if case not in supported_cases]
         self.logger.debug("Filtered " + str(len(filtered_cases)) + " test cases: " + str(filtered_cases))
@@ -250,8 +274,8 @@ class NetworkTestOrchestrator:
         return from_host_mappings, to_host_mappings, port_mappings
 
     def _hosts_are_in_cluster(self, case):
-        return all([isinstance(h, (ClusterHost, GenericClusterHost))
-                    for h in [case.from_host, case.to_host]])
+        return all([isinstance(host, (ClusterHost, GenericClusterHost))
+                    for host in [case.from_host, case.to_host]])
 
     def _filter_cluster_cases(self):
         return [c for c in self.test_cases if
@@ -308,6 +332,9 @@ class NetworkTestOrchestrator:
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
 
     def create_daemonset(self, daemon_set_name, service_account_name, config_map_name, api):
+        """
+        Creates a DaemonSet on basis of the project's manifest files
+        """
         # load suitable manifest
         container_runtime_version = get_container_runtime()
         if container_runtime_version.startswith("docker"):
