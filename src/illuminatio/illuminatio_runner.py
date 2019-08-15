@@ -280,6 +280,6 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
             api_response = api.create_namespaced_config_map(namespace, cfg_map)
             logger.debug(api_response)
         else:
-            logger.error("code was: " + json_body.get("code"))
-            logger.error("An Error occured while checking for an existing ConfigMap")
+            logger.error("Code was: " + json_body.get("code"))
+            logger.error("An error occured while checking for an existing ConfigMap")
             raise e
