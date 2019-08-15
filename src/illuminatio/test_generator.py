@@ -12,11 +12,8 @@ from illuminatio.util import rand_port, INVERTED_ATTRIBUTE_PREFIX
 class NetworkTestCaseGenerator:
     """ Class for Generating Test cases out of a k8s NetworkPolicy and saving them to a specified format. """
 
-    logger = None
-
     def __init__(self, log):
-        global logger
-        logger = log
+        self.logger = log
 
     def generate_test_cases(self, network_policies: List[k8s.client.V1NetworkPolicy],
                             namespaces: List[k8s.client.V1Namespace]):
@@ -26,11 +23,11 @@ class NetworkTestCaseGenerator:
         other_hosts = []
         outgoing_test_cases = []
         incoming_test_cases = []
-        logger.debug("Generating test cases for " + str(network_policies))
+        self.logger.debug("Generating test cases for " + str(network_policies))
         rules = [Rule.from_network_policy(netPol) for netPol in network_policies]
         net_pol_parsing_time = time.time()
         runtimes["parse"] = net_pol_parsing_time - start_time
-        logger.debug("Rule: " + str(rules))
+        self.logger.debug("Rule: " + str(rules))
         for rule in rules:
             rule_host = ClusterHost(rule.concerns["namespace"], rule.concerns["podLabels"])
             if rule_host not in isolated_hosts:
@@ -39,7 +36,7 @@ class NetworkTestCaseGenerator:
                 for connection in rule.allowed:
                     for port in connection.ports:
                         on_port = port
-                        other_host = self._get_other_host_from(self, connection.targets, rule.concerns["namespace"])
+                        other_host = self._get_other_host_from(connection.targets, rule.concerns["namespace"])
                         other_hosts.append(other_host)
                         if connection.direction == "to":
                             case = NetworkTestCase(rule_host, other_host, on_port, True)
@@ -71,8 +68,8 @@ class NetworkTestCaseGenerator:
         runtimes["nsLabelResolve"] = namespace_label_resolve_time - start_time
         labels_per_namespace = {n.metadata.name: n.metadata.labels for n in namespaces}
         overlaps_per_host = {
-            host: get_overlapping_hosts(host, namespaces_per_label_strings, labels_per_namespace,
-                                        isolated_hosts + other_hosts)
+            host: self.get_overlapping_hosts(host, namespaces_per_label_strings, labels_per_namespace,
+                                             isolated_hosts + other_hosts)
             for host in isolated_hosts}
         overlap_calc_time = time.time()
         runtimes["overlapCalc"] = overlap_calc_time - namespace_label_resolve_time
@@ -82,10 +79,10 @@ class NetworkTestCaseGenerator:
             host_start_time = time.time()
             runtimes[host_string] = {}
             # Check for hosts that can target these to construct negative cases from
-            logger.debug(overlaps_per_host[host])
+            self.logger.debug(overlaps_per_host[host])
             reaching_hosts_with_ports = [(t.from_host, t.port_string) for t in incoming_test_cases if
                                          t.to_host in overlaps_per_host[host]]
-            logger.debug(reaching_hosts_with_ports)
+            self.logger.debug(reaching_hosts_with_ports)
             reaching_host_find_time = time.time()
             runtimes[host_string]["findReachingHosts"] = reaching_host_find_time - host_start_time
             if reaching_hosts_with_ports:
@@ -96,26 +93,27 @@ class NetworkTestCaseGenerator:
                 if match_all_host in reaching_hosts:
                     # All hosts are allowed to reach (on some ports or all) => results from ALLOW all
                     if "*" in ports_per_host[match_all_host]:
-                        logger.info("Not generating negative tests for host " + str(
+                        self.logger.info("Not generating negative tests for host " + str(
                             host) + " as all connections to it are allowed")
                     else:
                         case = NetworkTestCase(match_all_host, host, rand_port(ports_per_host[match_all_host]), False)
                         cases.append(case)
                     runtimes[host_string]["matchAllCase"] = time.time() - reaching_host_find_time
                 else:
-                    inverted_hosts = set([h for l in [invert_host(host) for host in reaching_hosts] for h in l])
+                    inverted_hosts = {h for l in {invert_host(host) for host in reaching_hosts} for h in l}
                     hosts_on_inverted = {h: originalHost for l, originalHost in
                                          [(invert_host(host), host) for host in reaching_hosts] for h in l}
                     host_inversion_time = time.time()
                     runtimes[host_string]["hostInversion"] = host_inversion_time - reaching_host_find_time
                     overlaps_for_inverted_hosts = {
-                        h: get_overlapping_hosts(h, namespaces_per_label_strings, labels_per_namespace, reaching_hosts)
+                        h: self.get_overlapping_hosts(h, namespaces_per_label_strings,
+                                                      labels_per_namespace, reaching_hosts)
                         for h in inverted_hosts}
                     overlap_calc_time = time.time()
                     runtimes[host_string]["overlapCalc"] = overlap_calc_time - host_inversion_time
-                    logger.debug("InvertedHosts: " + str(inverted_hosts))
+                    self.logger.debug("InvertedHosts: " + str(inverted_hosts))
                     negative_test_targets = [h for h in inverted_hosts if len(overlaps_for_inverted_hosts[h]) <= 1]
-                    logger.debug("NegativeTestTargets: " + str(negative_test_targets))
+                    self.logger.debug("NegativeTestTargets: " + str(negative_test_targets))
                     # now remove the inverted hosts that are reachable
                     for target in negative_test_targets:
                         ports_for_inverted_hosts_original_host = ports_per_host[hosts_on_inverted[target]]
@@ -148,6 +146,37 @@ class NetworkTestCaseGenerator:
             return GenericClusterHost({}, {})
         raise ValueError("Unknown combination of field in connection " + str(connection_targets))
 
+    def get_overlapping_hosts(self, host, namespaces_per_label_strings, labels_per_namespace, other_hosts):
+        """ Returns a list of hosts that *might* be selected by the same policies  """
+        out = [host]
+        for other in other_hosts:
+            if host is not other:
+                namespace_overlap = self.namespaces_overlap(host, namespaces_per_label_strings,
+                                                            labels_per_namespace, other)
+                pod_label_overlap = labels_overlap(other.pod_labels, host.pod_labels)
+                if namespace_overlap and pod_label_overlap:
+                    out.append(other)
+        return out
+
+
+    def namespaces_overlap(self, host, namespaces_per_label_strings, labels_per_namespace, other):
+        host_ns = self.resolve_namespaces(host, namespaces_per_label_strings)
+        other_ns = self.resolve_namespaces(other, namespaces_per_label_strings)
+        if host_ns and other_ns:
+            return any(ns in other_ns for ns in host_ns)
+        ns_labels = lookup_namespace_labels(host, labels_per_namespace)
+        other_ns_labels = lookup_namespace_labels(other, labels_per_namespace)
+        if ns_labels is not None and other_ns_labels is not None:
+            return labels_overlap(ns_labels, other_ns_labels)
+        return False
+
+    def resolve_namespaces(self, host, namespaces_per_label_strings):
+        self.logger.debug(host)
+        if isinstance(host, ClusterHost):
+            return [host.namespace]
+
+        labels = labels_to_string(host.namespace_labels)
+        return namespaces_per_label_strings[labels] if labels in namespaces_per_label_strings else []
 
 def invert_host(host):
     if isinstance(host, GenericClusterHost):
@@ -182,46 +211,11 @@ def invert_labels(labels):
     return {INVERTED_ATTRIBUTE_PREFIX + k: v for k, v in labels.items()}
 
 
-def get_overlapping_hosts(host, namespaces_per_label_strings, labels_per_namespace, other_hosts):
-    """ Returns a list of hosts that *might* be selected by the same policies  """
-    out = [host]
-    for other in other_hosts:
-        if host is not other:
-            namespace_overlap = namespaces_overlap(host, namespaces_per_label_strings, labels_per_namespace, other)
-            pod_label_overlap = labels_overlap(other.pod_labels, host.pod_labels)
-            if namespace_overlap and pod_label_overlap:
-                out.append(other)
-    return out
-
-
-def namespaces_overlap(host, namespaces_per_label_strings, labels_per_namespace, other):
-    host_ns = resolve_namespaces(host, namespaces_per_label_strings)
-    other_ns = resolve_namespaces(other, namespaces_per_label_strings)
-    if host_ns and other_ns:
-        return any(ns in other_ns for ns in host_ns)
-    ns_labels = lookup_namespace_labels(host, labels_per_namespace)
-    other_ns_labels = lookup_namespace_labels(other, labels_per_namespace)
-    if ns_labels is not None and other_ns_labels is not None:
-        return labels_overlap(ns_labels, other_ns_labels)
-
-    # if a namespace doesn't exist yet and we only have labels to match to a name it doesn't match
-    return False
-
-
 def labels_overlap(labels1, labels2):
     if labels1 and labels2:
         return any(item in labels2.items() for item in labels1.items())
-    # if one of the label dicts is empty, they overlap anyway as empty label selectors select all labels
+    # if either of the labels dict is empty, they always overlap, as empty label selectors select all labels
     return True
-
-
-def resolve_namespaces(host, namespaces_per_label_strings):
-    logger.debug(host)
-    if isinstance(host, ClusterHost):
-        return [host.namespace]
-
-    labels = labels_to_string(host.namespace_labels)
-    return namespaces_per_label_strings[labels] if labels in namespaces_per_label_strings else []
 
 
 def lookup_namespace_labels(host, labels_per_namespace):
