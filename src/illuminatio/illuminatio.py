@@ -19,6 +19,7 @@ from illuminatio.util import CLEANUP_ALWAYS, CLEANUP_ON_REQUEST
 LOGGER = logging.getLogger(__name__)
 click_log.basic_config(LOGGER)
 
+
 @click.group(chain=True)
 @click_log.simple_verbosity_option(LOGGER, default="INFO")
 @click.option('--incluster', default=False, is_flag=True)
@@ -136,13 +137,13 @@ def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, p
     LOGGER.debug("toHostMappings: %s", str(receiver_pod_mappings))
     LOGGER.debug("portMappings: %s", str(port_mappings))
 
-    #iterate over all requests
+    # iterate over all requests
     for sender_pod, mapped_sender_pod in sender_pod_mappings.items():
         transformed[sender_pod] = {}
         for receiver_pod, mapped_receiver_pod in receiver_pod_mappings[sender_pod].items():
             transformed[sender_pod][receiver_pod] = {}
             for port, mapped_port in port_mappings[sender_pod][receiver_pod].items():
-                #fetch and print metadata for each request
+                # fetch and print metadata for each request
                 LOGGER.debug("port: %s", port)
                 LOGGER.debug("mapped_port: %s", str(mapped_port))
                 LOGGER.debug("sender_pod: %s", str(sender_pod))

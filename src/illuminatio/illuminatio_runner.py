@@ -77,7 +77,7 @@ def run_all_tests():
         test_runtimes = {}
         all_sender_pods = [Host.from_identifier(from_host_string) for from_host_string in cases]
         sender_pods_on_node = get_pods_contained_in_both_lists(all_sender_pods, pods_on_node)
-        #execute tests for each sender pod
+        # execute tests for each sender pod
         for sender_pod in sender_pods_on_node:
             pod_identifier = sender_pod.to_identifier()
             results[pod_identifier], test_runtimes[pod_identifier] = run_tests_for_sender_pod(sender_pod, cases)

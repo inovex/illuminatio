@@ -39,7 +39,7 @@ class NetworkTestCaseGenerator:
                 for connection in rule.allowed:
                     for port in connection.ports:
                         on_port = port
-                        other_host = _get_other_host_from(self, connection.targets, rule.concerns["namespace"])
+                        other_host = self._get_other_host_from(self, connection.targets, rule.concerns["namespace"])
                         other_hosts.append(other_host)
                         if connection.direction == "to":
                             case = NetworkTestCase(rule_host, other_host, on_port, True)
@@ -51,7 +51,7 @@ class NetworkTestCaseGenerator:
                             raise ValueError("Direction '" + connection.direction + "' unknown!")
         positive_test_time = time.time()
         runtimes["positiveTestGen"] = positive_test_time - net_pol_parsing_time
-        negative_test_cases, negative_test_gen_runtimes = generate_negative_cases_for_incoming_cases(
+        negative_test_cases, negative_test_gen_runtimes = self.generate_negative_cases_for_incoming_cases(
             isolated_hosts,
             incoming_test_cases,
             other_hosts, namespaces)
@@ -59,7 +59,7 @@ class NetworkTestCaseGenerator:
         return outgoing_test_cases + negative_test_cases + incoming_test_cases, runtimes
 
     # TODO: implement it also for outgoing test cases
-    def generate_negative_cases_for_incoming_cases(isolated_hosts, incoming_test_cases, other_hosts, namespaces):
+    def generate_negative_cases_for_incoming_cases(self, isolated_hosts, incoming_test_cases, other_hosts, namespaces):
         runtimes = {}
         start_time = time.time()
         namespace_labels = [h.namespace_labels for h in other_hosts if isinstance(h, GenericClusterHost)]
