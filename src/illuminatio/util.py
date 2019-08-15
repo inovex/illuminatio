@@ -1,3 +1,6 @@
+"""
+contains several illuminatio constants especially names and some util functions
+"""
 from random import choice
 
 PROJECT_PREFIX = "illuminatio"
@@ -10,18 +13,24 @@ INVERTED_ATTRIBUTE_PREFIX = PROJECT_PREFIX + "-inverted-"
 CLEANUP_ALWAYS = "always"
 CLEANUP_ON_REQUEST = "on-request"
 
-cleanup_values = [CLEANUP_ALWAYS, CLEANUP_ON_REQUEST]
+CLEANUP_VALUES = [CLEANUP_ALWAYS, CLEANUP_ON_REQUEST]
 
 
 def validate_cleanup_in(labels):
+    """
+    Validates the presence of the CLEANUP_LABEL and its values in a list of labels, raises ValueError otherwise
+    """
     if CLEANUP_LABEL not in labels:
         raise ValueError("Cleanup label (" + CLEANUP_LABEL + ") missing in pod labels.")
-    elif labels[CLEANUP_LABEL] not in cleanup_values:
+    if labels[CLEANUP_LABEL] not in CLEANUP_VALUES:
         raise ValueError("Cleanup value " + labels[CLEANUP_LABEL]
-                         + " not permitted. Use one of: " + str(cleanup_values))
+                         + " not permitted. Use one of: " + str(CLEANUP_VALUES))
 
 
 def rand_port(except_ports=None):
+    """
+    Returns a random port, exclusions possible via parameter set
+    """
     if except_ports is None:
         except_ports = []
     max_port_int = 65535

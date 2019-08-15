@@ -39,7 +39,7 @@ class NetworkTestCaseGenerator:
                 for connection in rule.allowed:
                     for port in connection.ports:
                         on_port = port
-                        other_host = self._get_other_host_from(connection.targets, rule.concerns["namespace"])
+                        other_host = _get_other_host_from(self, connection.targets, rule.concerns["namespace"])
                         other_hosts.append(other_host)
                         if connection.direction == "to":
                             case = NetworkTestCase(rule_host, other_host, on_port, True)
@@ -51,7 +51,7 @@ class NetworkTestCaseGenerator:
                             raise ValueError("Direction '" + connection.direction + "' unknown!")
         positive_test_time = time.time()
         runtimes["positiveTestGen"] = positive_test_time - net_pol_parsing_time
-        negative_test_cases, negative_test_gen_runtimes = self.generate_negative_cases_for_incoming_cases(
+        negative_test_cases, negative_test_gen_runtimes = generate_negative_cases_for_incoming_cases(
             isolated_hosts,
             incoming_test_cases,
             other_hosts, namespaces)
@@ -59,7 +59,7 @@ class NetworkTestCaseGenerator:
         return outgoing_test_cases + negative_test_cases + incoming_test_cases, runtimes
 
     # TODO: implement it also for outgoing test cases
-    def generate_negative_cases_for_incoming_cases(self, isolated_hosts, incoming_test_cases, other_hosts, namespaces):
+    def generate_negative_cases_for_incoming_cases(isolated_hosts, incoming_test_cases, other_hosts, namespaces):
         runtimes = {}
         start_time = time.time()
         namespace_labels = [h.namespace_labels for h in other_hosts if isinstance(h, GenericClusterHost)]
@@ -138,16 +138,15 @@ class NetworkTestCaseGenerator:
         namespace = "namespace"
         if namespace_labels in connection_targets and pod_labels in connection_targets:
             return GenericClusterHost(connection_targets[namespace_labels], connection_targets[pod_labels])
-        elif namespace in connection_targets and pod_labels in connection_targets:
+        if namespace in connection_targets and pod_labels in connection_targets:
             return ClusterHost(connection_targets[namespace], connection_targets[pod_labels])
-        elif namespace_labels in connection_targets:  # and no podLabels included
+        if namespace_labels in connection_targets:  # and no podLabels included
             return GenericClusterHost(connection_targets[namespace_labels], {})
-        elif pod_labels in connection_targets:
+        if pod_labels in connection_targets:
             return ClusterHost(rule_namespace, connection_targets[pod_labels])
-        elif connection_targets == {}:
+        if connection_targets == {}:
             return GenericClusterHost({}, {})
-        else:
-            raise ValueError("Unknown combination of field in connection " + str(connection_targets))
+        raise ValueError("Unknown combination of field in connection " + str(connection_targets))
 
 
 def invert_host(host):
@@ -171,13 +170,12 @@ def invert_cluster_host(host: ClusterHost):
 def invert_generic_cluster_host(host: GenericClusterHost):
     if host == GenericClusterHost({}, {}):
         raise ValueError("Cannot invert GenericClusterHost matching all hosts in cluster")
-    elif host.namespace_labels == {}:
+    if host.namespace_labels == {}:
         return [GenericClusterHost({}, invert_labels(host.pod_labels))]
-    else:
-        inverted_hosts = [GenericClusterHost(host.namespace_labels, invert_labels(host.pod_labels)),
-                          GenericClusterHost(invert_labels(host.namespace_labels), host.pod_labels),
-                          GenericClusterHost(invert_labels(host.namespace_labels), invert_labels(host.pod_labels))]
-        return inverted_hosts
+    inverted_hosts = [GenericClusterHost(host.namespace_labels, invert_labels(host.pod_labels)),
+                      GenericClusterHost(invert_labels(host.namespace_labels), host.pod_labels),
+                      GenericClusterHost(invert_labels(host.namespace_labels), invert_labels(host.pod_labels))]
+    return inverted_hosts
 
 
 def invert_labels(labels):
@@ -201,21 +199,20 @@ def namespaces_overlap(host, namespaces_per_label_strings, labels_per_namespace,
     other_ns = resolve_namespaces(other, namespaces_per_label_strings)
     if host_ns and other_ns:
         return any(ns in other_ns for ns in host_ns)
-    else:
-        ns_labels = lookup_namespace_labels(host, labels_per_namespace)
-        other_ns_labels = lookup_namespace_labels(other, labels_per_namespace)
-        if ns_labels is not None and other_ns_labels is not None:
-            return labels_overlap(ns_labels, other_ns_labels)
-        else:  # if a namespace doesn't exist yet and we only have labels to match to a name it doesn't match
-            return False
+    ns_labels = lookup_namespace_labels(host, labels_per_namespace)
+    other_ns_labels = lookup_namespace_labels(other, labels_per_namespace)
+    if ns_labels is not None and other_ns_labels is not None:
+        return labels_overlap(ns_labels, other_ns_labels)
+
+    # if a namespace doesn't exist yet and we only have labels to match to a name it doesn't match
+    return False
 
 
 def labels_overlap(labels1, labels2):
     if labels1 and labels2:
         return any(item in labels2.items() for item in labels1.items())
-    else:
-        # if either of the labels dict is empty, they always overlap, as empty label selectors select all labels
-        return True
+    # if one of the label dicts is empty, they overlap anyway as empty label selectors select all labels
+    return True
 
 
 def resolve_namespaces(host, namespaces_per_label_strings):
