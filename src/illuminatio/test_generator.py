@@ -158,7 +158,6 @@ class NetworkTestCaseGenerator:
                     out.append(other)
         return out
 
-
     def namespaces_overlap(self, host, namespaces_per_label_strings, labels_per_namespace, other):
         host_ns = self.resolve_namespaces(host, namespaces_per_label_strings)
         other_ns = self.resolve_namespaces(other, namespaces_per_label_strings)
@@ -177,6 +176,7 @@ class NetworkTestCaseGenerator:
 
         labels = labels_to_string(host.namespace_labels)
         return namespaces_per_label_strings[labels] if labels in namespaces_per_label_strings else []
+
 
 def invert_host(host):
     if isinstance(host, GenericClusterHost):
