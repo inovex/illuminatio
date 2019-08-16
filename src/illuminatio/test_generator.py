@@ -1,3 +1,6 @@
+"""
+file for test case generation
+"""
 import time
 from typing import List
 
@@ -10,13 +13,19 @@ from illuminatio.util import rand_port, INVERTED_ATTRIBUTE_PREFIX
 
 
 class NetworkTestCaseGenerator:
-    """ Class for Generating Test cases out of a k8s NetworkPolicy and saving them to a specified format. """
+    """
+    Class for Generating Test cases out of a k8s NetworkPolicy and saving them to a specified format
+    """
 
     def __init__(self, log):
         self.logger = log
 
-    def generate_test_cases(self, network_policies: List[k8s.client.V1NetworkPolicy],
+    def generate_test_cases(self,
+                            network_policies: List[k8s.client.V1NetworkPolicy],
                             namespaces: List[k8s.client.V1Namespace]):
+        """
+        Generates positive and negative test cases, also returns measured runtimes
+        """
         runtimes = {}
         start_time = time.time()
         isolated_hosts = []
@@ -56,14 +65,19 @@ class NetworkTestCaseGenerator:
         return outgoing_test_cases + negative_test_cases + incoming_test_cases, runtimes
 
     # TODO: implement it also for outgoing test cases
+    # TODO: divide this into submethods
     def generate_negative_cases_for_incoming_cases(self, isolated_hosts, incoming_test_cases, other_hosts, namespaces):
+        """
+        Generates negative test cases based on desired positive test cases
+        """
         runtimes = {}
         start_time = time.time()
         namespace_labels = [h.namespace_labels for h in other_hosts if isinstance(h, GenericClusterHost)]
-        namespaces_per_label_strings = {labels_to_string(k): [n.metadata.name for n in namespaces if
-                                                              n.metadata.labels is not None
-                                                              and k.items() <= n.metadata.labels.items()]
-                                        for k in namespace_labels}
+        namespaces_per_label_strings = {labels_to_string(namespace_label):
+                                        [namespace.metadata.name for namespace in namespaces
+                                         if namespace.metadata.labels is not None and
+                                         namespace_label.items() <= namespace.metadata.labels.items()]
+                                        for namespace_label in namespace_labels}
         namespace_label_resolve_time = time.time()
         runtimes["nsLabelResolve"] = namespace_label_resolve_time - start_time
         labels_per_namespace = {n.metadata.name: n.metadata.labels for n in namespaces}
@@ -80,14 +94,15 @@ class NetworkTestCaseGenerator:
             runtimes[host_string] = {}
             # Check for hosts that can target these to construct negative cases from
             self.logger.debug(overlaps_per_host[host])
-            reaching_hosts_with_ports = [(t.from_host, t.port_string) for t in incoming_test_cases if
-                                         t.to_host in overlaps_per_host[host]]
-            self.logger.debug(reaching_hosts_with_ports)
+            allowed_hosts_with_ports = [(test_case.from_host, test_case.port_string)
+                                        for test_case in incoming_test_cases if
+                                        test_case.to_host in overlaps_per_host[host]]
+            self.logger.debug(allowed_hosts_with_ports)
             reaching_host_find_time = time.time()
             runtimes[host_string]["findReachingHosts"] = reaching_host_find_time - host_start_time
-            if reaching_hosts_with_ports:
-                reaching_hosts, _ = zip(*reaching_hosts_with_ports)
-                ports_per_host = {host: [p for h, p in reaching_hosts_with_ports if h == host] for host in
+            if allowed_hosts_with_ports:
+                reaching_hosts, _ = zip(*allowed_hosts_with_ports)
+                ports_per_host = {host: [p for h, p in allowed_hosts_with_ports if h == host] for host in
                                   reaching_hosts}
                 match_all_host = GenericClusterHost({}, {})
                 if match_all_host in reaching_hosts:
