@@ -11,6 +11,33 @@ from illuminatio.test_case import NetworkTestCase
 from illuminatio.host import ClusterHost, GenericClusterHost
 from illuminatio.util import rand_port, INVERTED_ATTRIBUTE_PREFIX
 
+def _get_other_host_from(connection_targets, rule_namespace):
+    namespace_labels = "namespaceLabels"
+    pod_labels = "podLabels"
+    namespace = "namespace"
+    if namespace_labels in connection_targets and pod_labels in connection_targets:
+        return GenericClusterHost(connection_targets[namespace_labels], connection_targets[pod_labels])
+    if namespace in connection_targets and pod_labels in connection_targets:
+        return ClusterHost(connection_targets[namespace], connection_targets[pod_labels])
+    if namespace_labels in connection_targets:  # and no podLabels included
+        return GenericClusterHost(connection_targets[namespace_labels], {})
+    if pod_labels in connection_targets:
+        return ClusterHost(rule_namespace, connection_targets[pod_labels])
+    if connection_targets == {}:
+        return GenericClusterHost({}, {})
+    raise ValueError("Unknown combination of field in connection " + str(connection_targets))
+
+
+def get_namespace_label_strings(namespace_labels, namespaces):
+    """
+    Returns a set of all stringified namespace labels
+    """
+    # list of all namespace names with labels
+    return {labels_to_string(namespace_label): [namespace.metadata.name for namespace in namespaces
+                                                if namespace.metadata.labels is not None and
+                                                namespace_label.items() <= namespace.metadata.labels.items()]
+            for namespace_label in namespace_labels}
+
 
 class NetworkTestCaseGenerator:
     """
@@ -45,7 +72,7 @@ class NetworkTestCaseGenerator:
                 for connection in rule.allowed:
                     for port in connection.ports:
                         on_port = port
-                        other_host = self._get_other_host_from(connection.targets, rule.concerns["namespace"])
+                        other_host = _get_other_host_from(connection.targets, rule.concerns["namespace"])
                         other_hosts.append(other_host)
                         if connection.direction == "to":
                             case = NetworkTestCase(rule_host, other_host, on_port, True)
@@ -72,12 +99,9 @@ class NetworkTestCaseGenerator:
         """
         runtimes = {}
         start_time = time.time()
+        # list of all namespace labels set on other hosts
         namespace_labels = [h.namespace_labels for h in other_hosts if isinstance(h, GenericClusterHost)]
-        namespaces_per_label_strings = {labels_to_string(namespace_label):
-                                        [namespace.metadata.name for namespace in namespaces
-                                         if namespace.metadata.labels is not None and
-                                         namespace_label.items() <= namespace.metadata.labels.items()]
-                                        for namespace_label in namespace_labels}
+        namespaces_per_label_strings = get_namespace_label_strings(namespace_labels, namespaces)
         namespace_label_resolve_time = time.time()
         runtimes["nsLabelResolve"] = namespace_label_resolve_time - start_time
         labels_per_namespace = {n.metadata.name: n.metadata.labels for n in namespaces}
@@ -101,28 +125,28 @@ class NetworkTestCaseGenerator:
             reaching_host_find_time = time.time()
             runtimes[host_string]["findReachingHosts"] = reaching_host_find_time - host_start_time
             if allowed_hosts_with_ports:
-                reaching_hosts, _ = zip(*allowed_hosts_with_ports)
-                ports_per_host = {host: [p for h, p in allowed_hosts_with_ports if h == host] for host in
-                                  reaching_hosts}
+                allowed_hosts, _ = zip(*allowed_hosts_with_ports)
+                ports_per_host = {host: [port for _host, port in allowed_hosts_with_ports if _host == allowed_host]
+                                  for allowed_host in allowed_hosts}
                 match_all_host = GenericClusterHost({}, {})
-                if match_all_host in reaching_hosts:
+                if match_all_host in allowed_hosts:
                     # All hosts are allowed to reach (on some ports or all) => results from ALLOW all
                     if "*" in ports_per_host[match_all_host]:
                         self.logger.info("Not generating negative tests for host " + str(
                             host) + " as all connections to it are allowed")
                     else:
-                        case = NetworkTestCase(match_all_host, host, rand_port(ports_per_host[match_all_host]), False)
-                        cases.append(case)
+                        cases.append(NetworkTestCase(match_all_host, host,
+                                                     rand_port(ports_per_host[match_all_host]), False))
                     runtimes[host_string]["matchAllCase"] = time.time() - reaching_host_find_time
                 else:
-                    inverted_hosts = {h for l in {invert_host(host) for host in reaching_hosts} for h in l}
+                    inverted_hosts = {h for l in {invert_host(host) for host in allowed_hosts} for h in l}
                     hosts_on_inverted = {h: originalHost for l, originalHost in
-                                         [(invert_host(host), host) for host in reaching_hosts] for h in l}
+                                         [(invert_host(host), host) for host in allowed_hosts] for h in l}
                     host_inversion_time = time.time()
                     runtimes[host_string]["hostInversion"] = host_inversion_time - reaching_host_find_time
                     overlaps_for_inverted_hosts = {
                         h: self.get_overlapping_hosts(h, namespaces_per_label_strings,
-                                                      labels_per_namespace, reaching_hosts)
+                                                      labels_per_namespace, allowed_hosts)
                         for h in inverted_hosts}
                     overlap_calc_time = time.time()
                     runtimes[host_string]["overlapCalc"] = overlap_calc_time - host_inversion_time
@@ -144,22 +168,6 @@ class NetworkTestCaseGenerator:
                 cases.append(NetworkTestCase(host, host, "*", False))
             runtimes["all"] = time.time() - start_time
         return cases, runtimes
-
-    def _get_other_host_from(self, connection_targets, rule_namespace):
-        namespace_labels = "namespaceLabels"
-        pod_labels = "podLabels"
-        namespace = "namespace"
-        if namespace_labels in connection_targets and pod_labels in connection_targets:
-            return GenericClusterHost(connection_targets[namespace_labels], connection_targets[pod_labels])
-        if namespace in connection_targets and pod_labels in connection_targets:
-            return ClusterHost(connection_targets[namespace], connection_targets[pod_labels])
-        if namespace_labels in connection_targets:  # and no podLabels included
-            return GenericClusterHost(connection_targets[namespace_labels], {})
-        if pod_labels in connection_targets:
-            return ClusterHost(rule_namespace, connection_targets[pod_labels])
-        if connection_targets == {}:
-            return GenericClusterHost({}, {})
-        raise ValueError("Unknown combination of field in connection " + str(connection_targets))
 
     def get_overlapping_hosts(self, host, namespaces_per_label_strings, labels_per_namespace, other_hosts):
         """

@@ -7,7 +7,9 @@ from illuminatio.host import Host
 
 
 class NetworkTestCase:
-    """ Class that encompasses a single network test case. """
+    """
+    Class that describes a single network test case
+    """
 
     def __init__(self, from_host: Host, to_host: Host, on_port, should_connect):
         if from_host is None:

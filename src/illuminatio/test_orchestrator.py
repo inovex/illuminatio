@@ -46,6 +46,19 @@ def get_manifest(yaml_filename):
     return daemonset_manifest
 
 
+def _hosts_are_in_cluster(case):
+    return all([isinstance(host, (ClusterHost, GenericClusterHost))
+                for host in [case.from_host, case.to_host]])
+
+# TODO refactor with above method / at least use already polled namespaces in self._currentNamespaces
+def _create_project_namespace_if_missing(api: k8s.client.CoreV1Api):
+    namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
+    namespace_list = api.list_namespace(label_selector=labels_to_string(namespace_labels))
+    if not namespace_list.items:
+        namespace = k8s.client.V1Namespace(
+            metadata=k8s.client.V1ObjectMeta(name=PROJECT_NAMESPACE, labels=namespace_labels))
+        api.create_namespace(namespace)
+
 class NetworkTestOrchestrator:
     """
     Class for handling test case related kubernetes resources
@@ -240,20 +253,11 @@ class NetworkTestOrchestrator:
         self.logger.error("Failed to create test namespace for {}! Resp: {}".format(from_host, resp))
         return []
 
-    # TODO refactor with above method / at least use already polled namespaces in self._currentNamespaces
-    def _create_project_namespace_if_missing(self, api: k8s.client.CoreV1Api):
-        namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
-        namespace_list = api.list_namespace(label_selector=labels_to_string(namespace_labels))
-        if not namespace_list.items:
-            namespace = k8s.client.V1Namespace(
-                metadata=k8s.client.V1ObjectMeta(name=PROJECT_NAMESPACE, labels=namespace_labels))
-            api.create_namespace(namespace)
-
     def create_and_launch_daemon_set_runners(self, apps_api: k8s.client.AppsV1Api, core_api: k8s.client.CoreV1Api):
         """
         Ensures that all required resources for illuminatio are created
         """
-        supported_cases = [case for case in self.test_cases if self._hosts_are_in_cluster(case)]
+        supported_cases = [case for case in self.test_cases if _hosts_are_in_cluster(case)]
         filtered_cases = [case for case in self.test_cases if case not in supported_cases]
         self.logger.debug("Filtered " + str(len(filtered_cases)) + " test cases: " + str(filtered_cases))
         cases_dict = merge_in_dict(supported_cases)
@@ -261,7 +265,7 @@ class NetworkTestOrchestrator:
         concrete_cases, from_host_mappings, to_host_mappings, port_mappings = \
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
         self.logger.debug("concreteCases: " + str(concrete_cases))
-        self._create_project_namespace_if_missing(core_api)
+        _create_project_namespace_if_missing(core_api)
         config_map_name = PROJECT_PREFIX + "-cases-cfgmap"
         self._create_or_update_case_config_map(config_map_name, concrete_cases, core_api)
 
@@ -272,10 +276,6 @@ class NetworkTestOrchestrator:
 
         self._create_daemon_set_if_missing(service_account_name, config_map_name, apps_api)
         return from_host_mappings, to_host_mappings, port_mappings
-
-    def _hosts_are_in_cluster(self, case):
-        return all([isinstance(host, (ClusterHost, GenericClusterHost))
-                    for host in [case.from_host, case.to_host]])
 
     def _filter_cluster_cases(self):
         return [c for c in self.test_cases if
