@@ -1,5 +1,5 @@
 """
-contains several illuminatio constants especially names and some util functions
+Contains several illuminatio constants especially names and some util functions
 """
 from random import choice
 

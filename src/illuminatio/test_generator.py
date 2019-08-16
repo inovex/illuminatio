@@ -147,29 +147,37 @@ class NetworkTestCaseGenerator:
         raise ValueError("Unknown combination of field in connection " + str(connection_targets))
 
     def get_overlapping_hosts(self, host, namespaces_per_label_strings, labels_per_namespace, other_hosts):
-        """ Returns a list of hosts that *might* be selected by the same policies  """
+        """
+        Returns a list of hosts that might be selected by the same policies
+        """
         out = [host]
         for other in other_hosts:
             if host is not other:
                 namespace_overlap = self.namespaces_overlap(host, namespaces_per_label_strings,
                                                             labels_per_namespace, other)
-                pod_label_overlap = labels_overlap(other.pod_labels, host.pod_labels)
+                pod_label_overlap = label_selector_overlap(other.pod_labels, host.pod_labels)
                 if namespace_overlap and pod_label_overlap:
                     out.append(other)
         return out
 
-    def namespaces_overlap(self, host, namespaces_per_label_strings, labels_per_namespace, other):
+    def namespaces_overlap(self, host, namespaces_per_label_strings, labels_per_namespace, other_host):
+        """
+        Checks whether two hosts have namespaces in common
+        """
         host_ns = self.resolve_namespaces(host, namespaces_per_label_strings)
-        other_ns = self.resolve_namespaces(other, namespaces_per_label_strings)
+        other_ns = self.resolve_namespaces(other_host, namespaces_per_label_strings)
         if host_ns and other_ns:
             return any(ns in other_ns for ns in host_ns)
         ns_labels = lookup_namespace_labels(host, labels_per_namespace)
-        other_ns_labels = lookup_namespace_labels(other, labels_per_namespace)
+        other_ns_labels = lookup_namespace_labels(other_host, labels_per_namespace)
         if ns_labels is not None and other_ns_labels is not None:
-            return labels_overlap(ns_labels, other_ns_labels)
+            return label_selector_overlap(ns_labels, other_ns_labels)
         return False
 
     def resolve_namespaces(self, host, namespaces_per_label_strings):
+        """
+        Returns the namespace of a given host
+        """
         self.logger.debug(host)
         if isinstance(host, ClusterHost):
             return [host.namespace]
@@ -179,6 +187,9 @@ class NetworkTestCaseGenerator:
 
 
 def invert_host(host):
+    """
+    Returns a list of either inverted GenericClusterHosts or inverted ClusterHosts
+    """
     if isinstance(host, GenericClusterHost):
         return invert_generic_cluster_host(host)
     if isinstance(host, ClusterHost):
@@ -187,38 +198,60 @@ def invert_host(host):
 
 
 def invert_cluster_host(host: ClusterHost):
+    """
+    Returns a list of ClusterHosts with\n
+    once inverted pod label selectors,\n
+    once inverted namespace label selectors\n
+    and once both
+    """
     if host.pod_labels == {}:
         return [ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, {})]
 
     inverted_hosts = [ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, host.pod_labels),
-                      ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, invert_labels(host.pod_labels)),
-                      ClusterHost(host.namespace, invert_labels(host.pod_labels))]
+                      ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, invert_label_selector(host.pod_labels)),
+                      ClusterHost(host.namespace, invert_label_selector(host.pod_labels))]
     return inverted_hosts
 
 
 def invert_generic_cluster_host(host: GenericClusterHost):
+    """
+    Returns a list of GenericClusterHosts with\n
+    once inverted pod label selectors,\n
+    once inverted namespace label selectors\n
+    and once both
+    """
     if host == GenericClusterHost({}, {}):
         raise ValueError("Cannot invert GenericClusterHost matching all hosts in cluster")
     if host.namespace_labels == {}:
-        return [GenericClusterHost({}, invert_labels(host.pod_labels))]
-    inverted_hosts = [GenericClusterHost(host.namespace_labels, invert_labels(host.pod_labels)),
-                      GenericClusterHost(invert_labels(host.namespace_labels), host.pod_labels),
-                      GenericClusterHost(invert_labels(host.namespace_labels), invert_labels(host.pod_labels))]
+        return [GenericClusterHost({}, invert_label_selector(host.pod_labels))]
+    inverted_hosts = [GenericClusterHost(host.namespace_labels, invert_label_selector(host.pod_labels)),
+                      GenericClusterHost(invert_label_selector(host.namespace_labels), host.pod_labels),
+                      GenericClusterHost(invert_label_selector(host.namespace_labels),
+                                         invert_label_selector(host.pod_labels))]
     return inverted_hosts
 
 
-def invert_labels(labels):
+def invert_label_selector(labels):
+    """
+    Inverts a label selector
+    """
     return {INVERTED_ATTRIBUTE_PREFIX + k: v for k, v in labels.items()}
 
 
-def labels_overlap(labels1, labels2):
-    if labels1 and labels2:
-        return any(item in labels2.items() for item in labels1.items())
-    # if either of the labels dict is empty, they always overlap, as empty label selectors select all labels
+def label_selector_overlap(label_selector_1, label_selector_2):
+    """
+    Returns the intersection of two label selectors
+    """
+    if label_selector_1 and label_selector_2:
+        return any(item in label_selector_2.items() for item in label_selector_1.items())
+    # if one of the label selector dicts is empty, they always overlap, as empty label selectors select all labels
     return True
 
 
 def lookup_namespace_labels(host, labels_per_namespace):
+    """
+    Returns the namespace labels of a host
+    """
     if isinstance(host, GenericClusterHost):
         return host.namespace_labels
 

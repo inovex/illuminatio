@@ -1,5 +1,5 @@
 """
-file with several useful functions for interacting with k8s
+File with several useful functions for interacting with k8s
 """
 
 import kubernetes as k8s
@@ -9,7 +9,7 @@ from illuminatio.util import CLEANUP_LABEL, validate_cleanup_in, CLEANUP_ON_REQU
 
 def init_service_account_for_runners(name, namespace):
     """
-    creates, initializes and returns a ServiceAccount for the illuminatio runner
+    Creates, initializes and returns a ServiceAccount for the illuminatio runner
     """
     sa_labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST, ROLE_LABEL: "runner-service-account"}
     sa_meta = k8s.client.V1ObjectMeta(name=name, namespace=namespace, labels=sa_labels)
@@ -18,7 +18,7 @@ def init_service_account_for_runners(name, namespace):
 
 def init_role_binding_for_service_account(namespace, name, sa_name):
     """
-    creates, initializes and returns a ClusterRoleBinding for the illuminatio service account
+    Creates, initializes and returns a ClusterRoleBinding for the illuminatio service account
     """
     # role binding for account, granting it admin rights for the moment (TODO limit rights)
     rb_labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST, ROLE_LABEL: "runner-rb"}
@@ -41,7 +41,7 @@ def update_role_binding(role_binding: k8s.client.V1ClusterRoleBinding, namespace
 
 def init_test_output_config_map(namespace, name, data=None):
     """
-    creates, initializes and returns a ConfigMap with given parameters
+    Creates, initializes and returns a ConfigMap with given parameters
     """
     meta = k8s.client.V1ObjectMeta(namespace=namespace, name=name, labels={CLEANUP_LABEL: CLEANUP_ALWAYS})
     cfg_map = k8s.client.V1ConfigMap(metadata=meta)
@@ -51,7 +51,7 @@ def init_test_output_config_map(namespace, name, data=None):
 
 def init_pod(host: Host, additional_labels, generate_name, container, sa_name="default"):
     """
-    creates, initializes and returns a pod with given parameters
+    Creates, initializes and returns a pod with given parameters
     """
     pod = k8s.client.V1Pod()
     labels = {key: value for key, value in host.pod_labels.items()}
@@ -67,7 +67,7 @@ def init_pod(host: Host, additional_labels, generate_name, container, sa_name="d
 
 def init_svc(host: Host, additional_selector_labels, svc_labels, name, port_nums):
     """
-    creates, initializes and returns a service with given parameters
+    Creates, initializes and returns a service with given parameters
     """
     svc_meta = k8s.client.V1ObjectMeta(name=name, namespace=host.namespace)
     svc = k8s.client.V1Service(api_version="v1", kind="Service", metadata=svc_meta)
@@ -85,6 +85,6 @@ def init_svc(host: Host, additional_selector_labels, svc_labels, name, port_nums
 
 def labels_to_string(labels):
     """
-    concatenates a list of labels to single string
+    Concatenates a list of labels to a single string
     """
     return ",".join([str(k) + "=" + str(v) for k, v in labels.items()]) if labels else "*"

@@ -135,7 +135,8 @@ class ClusterHost(Host):
 
 class GenericClusterHost(Host):
     """
-    Abstract class for cluster hosts
+    Abstract class for cluster hosts,
+    can be used to express multiple hosts e.g. with different namespace labels
     """
     def __init__(self, namespace_labels, pod_labels):
         if namespace_labels is None:
