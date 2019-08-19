@@ -127,7 +127,9 @@ disable=print-statement,
         dict-items-not-iterating,
         dict-keys-not-iterating,
         dict-values-not-iterating,
-        fixme
+        fixme,
+        too-many-locals,
+        protected-access
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
