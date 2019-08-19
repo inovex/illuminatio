@@ -11,6 +11,7 @@ from illuminatio.test_case import NetworkTestCase
 from illuminatio.host import ClusterHost, GenericClusterHost
 from illuminatio.util import rand_port, INVERTED_ATTRIBUTE_PREFIX
 
+
 def _get_other_host_from(connection_targets, rule_namespace):
     namespace_labels = "namespaceLabels"
     pod_labels = "podLabels"

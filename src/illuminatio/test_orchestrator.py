@@ -50,6 +50,7 @@ def _hosts_are_in_cluster(case):
     return all([isinstance(host, (ClusterHost, GenericClusterHost))
                 for host in [case.from_host, case.to_host]])
 
+
 # TODO refactor with above method / at least use already polled namespaces in self._currentNamespaces
 def _create_project_namespace_if_missing(api: k8s.client.CoreV1Api):
     namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
@@ -58,6 +59,7 @@ def _create_project_namespace_if_missing(api: k8s.client.CoreV1Api):
         namespace = k8s.client.V1Namespace(
             metadata=k8s.client.V1ObjectMeta(name=PROJECT_NAMESPACE, labels=namespace_labels))
         api.create_namespace(namespace)
+
 
 class NetworkTestOrchestrator:
     """
