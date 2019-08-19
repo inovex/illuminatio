@@ -282,4 +282,5 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
         else:
             logger.error("Code was: " + json_body.get("code"))
             logger.error("An error occured while checking for an existing ConfigMap")
-            raise e
+            exit(1)
+            # TODO add retry logic e.g. with https://pypi.org/project/retry/
