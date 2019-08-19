@@ -84,7 +84,7 @@ class Cleaner:
         namespaces = self.core_api.list_namespace(
             label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy})).items
         namespace_names = [n.metadata.name for n in namespaces]
-        self.logger.info("Deleting namespacess %s with cleanup policy %s", str(namespace_names), cleanup_policy)
+        self.logger.info("Deleting namespaces %s with cleanup policy %s", str(namespace_names), cleanup_policy)
         for namespace in namespaces:
             resp = self.core_api.delete_namespace(namespace.metadata.name, propagation_policy="Background")
             responses.append(resp)

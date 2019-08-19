@@ -220,3 +220,59 @@ jobs:
       script:
       # run illuminatio e2e tests
       - python setup.py test --addopts="-m e2e"
+
+    # merely build the image for untagged commits
+    - stage: build
+      name: "build image"
+      if: (tag IS blank)
+      sudo: required
+      services:
+        - docker
+      script:
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
+
+    # build and push the latest image for master commits
+    - stage: build
+      name: "push latest image"
+      if: (branch = master AND NOT type = pull_request)
+      sudo: required
+      services:
+        - docker
+      script:
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
+
+    # build and push the tagged image for tagged commits
+    - stage: build
+      name: "push tagged image"
+      if: (tag IS present)
+      sudo: required
+      services:
+        - docker
+      script:
+      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
+
+    # merely build the python package for untagged commits
+    - stage: build
+      name: "build python package"
+      if: (tag IS blank)
+      language: python
+      python:
+        - "3.7"
+      script:
+      - python3 setup.py bdist_wheel
+
+    # build and upload the tagged python package for tagged commits
+    - stage: build
+      name: "upload python package"
+      if: (tag IS present)
+      language: python
+      python:
+        - "3.7"
+      script:
+      - python setup.py bdist_wheel
+      - pip install twine
+      - twine upload -u "${PYPI_USERNAME}" -p "${PYPI_PASSWORD}" --repository-url https://upload.pypi.org/legacy/ dist/*
