@@ -269,10 +269,18 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     cfg_map = init_test_output_config_map(namespace, name, data=yaml.dump(results))
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
-    config_map_in_cluster = api.list_namespaced_config_map(namespace, field_selector="metadata.name=" + name).items
-    if config_map_in_cluster:
+    try:
         api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
         logger.info(api_response)
-    else:
-        api_response = api.create_namespaced_config_map(namespace, cfg_map)
-        logger.info(api_response)
+    except k8s.client.rest.ApiException as e:
+        json_body = json.loads(e.body)
+        logger.debug("ApiException Body:\n%s\n" % json_body)
+        if json_body.get("code") == 404:
+            logger.info("Creating new ConfigMap")
+            api_response = api.create_namespaced_config_map(namespace, cfg_map)
+            logger.debug(api_response)
+        else:
+            logger.error("Code was: " + json_body.get("code"))
+            logger.error("An error occured while checking for an existing ConfigMap")
+            exit(1)
+            # TODO add retry logic e.g. with https://pypi.org/project/retry/
