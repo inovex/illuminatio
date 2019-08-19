@@ -24,7 +24,7 @@ python3 setup.py install
 
 We will bootstrap a [Minikube VM](https://kubernetes.io/docs/setup/minikube/) for local development.
 
-### [Docker](https://github.com/inovex/illuminatio/local_dev/startDocker.sh)
+### Docker
 
 ```bash
 # See also: https://github.com/projectcalico/calico/issues/1013
@@ -42,7 +42,9 @@ minikube start \
 minikube addons enable registry
 ```
 
-### [Containerd](https://github.com/inovex/illuminatio/local_dev/startContainerd.sh)
+There is also a simple bash script that makes it easier to setup the development env: [start_docker.sh](../local_dev/start_docker.sh)
+
+### Containerd
 
 See also [alternative runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md)
 
@@ -69,6 +71,8 @@ minikube addons enable registry
 
 If you want to interact with `containerd` you can use `minikube ssh` to ssh into the minikube VM and run `sudo crictl -r unix:///run/containerd/containerd.sock pods` (or other `crictl` commands).
 
+There is also a simple bash script that makes it easier to setup the development env: [start_containerd.sh](../local_dev/start_containerd.sh)
+
 ## Networking
 
 Installing Calico (or other [CNI network plugins](https://kubernetes.io/docs/concepts/cluster-administration/networking/#how-to-implement-the-kubernetes-networking-model)) for example:
@@ -86,11 +90,14 @@ In order to test newly build runner images we need to use the [Minikube Docker d
 eval $(minikube docker-env)
 ```
 
-And also deploy a local docker regisrty:
+And also deploy a local docker registry:
 
 ```bash
 kubectl apply -f local_dev/docker-registry.yml
 ```
+
+Now you need to add the minikube ip (you can get it with `minikube ip`) to the insecure regsitries of the [Docker client](https://docs.docker.com/registry/insecure/).
+This step is required because we didn't setup any TLS certificate for our testing registry.
 
 **This step is only required for containerd**
 We need to configure `containerd` to be able to pull images from our local registry:
@@ -107,21 +114,21 @@ sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd
 sudo sed -i '56i\       [plugins.cri.registry.mirrors."localhost"]' /etc/containerd/config.toml  
 # Finally restart the containerd service
 sudo systemctl restart containerd
-# check everythin worked:
+# Check everything is working
 sudo systemctl status containerd
 ```
 
 Now we can build locally the new runner image:
 
 ```bash
-docker build -t "localhost:5000/illuminatio-runner:dev" -f illuminatio-runner.dockerfile .
+docker build -t "$(minikube ip):5000/illuminatio-runner:dev" -f illuminatio-runner.dockerfile .
 ```
 
 And if you run the following command you should see the new image `docker images`.
 In order to be able to pull the image from the local registry we need to push the image there:
 
 ```bash
-docker push "localhost:5000/illuminatio-runner:dev"
+docker push "$(minikube ip):5000/illuminatio-runner:dev"
 ```
 
 If you change code on the orchestrator run:
@@ -133,22 +140,7 @@ python3 setup.py install
 ## Manual testing
 
 ```bash
-kubectl create deployment web --image=nginx
-kubectl expose deployment web --port 80 --target-port 80
-
-cat <<EOF | kubectl create -f -
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: web-deny-all
-spec:
-  podSelector:
-    matchLabels:
-      app: web
-  ingress: []
-EOF
-
-${PWD}/.venv/bin/illuminatio run --runner-image='localhost:5000/illuminatio-runner:dev'
+./local_dev/run_e2e_tests.sh
 ```
 
 ## Unit Tests

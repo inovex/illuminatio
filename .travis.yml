@@ -154,13 +154,10 @@ jobs:
       - kubectl taint nodes --all node-role.kubernetes.io/master-
       # create local registry
       - kubectl apply -f local_dev/docker-registry.yml
-      # build and push image to local registry as soon as it is ready
-      - docker build -t "localhost:5000/illuminatio-runner:dev" -f illuminatio-runner.dockerfile .
-      - until docker push "localhost:5000/illuminatio-runner:dev"; do sleep 1; done
 
       script:
       # run illuminatio e2e tests
-      - python setup.py test --addopts="-m e2e"
+      - ./local_dev/run_e2e_tests.sh
 
     - stage: e2e
       name: "containerd - calico e2e Tests"
@@ -213,13 +210,10 @@ jobs:
       - kubectl taint nodes --all node-role.kubernetes.io/master-
       # create local registry
       - kubectl apply -f local_dev/docker-registry.yml
-      # build and push image to local registry as soon as it is ready
-      - docker build -t "localhost:5000/illuminatio-runner:dev" -f illuminatio-runner.dockerfile .
-      - until docker push "localhost:5000/illuminatio-runner:dev"; do sleep 1; done
 
       script:
       # run illuminatio e2e tests
-      - python setup.py test --addopts="-m e2e"
+      - ./local_dev/run_e2e_tests.sh
 
     # merely build the image for untagged commits
     - stage: build
