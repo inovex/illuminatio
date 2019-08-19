@@ -313,7 +313,8 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     cfg_map = init_test_output_config_map(namespace, name, data=yaml.dump(results))
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
-    try:
+    config_map_in_cluster = api.list_namespaced_config_map(namespace, field_selector="metadata.name=" + name).items
+    if config_map_in_cluster:
         api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
         LOGGER.info(api_response)
     else:
