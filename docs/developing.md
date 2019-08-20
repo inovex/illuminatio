@@ -96,7 +96,7 @@ And also deploy a local docker registry:
 kubectl apply -f local_dev/docker-registry.yml
 ```
 
-Now you need to add the minikube ip (you can get it with `minikube ip`) to the insecure regsitries of the [Docker client](https://docs.docker.com/registry/insecure/).
+Now you need to add the minikube ip (you can get it with `minikube ip`) to the insecure registries of the [Docker client](https://docs.docker.com/registry/insecure/).
 This step is required because we didn't setup any TLS certificate for our testing registry.
 
 **This step is only required for containerd**
@@ -140,7 +140,7 @@ python3 setup.py install
 ## Manual testing
 
 ```bash
-./local_dev/run_e2e_tests.sh
+DOCKER_REGISTRY=$(minikube ip) ./local_dev/run_e2e_tests.sh
 ```
 
 ## Unit Tests

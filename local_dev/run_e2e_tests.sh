@@ -1,26 +1,17 @@
 #!/usr/bin/env bash
 
-#abort if any of the following commands fails or variables are undefined
+# Abort if any of the following commands fails or variables are undefined
 set -eu
 
-#use local docker daemon to build
-unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset DOCKER_API_VERSION
+DOCKER_REGISTRY=${DOCKER_REGISTRY:-"localhost"}
+ILLUMINATIO_IMAGE="${DOCKER_REGISTRY}:5000/illuminatio-runner:dev"
 
-ILLUMNATIO_IMAGE="$(minikube ip):5000/illuminatio-runner:dev"
-
-docker build -t "${ILLUMNATIO_IMAGE}" -f illuminatio-runner.dockerfile .
+docker build -t "${ILLUMINATIO_IMAGE}" -f illuminatio-runner.dockerfile .
 
 # Use minikube docker daemon to push to the insecure registry
-eval "$(minikube docker-env)"
-if docker images "${ILLUMNATIO_IMAGE}" | grep "${ILLUMNATIO_IMAGE}"
-then
-  docker rmi "${ILLUMNATIO_IMAGE}"
-fi
+DOCKER_REGISTRY=${DOCKER_REGISTRY:-"localhost"}
 
-until docker push "${ILLUMNATIO_IMAGE}"
+until docker push "${ILLUMINATIO_IMAGE}"
 do
   sleep 1
 done
