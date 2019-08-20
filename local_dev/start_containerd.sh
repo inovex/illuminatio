@@ -28,7 +28,7 @@ minikube start \
 # Setup the minikube docker registry and calico
 minikube addons enable registry
 
-if [[ -z ${CI} ]];
+if [[ -n ${CI} ]];
 then
     sudo chown -R travis: /home/travis/.minikube/
 fi
@@ -37,7 +37,17 @@ kubectl apply -f "https://docs.projectcalico.org/${CALICO_VERSION}/getting-start
 kubectl apply -f local_dev/docker-registry.yml
 
 # Configure containerd to use the local registry
-minikube ssh <<EOF
+if [[ -n ${CI} ]];
+then
+    sudo mkdir -p /etc/containerd
+    sudo tee /etc/containerd/config.toml <<EOF
+[plugins.cri.registry.mirrors]
+  [plugins.cri.registry.mirrors."localhost"]
+    endpoint = ["http://localhost:5000"]
+EOF
+
+else
+    minikube ssh <<EOF
 # the following commands are executed inside the minikube vm
 # Add the following lines -> see https://github.com/kubernetes/minikube/issues/3444
 sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml  
@@ -46,3 +56,4 @@ sudo sed -i '56i\       [plugins.cri.registry.mirrors."localhost"]' /etc/contain
 sudo systemctl restart containerd
 exit
 EOF
+fi
