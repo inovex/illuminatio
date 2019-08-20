@@ -150,3 +150,11 @@ In order to run the unit tests:
 ```bash
 python3 setup.py test --addopts --runslow
 ```
+
+## Cleanup
+
+If you are done testing (or want to use another container runtime) just delete the current minikube cluster:
+
+```bash
+minikube delete
+```
