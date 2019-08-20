@@ -117,7 +117,7 @@ jobs:
       - python setup.py test --addopts --runslow
 
     - stage: e2e
-      name: "docker - calico e2e Test"
+      name: "docker - calico e2e Tests"
       sudo: required
       language: python
       python:
@@ -126,7 +126,7 @@ jobs:
       env:
         global:
           - KUBECONFIG=$HOME/.kube/config
-          - KUBERNETES_VERSION=1.15.0
+          - KUBERNETES_VERSION=v1.15.0
           - MINIKUBE_VERSION=v1.3.1
           - CHANGE_MINIKUBE_NONE_USER=true
           - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -136,9 +136,9 @@ jobs:
           - KUBECONFIG=$HOME/.kube/config
 
       before_script:
-      # install dependent libraries
-      - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      # install dependent binaries
+      - curl -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
       - mkdir -p $HOME/.kube $HOME/.minikube
       - touch $KUBECONFIG
       - minikube config set vm-driver none
@@ -159,7 +159,8 @@ jobs:
       env:
         global:
           - KUBECONFIG=$HOME/.kube/config
-          - KUBERNETES_VERSION=1.15.0
+          - CONTAINERD_VERSION=1.2.6
+          - KUBERNETES_VERSION=v1.15.0
           - MINIKUBE_VERSION=v1.3.1
           - CHANGE_MINIKUBE_NONE_USER=true
           - MINIKUBE_WANTUPDATENOTIFICATION=false
@@ -168,10 +169,16 @@ jobs:
           - CHANGE_MINIKUBE_NONE_USER=true
           - KUBECONFIG=$HOME/.kube/config
 
+      before_install:
+      # See: https://github.com/containerd/cri/blob/master/docs/installation.md
+      - sudo apt-get update && sudo apt-get install libseccomp2 -y
+      - curl -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
+      - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+
       before_script:
-      # install dependent libraries
-      - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      # install dependent binaries
+      - curl -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
       - mkdir -p $HOME/.kube $HOME/.minikube
       - touch $KUBECONFIG
       - minikube config set vm-driver none
