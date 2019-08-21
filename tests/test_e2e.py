@@ -18,7 +18,6 @@ def test_deny_all_traffic_to_an_application():
                      "e2e-manifests/01-deny-all-traffic-to-an-application.yml",
                      verbose=False, wait_until_ready=True)
 
-    # ToDo handle exceptions
     res = subprocess.run(["illuminatio", "clean", "run", "--runner-image=localhost:5000/illuminatio-runner:dev"],
                          capture_output=True,
                          timeout=60)
