@@ -126,14 +126,12 @@ jobs:
       env:
         global:
           - KUBECONFIG=$HOME/.kube/config
-          - KUBERNETES_VERSION=v1.15.0
+          - KUBERNETES_VERSION=v1.15.3
           - MINIKUBE_VERSION=v1.3.1
           - CHANGE_MINIKUBE_NONE_USER=true
           - MINIKUBE_WANTUPDATENOTIFICATION=false
           - MINIKUBE_WANTREPORTERRORPROMPT=false
           - MINIKUBE_HOME=$HOME
-          - CHANGE_MINIKUBE_NONE_USER=true
-          - KUBECONFIG=$HOME/.kube/config
 
       before_script:
       # install dependent binaries
@@ -158,16 +156,14 @@ jobs:
         - "3.7"
       env:
         global:
-          - KUBECONFIG=$HOME/.kube/config
           - CONTAINERD_VERSION=1.2.6
-          - KUBERNETES_VERSION=v1.15.0
+          - KUBECONFIG=$HOME/.kube/config
+          - KUBERNETES_VERSION=v1.15.3
           - MINIKUBE_VERSION=v1.3.1
           - CHANGE_MINIKUBE_NONE_USER=true
           - MINIKUBE_WANTUPDATENOTIFICATION=false
           - MINIKUBE_WANTREPORTERRORPROMPT=false
           - MINIKUBE_HOME=$HOME
-          - CHANGE_MINIKUBE_NONE_USER=true
-          - KUBECONFIG=$HOME/.kube/config
 
       before_install:
       # See: https://github.com/containerd/cri/blob/master/docs/installation.md
