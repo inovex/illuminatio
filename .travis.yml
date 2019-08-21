@@ -117,43 +117,31 @@ jobs:
       - python setup.py test --addopts --runslow
 
     - stage: e2e
-      name: "docker - calico e2e Test"
+      name: "docker - calico e2e Tests"
       sudo: required
       language: python
       python:
         - "3.7"
       # ToDo implement multiple python versions?
       env:
-        global:
-          - KUBECONFIG=$HOME/.kube/config
-          - KUBERNETES_VERSION=1.15.0
+        - KUBECONFIG="$HOME/.kube/config"
+        - KUBERNETES_VERSION=v1.15.3
+        - MINIKUBE_VERSION=v1.3.1
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
 
-      before_install:
-      # install dependent libraries
-      - sudo apt-get update 
-      - sudo apt-get install libseccomp2 wget -y
-      # install docker, kubeadm, kubelet, kubectl
-      - sudo apt-get update && sudo apt-get install -y docker.io apt-transport-https curl
-      - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-      - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
-      - sudo apt-get update
-      - sudo apt-get install -y kubelet=${KUBERNETES_VERSION}-00 kubeadm=${KUBERNETES_VERSION}-00 kubectl=${KUBERNETES_VERSION}-00
-      - sudo apt-mark hold kubelet kubeadm kubectl
-      - sudo mkdir -p /etc/systemd/system/kubelet.service.d/
-      - sudo kubeadm init --pod-network-cidr=10.244.0.0/16
-      - mkdir -p $HOME/.kube
-      - sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-      - sudo chown $(id -u):$(id -g) $HOME/.kube/config
-      # setup calico
-      - kubectl apply -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+      before_script:
+      # install dependent binaries
+      - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      - mkdir -p $HOME/.kube $HOME/.minikube
+      - touch $KUBECONFIG
+      - minikube config set vm-driver none
+      - sudo -H -E ./local_dev/start_docker.sh
       - pip install -r requirements.txt
       - python setup.py install
-      before_script:
-      # wait for cluster to be available
-      - until kubectl get nodes | grep " Ready"; do kubectl get nodes -o wide; done
-      - kubectl taint nodes --all node-role.kubernetes.io/master-
-      # create local registry
-      - kubectl apply -f local_dev/docker-registry.yml
 
       script:
       # run illuminatio e2e tests
@@ -166,50 +154,31 @@ jobs:
       python:
         - "3.7"
       env:
-        global:
-          - KUBECONFIG=$HOME/.kube/config
-          - CONTAINERD_VERSION=1.2.4
-          - KUBERNETES_VERSION=1.15.0
+        - CONTAINERD_VERSION=1.2.6
+        - KUBECONFIG="$HOME/.kube/config"
+        - KUBERNETES_VERSION=v1.15.3
+        - MINIKUBE_VERSION=v1.3.1
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
 
       before_install:
-      # install dependent libraries
-      - sudo apt-get update 
-      - sudo apt-get install libseccomp2 wget -y
-      # download release tarball
-      - wget https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
-      - sha256sum cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
-      - curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz.sha256
-      # install containerd
+      # See: https://github.com/containerd/cri/blob/master/docs/installation.md
+      - sudo apt-get update && sudo apt-get install libseccomp2 -y
+      - curl --fail -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
       - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
-      - sudo systemctl start containerd
-      # install kubeadm, kubelet, kubectl
-      - sudo apt-get update && sudo apt-get install -y docker.io apt-transport-https curl
-      - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-      - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
-      - sudo apt-get update
-      - sudo apt-get install -y kubelet=${KUBERNETES_VERSION}-00 kubeadm=${KUBERNETES_VERSION}-00 kubectl=${KUBERNETES_VERSION}-00
-      - sudo apt-mark hold kubelet kubeadm kubectl
-      - sudo mkdir -p /etc/systemd/system/kubelet.service.d/
-      # create systemd drop-in for containerd
-      - sudo echo '[Service]' | sudo tee -a /etc/systemd/system/kubelet.service.d/0-containerd.conf
-      - sudo echo 'Environment="KUBELET_EXTRA_ARGS=--container-runtime=remote --runtime-request-timeout=15m --container-runtime-endpoint=unix:///run/containerd/containerd.sock"' | sudo tee -a /etc/systemd/system/kubelet.service.d/0-containerd.conf
-      - sudo systemctl daemon-reload
-      - sudo systemctl restart containerd
-      - sudo systemctl status containerd
-      - sudo kubeadm init --cri-socket /run/containerd/containerd.sock --pod-network-cidr=10.244.0.0/16
-      - mkdir -p $HOME/.kube
-      - sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-      - sudo chown $(id -u):$(id -g) $HOME/.kube/config
-      # setup calico
-      - kubectl apply -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+
+      before_script:
+      # install dependent binaries
+      - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      - mkdir -p $HOME/.kube $HOME/.minikube
+      - touch $KUBECONFIG
+      - minikube config set vm-driver none
+      - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
       - python setup.py install
-      before_script:
-      # wait for cluster to be available
-      - until kubectl get nodes | grep " Ready"; do kubectl get nodes -o wide; done
-      - kubectl taint nodes --all node-role.kubernetes.io/master-
-      # create local registry
-      - kubectl apply -f local_dev/docker-registry.yml
 
       script:
       # run illuminatio e2e tests
