@@ -125,7 +125,7 @@ jobs:
       # ToDo implement multiple python versions?
       env:
         global:
-          - KUBECONFIG=$HOME/.kube/config
+          - KUBECONFIG="$HOME/.kube/config"
           - KUBERNETES_VERSION=v1.15.3
           - MINIKUBE_VERSION=v1.3.1
           - CHANGE_MINIKUBE_NONE_USER=true
@@ -157,7 +157,7 @@ jobs:
       env:
         global:
           - CONTAINERD_VERSION=1.2.6
-          - KUBECONFIG=$HOME/.kube/config
+          - KUBECONFIG="$HOME/.kube/config"
           - KUBERNETES_VERSION=v1.15.3
           - MINIKUBE_VERSION=v1.3.1
           - CHANGE_MINIKUBE_NONE_USER=true
