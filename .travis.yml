@@ -124,14 +124,13 @@ jobs:
         - "3.7"
       # ToDo implement multiple python versions?
       env:
-        global:
-          - KUBECONFIG="$HOME/.kube/config"
-          - KUBERNETES_VERSION=v1.15.3
-          - MINIKUBE_VERSION=v1.3.1
-          - CHANGE_MINIKUBE_NONE_USER=true
-          - MINIKUBE_WANTUPDATENOTIFICATION=false
-          - MINIKUBE_WANTREPORTERRORPROMPT=false
-          - MINIKUBE_HOME=$HOME
+        - KUBECONFIG="$HOME/.kube/config"
+        - KUBERNETES_VERSION=v1.15.3
+        - MINIKUBE_VERSION=v1.3.1
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
 
       before_script:
       # install dependent binaries
@@ -155,15 +154,14 @@ jobs:
       python:
         - "3.7"
       env:
-        global:
-          - CONTAINERD_VERSION=1.2.6
-          - KUBECONFIG="$HOME/.kube/config"
-          - KUBERNETES_VERSION=v1.15.3
-          - MINIKUBE_VERSION=v1.3.1
-          - CHANGE_MINIKUBE_NONE_USER=true
-          - MINIKUBE_WANTUPDATENOTIFICATION=false
-          - MINIKUBE_WANTREPORTERRORPROMPT=false
-          - MINIKUBE_HOME=$HOME
+        - CONTAINERD_VERSION=1.2.6
+        - KUBECONFIG="$HOME/.kube/config"
+        - KUBERNETES_VERSION=v1.15.3
+        - MINIKUBE_VERSION=v1.3.1
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
 
       before_install:
       # See: https://github.com/containerd/cri/blob/master/docs/installation.md
