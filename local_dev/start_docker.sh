@@ -5,7 +5,6 @@ set -eu
 KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.15.0}"
 CALICO_VERSION="${CALICO_VERSION:-v3.8}"
 
-
 # Setup minikube
 minikube delete
 minikube start \
@@ -25,7 +24,7 @@ minikube start \
 # Setup the minikube docker registry and calico
 minikube addons enable registry
 
-if [[ -z ${CI} ]];
+if [[ -n "${CI:-}" ]];
 then
     sudo chown -R travis: /home/travis/.minikube/
 fi

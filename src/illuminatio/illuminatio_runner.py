@@ -12,6 +12,7 @@ import socket
 import tempfile
 import time
 import yaml
+from nsenter import Namespace
 from illuminatio.host import Host, ConcreteClusterHost
 from illuminatio.k8s_util import init_test_output_config_map
 import docker
@@ -76,16 +77,16 @@ def filter_from_hosts(from_hosts, pods_on_node):
 def run_tests_for_from_pod(from_pod, cases):
     from_host_string = from_pod.to_identifier()
     runtimes = {}
-    nsenter_cmd = build_nsenter_cmd_for_pod(from_pod.namespace, from_pod.name)
+    network_ns = get_network_ns_for_pod(from_pod.namespace, from_pod.name)
     results = {}
     for target, ports in cases[from_host_string].items():
         start_time = time.time()
-        results[target] = run_tests_for_target(nsenter_cmd, ports, target)
+        results[target] = run_tests_for_target(network_ns, ports, target)
         runtimes[target] = time.time() - start_time
     return results, runtimes
 
 
-def run_tests_for_target(enter_net_ns_cmd, ports, target):
+def run_tests_for_target(network_ns, ports, target):
     # resolve host directly here
     # https://stackoverflow.com/questions/2805231/how-can-i-do-dns-lookups-in-python-including-referring-to-etc-hosts
     logger.info("Target: %s" % target)
@@ -114,11 +115,13 @@ def run_tests_for_target(enter_net_ns_cmd, ports, target):
         # remove the need for nmap!
         # e.g. https://gist.github.com/betrcode/0248f0fda894013382d7
         # nmap that target TODO: handle None ip
+        # Replace bare nmap call with a better integrated solution like: https://pypi.org/project/python-nmap/ ?
         nmap_cmd = ["nmap", "-oX", result_file.name, "-Pn", "-p", port_string, svc_ip]
-        cmd = enter_net_ns_cmd + nmap_cmd
-        logger.info("running nmap with cmd %s", cmd)
-        prc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if prc.returncode:
+        logger.info("running nmap with cmd %s", nmap_cmd)
+        prc = None
+        with Namespace(network_ns, 'net'):
+            prc = subprocess.run(nmap_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if prc is None or prc.returncode:
             logger.error("Executing nmap in foreign net ns failed! output:")
             logger.error(prc.stderr)
             logger.debug(prc)
@@ -237,7 +240,7 @@ def get_containerd_network_namespace(host_namespace, host_name):
     return net_ns
 
 
-def build_nsenter_cmd_for_pod(pod_namespace, pod_name):
+def get_network_ns_for_pod(pod_namespace, pod_name):
     container_runtime_name = os.environ["CONTAINER_RUNTIME_NAME"]
     if container_runtime_name == "containerd":
         net_ns = get_containerd_network_namespace(pod_namespace, pod_name)
@@ -246,9 +249,8 @@ def build_nsenter_cmd_for_pod(pod_namespace, pod_name):
     else:
         # TODO add more runtimes to support
         raise ValueError("the container runtime '%s' is not supported" % container_runtime_name)
-    # make use of https://github.com/zalando/python-nsenter + ns_type netns should be enough
-    # --> https://github.com/zalando/python-nsenter/blob/master/nsenter/__init__.py#L42-L45
-    return ["nsenter", "-t", net_ns, "--net", "--"]
+
+    return net_ns
 
 
 def get_pods_on_node():
