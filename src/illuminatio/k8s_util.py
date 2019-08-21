@@ -27,7 +27,10 @@ def update_role_binding(role_binding: k8s.client.V1ClusterRoleBinding, namespace
 
 
 def init_test_output_config_map(namespace, name, data=None):
-    meta = k8s.client.V1ObjectMeta(namespace=namespace, name=name, labels={CLEANUP_LABEL: CLEANUP_ALWAYS})
+    meta = k8s.client.V1ObjectMeta(
+        namespace=namespace,
+        name=name,
+        labels={CLEANUP_LABEL: CLEANUP_ALWAYS, "illuminatio/runner": "result"})
     cfg_map = k8s.client.V1ConfigMap(metadata=meta)
     cfg_map.data = {"results": data}
     return cfg_map

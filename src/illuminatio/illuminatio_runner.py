@@ -33,7 +33,6 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
 @click.command()
 @click_log.simple_verbosity_option(logger)
 def cli():
-    run_times = {"overall": "error"}
     if not os.path.exists(case_file_path):
         raise RuntimeError("Could not find cases.yaml in %s!" % case_file_path)
     results, test_run_times = run_all_tests()
@@ -47,7 +46,7 @@ def cli():
     logger.debug("Output EnvVars: RUNNER_NAMESPACE=%s, RUNNER_NAME=%s", namespace, name)
     if namespace is not None and name is not None:
         store_results_to_cfg_map(results, namespace, name + "-results",
-                                 {"overall": run_times["overall"], "tests": test_run_times})
+                                 {"tests": test_run_times})
     logger.info("Finished running tests. Results:")
     logger.info(results)
     # Sleep some time until container is killed. TODO: continuous mode ???

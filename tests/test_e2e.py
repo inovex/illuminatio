@@ -1,5 +1,5 @@
-import pytest
 import subprocess
+import pytest
 from kubernetes import client, config, utils
 
 
@@ -10,7 +10,10 @@ def test_deny_all_traffic_to_an_application():
     k8s_client = client.ApiClient()
     corev1 = client.CoreV1Api()
 
-    corev1.create_namespace(client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace)))
+    corev1.create_namespace(client.V1Namespace(
+        metadata=client.V1ObjectMeta(
+            name=namespace,
+            labels={"illuminatio-e2e": namespace})))
     utils.create_from_yaml(k8s_client,
                            "e2e-manifests/01-deny-all-traffic-to-an-application.yml",
                            namespace=namespace)
