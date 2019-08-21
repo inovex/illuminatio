@@ -6,25 +6,39 @@ import time
 import yaml
 import pytest
 import subprocess
-from kubernetes import client, config
+from kubernetes import client, config, utils
 from kubernetes.utils.create_from_yaml import FailToCreateError
-
 
 @pytest.mark.e2e
 def test_deny_all_traffic_to_an_application():
     config.load_kube_config()
     k8s_client = client.ApiClient()
     create_from_yaml(k8s_client,
-                     "e2e-manifests/01-deny-all-traffic-to-an-application.yml",
-                     verbose=False, wait_until_ready=True)
-
-    res = subprocess.run(["illuminatio", "clean", "run", "--runner-image=localhost:5000/illuminatio-runner:dev"],
+                           "e2e-manifests/01-deny-all-traffic-to-an-application.yml",
+                           verbose=False, wait_until_ready=True)
+    results_yaml_file = "result.yml"
+    # run illuminatio and store the results to a yaml file
+    res = subprocess.run(["illuminatio", "clean", "run", "--runner-image=localhost:5000/illuminatio-runner:dev",
+                          "-o", results_yaml_file],
                          capture_output=True,
                          timeout=60)
-
-    print(res.stdout)
     assert res.returncode == 0
-    # ToDo evaluate result
+
+    # evaluate the results of illuminatio
+    with open(path.abspath(results_yaml_file)) as f:
+        yaml_document = yaml.safe_load_all(f)
+        for results_dict in yaml_document:
+            if results_dict["cases"] is None:
+                raise ValueError("Error: Invalid output, test cases seem to be missing")
+            cases_dict = results_dict["cases"]
+            for case in cases_dict:
+                raw_case = cases_dict[case]
+                for namespace in raw_case:
+                    result = raw_case[namespace]
+                    for ports in result:
+                        success = result[ports]["success"]
+                        if success != True:
+                            raise ValueError("Error: One or more test cases of illuminatio have failed")
 
     # Clean up
     res = subprocess.run(["illuminatio", "clean"], capture_output=True)
@@ -40,6 +54,7 @@ def test_deny_all_traffic_to_an_application():
     # ToDo evaluate result
     print(res.stdout)
 
+# TODO extract util functions into test_util.py
 
 def create_from_yaml(
         k8s_client,
@@ -123,7 +138,7 @@ def create_from_dict(k8s_client, data, verbose=False, namespace='default',
             for yml_object in data["items"]:
                 # Mitigate cases when server returns a xxxList object
                 # See kubernetes-client/python#586
-                if kind != "":
+                if kind is not "":
                     yml_object["apiVersion"] = data["apiVersion"]
                     yml_object["kind"] = kind
                 try:
@@ -139,7 +154,7 @@ def create_from_dict(k8s_client, data, verbose=False, namespace='default',
             try:
                 future_resource_ready = create_from_yaml_single_item(
                     k8s_client, data, executor, verbose, namespace=namespace, **kwargs)
-                # add resource ready future to the dict
+                    # add resource ready future to the dict
                 futures_dict_resources_ready[future_resource_ready] = data
             except client.rest.ApiException as api_exception:
                 api_exceptions.append(api_exception)
@@ -168,25 +183,24 @@ def resource_is_ready(k8s_api, kind, resource_name, kwargs):
     if kwargs["namespace"] is None:
         return True
     while True:
-        response = getattr(k8s_api, "read_namespaced_{0}".format(kind))(name=resource_name, **kwargs)
-        response_dict = response.to_dict()
-        status_dict = response_dict.get("status", "Ready")
-        if kind == "deployment":
-            print("waiting for deployment")
-            if status_dict["ready_replicas"] and status_dict["replicas"] == status_dict["ready_replicas"]:
-                print("Deployment is ready")
-                return True
-        elif kind == "pod":
-            print("waiting for pod")
-            if status_dict["phase"] == "Running":
-                print("Pod is ready")
-                return True
-        else:
-            print("kind not supported:", kind, response_dict)
-            return False
-        # sleep for a second to save CPU load
-        time.sleep(1)
-
+      response = getattr(k8s_api, "read_namespaced_{0}".format(kind))(name=resource_name, **kwargs)
+      response_dict = response.to_dict()
+      status_dict = response_dict.get("status", "Ready")
+      if kind == "deployment":
+          print("waiting for deployment")
+          if status_dict["ready_replicas"] and status_dict["replicas"] == status_dict["ready_replicas"]:
+              print("Deployment is ready")
+              return True
+      elif kind == "pod":
+          print("waiting for pod")
+          if status_dict["phase"] == "Running":
+              print("Pod is ready")
+              return True
+      else:
+          print("kind not supported:", kind, response_dict)
+          return False
+      # sleep for a second to save CPU load
+      time.sleep(1)
 
 def create_from_yaml_single_item(
         k8s_client, yml_object, executor, verbose=False, **kwargs):
@@ -218,7 +232,6 @@ def create_from_yaml_single_item(
             body=yml_object, **kwargs)
     else:
         # resource is namespaceless (and also instantly ready)
-        print("get:", kind, resource_name)
         kwargs.pop('namespace', None)
         resp = getattr(k8s_api, "create_{0}".format(kind))(
             body=yml_object, **kwargs)
@@ -230,11 +243,3 @@ def create_from_yaml_single_item(
 
     # future that returns True when the resource becomes ready
     return executor.submit(resource_is_ready, k8s_api, kind, resource_name, kwargs, 60)
-
-
-def main():
-    test_deny_all_traffic_to_an_application()
-
-
-if __name__ == "__main__":
-    main()
