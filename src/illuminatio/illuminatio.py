@@ -158,7 +158,6 @@ def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, p
                 LOGGER.debug("mapped_sender_pod: %s", str(mapped_sender_pod))
                 LOGGER.debug("mapped_receiver_pod: %s", str(mapped_receiver_pod))
                 LOGGER.debug("raw_results: %s", str(raw_results))
-                # ToDo review here!
                 if mapped_port in raw_results[mapped_sender_pod][mapped_receiver_pod]:
                     # fetch all requests from desired ports
                     transformed[sender_pod][receiver_pod][port] = \
@@ -172,7 +171,7 @@ def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, p
 
 def render_results(results, run_time, trailing_spaces=2):
     """
-    Prints test results in a beautiful way
+    Prints test results in a readable way
     """
     num_tests = len([p for f in results for t in results[f] for p in results[f][t]])
     LOGGER.info("Finished running %s tests in %.4f seconds", str(num_tests), run_time)

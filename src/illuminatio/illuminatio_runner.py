@@ -118,7 +118,7 @@ def run_tests_for_target(enter_net_ns_cmd, ports, target):
     LOGGER.info("Target: %s", target)
     port_on_nums = {port.replace("-", ""): port for port in ports}
     port_string = ",".join(port_on_nums.keys())
-    # ToDo do we really need this -> we know the service alreadz
+    # ToDo do we really need this -> we know the service already
     # DNS could be blocked
     # resolve target ip
     # Only IPv4 currently
@@ -251,7 +251,7 @@ def extract_network_namespace(inspectp_result):
     return net_ns
 
 
-def get_containerd_network_namespace(host_namespace, host_name):
+def get_cri_network_namespace(host_namespace, host_name):
     """
     Fetches and returns the path of the network namespace
     This function only works for runtimes that are CRI compliant e.g. containerd
@@ -279,7 +279,7 @@ def build_nsenter_cmd_for_pod(pod_namespace, pod_name):
     """
     container_runtime_name = os.environ["CONTAINER_RUNTIME_NAME"]
     if container_runtime_name == "containerd":
-        net_ns = get_containerd_network_namespace(pod_namespace, pod_name)
+        net_ns = get_cri_network_namespace(pod_namespace, pod_name)
     elif container_runtime_name == "docker":
         net_ns = get_docker_network_namespace(pod_namespace, pod_name)
     else:
