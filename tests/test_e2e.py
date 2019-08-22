@@ -56,8 +56,9 @@ def test_deny_all_traffic_to_an_application():
             del results_dict["results"]["mappings"]["fromHost"]
             # compare the remaining dicts
             assert results_dict == expected_dict
-            expected_start_string_1 = "01-deny-all:web-"
-            assert from_host_1.startswith(expected_start_string_1)
+            regex_pod_suffix = "[0-9a-z]{10}[-][0-9a-z]{5}"
+            regex_expected_start_string_1 = re.compile("01[-]deny[-]all:web[-]" + regex_pod_suffix)
+            assert regex_expected_start_string_1.search(from_host_1)
 
     # Clean up
     res = subprocess.run(["illuminatio", "clean"], capture_output=True)
