@@ -9,6 +9,7 @@ from create_from_yaml import create_from_yaml
 
 # TODO consider removing the raw stdout output of each test
 
+
 def validate_illuminatio_was_successful(results_dict):
     if results_dict["cases"] is None:
         raise ValueError("Error: Invalid output, test cases seem to be missing")
