@@ -314,7 +314,7 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
     try:
-        config_map_in_cluster = api.read_namespaced_config_map(name, namespace)
+        api.read_namespaced_config_map(name, namespace)
         api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
         LOGGER.info(api_response)
     except k8s.client.rest.ApiException as api_exception:
