@@ -129,7 +129,8 @@ disable=print-statement,
         dict-values-not-iterating,
         fixme,
         too-many-locals,
-        protected-access
+        protected-access,
+        consider-using-set-comprehension
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

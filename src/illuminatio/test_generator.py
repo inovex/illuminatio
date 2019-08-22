@@ -140,7 +140,7 @@ class NetworkTestCaseGenerator:
                                                      rand_port(ports_per_host[match_all_host]), False))
                     runtimes[host_string]["matchAllCase"] = time.time() - reaching_host_find_time
                 else:
-                    inverted_hosts = {h for l in {invert_host(host) for host in allowed_hosts} for h in l}
+                    inverted_hosts = set([h for l in [invert_host(host) for host in allowed_hosts] for h in l])
                     hosts_on_inverted = {h: originalHost for l, originalHost in
                                          [(invert_host(host), host) for host in allowed_hosts] for h in l}
                     host_inversion_time = time.time()
