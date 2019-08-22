@@ -8,6 +8,9 @@ from kubernetes import client, config
 from create_from_yaml import create_from_yaml
 
 # TODO consider removing the raw stdout output of each test
+REGEX_RESOURCE_INFIX = "[0-9a-z]{10}"
+REGEX_RESOURCE_SUFFIX = "[0-9a-z]{5}"
+REGEX_RESOURCE_LONG_SUFFIX = "%s[-]%s" % (REGEX_RESOURCE_INFIX, REGEX_RESOURCE_SUFFIX)
 
 
 def validate_illuminatio_was_successful(results_dict):
@@ -76,8 +79,7 @@ def test_deny_all_traffic_to_an_application():
             del results_dict["results"]["mappings"]["fromHost"]
             # compare the remaining dicts
             assert results_dict == expected_dict
-            regex_pod_suffix = "[0-9a-z]{10}[-][0-9a-z]{5}"
-            regex_expected_start_string_1 = re.compile("01[-]deny[-]all:web[-]" + regex_pod_suffix)
+            regex_expected_start_string_1 = re.compile("01[-]deny[-]all:web[-]%s" % REGEX_RESOURCE_LONG_SUFFIX)
             # not None if regex matches
             assert regex_expected_start_string_1.search(from_host_1)
 
@@ -96,46 +98,75 @@ def test_limit_traffic_to_an_application():
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
             validate_illuminatio_was_successful(results_dict)
-            expected_dict = {'cases': {'default:app=bookstore': {
-                'default:app=bookstore,role=api': {'*': {'success': True}}},
-                'default:illuminatio-inverted-app=bookstore': {
-                  'default:app=bookstore,role=api': {'-*': {'success': True}}},
-                'illuminatio-inverted-default:app=bookstore': {
-                  'default:app=bookstore,role=api': {'-*': {'success': True}}},
-                'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {
-                  'default:app=bookstore,role=api': {'-*': {'success': True}}}},
-                  'results': {'mappings': {'ports': {'default:app=bookstore': {
-                    'default:app=bookstore,role=api': {'*': '80'}},
-                    'default:illuminatio-inverted-app=bookstore': {
-                      'default:app=bookstore,role=api': {'-*': '-80'}},
-                    'illuminatio-inverted-default:app=bookstore': {
-                    'default:app=bookstore,role=api': {'-*': '-80'}},
-                    'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {
-                      'default:app=bookstore,role=api': {'-*': '-80'}}},
-                      'toHost': {'default:app=bookstore': {'default:app=bookstore,role=api':
-                                 'default:apiserver'}, 'default:illuminatio-inverted-app=bookstore': {
-                          'default:app=bookstore,role=api': 'default:apiserver'},
-                          'illuminatio-inverted-default:app=bookstore': {
-                            'default:app=bookstore,role=api': 'default:apiserver'},
-                          'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {
-                              'default:app=bookstore,role=api': 'default:apiserver'}}}}}
+            expected_dict_1 = {'cases': {'02-limit-traffic:app=bookstore': {
+              '02-limit-traffic:role=api,app=bookstore': {'*': {'success': True}}},
+              '02-limit-traffic:illuminatio-inverted-app=bookstore': {
+              '02-limit-traffic:role=api,app=bookstore': {'-*': {'success': True}}},
+              'illuminatio-inverted-02-limit-traffic:app=bookstore': {
+                '02-limit-traffic:role=api,app=bookstore': {'-*': {'success': True}}},
+              'illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore': {
+              '02-limit-traffic:role=api,app=bookstore': {'-*': {'success': True}}}},
+              'results': {'mappings': {'ports': {'02-limit-traffic:app=bookstore': {
+                '02-limit-traffic:role=api,app=bookstore': {'*': '80'}},
+                '02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                '02-limit-traffic:role=api,app=bookstore': {'-*': '-80'}},
+                'illuminatio-inverted-02-limit-traffic:app=bookstore': {
+                  '02-limit-traffic:role=api,app=bookstore': {'-*': '-80'}},
+                'illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                    '02-limit-traffic:role=api,app=bookstore': {'-*': '-80'}}},
+                    'toHost': {'02-limit-traffic:app=bookstore': {
+                      '02-limit-traffic:role=api,app=bookstore': '02-limit-traffic:apiserver'},
+                      '02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                        '02-limit-traffic:role=api,app=bookstore': '02-limit-traffic:apiserver'},
+                      'illuminatio-inverted-02-limit-traffic:app=bookstore': {
+                          '02-limit-traffic:role=api,app=bookstore': '02-limit-traffic:apiserver'},
+                      'illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                            '02-limit-traffic:role=api,app=bookstore': '02-limit-traffic:apiserver'}}}}}
+            # same as dict above but with switched labels order
+            expected_dict_2 = {'cases': {'02-limit-traffic:app=bookstore': {
+              '02-limit-traffic:app=bookstore,role=api': {'*': {'success': True}}},
+              '02-limit-traffic:illuminatio-inverted-app=bookstore': {
+              '02-limit-traffic:app=bookstore,role=api': {'-*': {'success': True}}},
+              'illuminatio-inverted-02-limit-traffic:app=bookstore': {
+                '02-limit-traffic:app=bookstore,role=api': {'-*': {'success': True}}},
+              'illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore': {
+              '02-limit-traffic:app=bookstore,role=api': {'-*': {'success': True}}}},
+              'results': {'mappings': {'ports': {'02-limit-traffic:app=bookstore': {
+                '02-limit-traffic:app=bookstore,role=api': {'*': '80'}},
+                '02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                '02-limit-traffic:app=bookstore,role=api': {'-*': '-80'}},
+                'illuminatio-inverted-02-limit-traffic:app=bookstore': {
+                  '02-limit-traffic:app=bookstore,role=api': {'-*': '-80'}},
+                'illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                    '02-limit-traffic:app=bookstore,role=api': {'-*': '-80'}}},
+                    'toHost': {'02-limit-traffic:app=bookstore': {
+                      '02-limit-traffic:app=bookstore,role=api': '02-limit-traffic:apiserver'},
+                      '02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                        '02-limit-traffic:app=bookstore,role=api': '02-limit-traffic:apiserver'},
+                      'illuminatio-inverted-02-limit-traffic:app=bookstore': {
+                          '02-limit-traffic:app=bookstore,role=api': '02-limit-traffic:apiserver'},
+                      'illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore': {
+                            '02-limit-traffic:app=bookstore,role=api': '02-limit-traffic:apiserver'}}}}}
             # exclude irrelevant information
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
             # extract information from strings with random ids
             from_host_dict = results_dict["results"]["mappings"]["fromHost"]
-            from_host_1 = from_host_dict["default:app=bookstore"]
-            from_host_2 = from_host_dict["default:illuminatio-inverted-app=bookstore"]
-            from_host_3 = from_host_dict["illuminatio-inverted-default:app=bookstore"]
-            from_host_4 = from_host_dict["illuminatio-inverted-default:illuminatio-inverted-app=bookstore"]
+            from_host_1 = from_host_dict["02-limit-traffic:app=bookstore"]
+            from_host_2 = from_host_dict["02-limit-traffic:illuminatio-inverted-app=bookstore"]
+            from_host_3 = from_host_dict["illuminatio-inverted-02-limit-traffic:app=bookstore"]
+            from_host_4 = from_host_dict["illuminatio-inverted-02-limit-traffic:illuminatio-inverted-app=bookstore"]
             del results_dict["results"]["mappings"]["fromHost"]
             # compare the remaining dicts
-            assert results_dict == expected_dict
-            regex_pod_suffix = "[0-9a-z]{10}[-][0-9a-z]{5}"
-            regex_expected_start_string_1 = re.compile("default:apiserver[-]" + regex_pod_suffix)
-            regex_expected_start_string_2 = re.compile("default:illuminatio-dummy-[0-9a-z]{5}")
-            regex_expected_start_string_3 = re.compile("illuminatio-inverted-default:illuminatio-dummy-[0-9a-z]{5}")
-            regex_expected_start_string_4 = re.compile("illuminatio-inverted-default:illuminatio-dummy-[0-9a-z]{5}")
+            assert results_dict == expected_dict_1 or results_dict == expected_dict_2
+            regex_expected_start_string_1 = re.compile("02[-]limit[-]traffic:apiserver[-]%s" %
+                                                       REGEX_RESOURCE_LONG_SUFFIX)
+            regex_expected_start_string_2 = re.compile("02[-]limit[-]traffic:illuminatio-dummy-%s" %
+                                                       REGEX_RESOURCE_SUFFIX)
+            regex_expected_start_string_3 = re.compile(
+              "illuminatio-inverted-02[-]limit[-]traffic:illuminatio-dummy-%s" % REGEX_RESOURCE_SUFFIX)
+            regex_expected_start_string_4 = re.compile(
+              "illuminatio-inverted-02[-]limit[-]traffic:illuminatio-dummy-%s" % REGEX_RESOURCE_SUFFIX)
             # not None if regex matches
             assert regex_expected_start_string_1.search(from_host_1)
             assert regex_expected_start_string_2.search(from_host_2)
