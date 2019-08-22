@@ -42,6 +42,7 @@ def test_deny_all_traffic_to_an_application():
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
             validate_illuminatio_was_successful(results_dict)
+            print(results_dict)
             # runtimes are irrelevant for validation
             expected_dict = {'cases': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': {'success': True}}},
                              'default:app=web': {'default:app=web': {'-*': {'success': True}}}},
@@ -52,6 +53,7 @@ def test_deny_all_traffic_to_an_application():
                                            'default:app=web': {'default:app=web': 'default:web'}}}}}
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
+            print(results_dict["results"]["mappings"]["fromHost"])
             from_host_1 = results_dict["results"]["mappings"]["fromHost"]["01-deny-all:app=web"]
             from_host_2 = results_dict["results"]["mappings"]["fromHost"]["default:app=web"]
             del results_dict["results"]["mappings"]["fromHost"]
