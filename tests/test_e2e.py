@@ -51,12 +51,13 @@ def test_deny_all_traffic_to_an_application():
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
             # extract information from strings with random ids
-            from_host = results_dict["results"]["mappings"]["fromHost"]["01-deny-all:app=web"]
+            from_host_dict = results_dict["results"]["mappings"]["fromHost"]
+            from_host_1 = from_host_dict["01-deny-all:app=web"]
             del results_dict["results"]["mappings"]["fromHost"]
             # compare the remaining dicts
             assert results_dict == expected_dict
             expected_start_string_1 = "01-deny-all:web-"
-            assert from_host.startswith(expected_start_string_1)
+            assert from_host_1.startswith(expected_start_string_1)
 
     # Clean up
     res = subprocess.run(["illuminatio", "clean"], capture_output=True)
