@@ -1,13 +1,11 @@
-import concurrent.futures
-import re
 from os import path
 
-import time
 import yaml
 import pytest
 import subprocess
 from kubernetes import client, config
 from create_from_yaml import create_from_yaml
+
 
 def validate_illuminatio_was_successful(results_dict):
     if results_dict["cases"] is None:
@@ -21,6 +19,7 @@ def validate_illuminatio_was_successful(results_dict):
                 success = result[ports]["success"]
                 if success is not True:
                     raise ValueError("Error: One or more test cases of illuminatio have failed")
+
 
 @pytest.mark.e2e
 def test_deny_all_traffic_to_an_application():
@@ -38,18 +37,19 @@ def test_deny_all_traffic_to_an_application():
     assert res.returncode == 0
 
     # evaluate the results of illuminatio
-    
+
     with open(path.abspath(results_yaml_file)) as f:
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
             validate_illuminatio_was_successful(results_dict)
             # runtimes are irrelevant for validation
             expected_dict = {'cases': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': {'success': True}}},
-            'default:app=web': {'default:app=web': {'-*': {'success': True}}}},
-            'results': {'mappings': {'ports': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': '-80'}},
-            'default:app=web': {'default:app=web': {'-*': '-80'}}},
-            'toHost': {'01-deny-all:app=web': {'01-deny-all:app=web': '01-deny-all:web'},
-            'default:app=web': {'default:app=web': 'default:web'}}}}}
+                             'default:app=web': {'default:app=web': {'-*': {'success': True}}}},
+                             'results': {'mappings': {'ports': {
+                                '01-deny-all:app=web': {'01-deny-all:app=web': {'-*': '-80'}},
+                                'default:app=web': {'default:app=web': {'-*': '-80'}}},
+                                'toHost': {'01-deny-all:app=web': {'01-deny-all:app=web': '01-deny-all:web'},
+                                           'default:app=web': {'default:app=web': 'default:web'}}}}}
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
             from_host_1 = results_dict["results"]["mappings"]["fromHost"]["01-deny-all:app=web"]
@@ -73,4 +73,3 @@ def test_deny_all_traffic_to_an_application():
 
     assert res.returncode == 0
     print(res.stdout)
-

@@ -1,9 +1,11 @@
 import concurrent.futures
 from os import path
 import re
+import time
 import yaml
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.utils.create_from_yaml import FailToCreateError
+
 
 def create_from_yaml(
         k8s_client,
