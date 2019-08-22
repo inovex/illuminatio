@@ -37,12 +37,16 @@ def test_deny_all_traffic_to_an_application():
     assert res.returncode == 0
 
     # evaluate the results of illuminatio
-    
+
     with open(path.abspath(results_yaml_file)) as f:
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
             validate_illuminatio_was_successful(results_dict)
-            expected_dict = {'cases': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': {'success': True}}}}, 'results': {'mappings': {'ports': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': '-80'}}}, 'toHost': {'01-deny-all:app=web': {'01-deny-all:app=web': '01-deny-all:web'}}}}}
+            expected_dict = {'cases': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': {'success': True}}}},
+                             'results': {'mappings': {'ports': {'01-deny-all:app=web': {
+                                                                '01-deny-all:app=web': {'-*': '-80'}}},
+                                         'toHost': {'01-deny-all:app=web': {'01-deny-all:app=web':
+                                                                            '01-deny-all:web'}}}}}
             # exclude irrelevant information
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
