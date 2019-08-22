@@ -37,31 +37,22 @@ def test_deny_all_traffic_to_an_application():
     assert res.returncode == 0
 
     # evaluate the results of illuminatio
-
+    
     with open(path.abspath(results_yaml_file)) as f:
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
             validate_illuminatio_was_successful(results_dict)
-            print(results_dict)
-            # runtimes are irrelevant for validation
-            expected_dict = {'cases': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': {'success': True}}},
-                             'default:app=web': {'default:app=web': {'-*': {'success': True}}}},
-                             'results': {'mappings': {'ports': {
-                                '01-deny-all:app=web': {'01-deny-all:app=web': {'-*': '-80'}},
-                                'default:app=web': {'default:app=web': {'-*': '-80'}}},
-                                'toHost': {'01-deny-all:app=web': {'01-deny-all:app=web': '01-deny-all:web'},
-                                           'default:app=web': {'default:app=web': 'default:web'}}}}}
+            expected_dict = {'cases': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': {'success': True}}}}, 'results': {'mappings': {'ports': {'01-deny-all:app=web': {'01-deny-all:app=web': {'-*': '-80'}}}, 'toHost': {'01-deny-all:app=web': {'01-deny-all:app=web': '01-deny-all:web'}}}}}
+            # exclude irrelevant information
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
-            print(results_dict["results"]["mappings"]["fromHost"])
-            from_host_1 = results_dict["results"]["mappings"]["fromHost"]["01-deny-all:app=web"]
-            from_host_2 = results_dict["results"]["mappings"]["fromHost"]["default:app=web"]
+            # extract information from strings with random ids
+            from_host = results_dict["results"]["mappings"]["fromHost"]["01-deny-all:app=web"]
             del results_dict["results"]["mappings"]["fromHost"]
-            assert expected_dict == results_dict
+            # compare the remaining dicts
+            assert results_dict == expected_dict
             expected_start_string_1 = "01-deny-all:web-"
-            assert from_host_1.startswith(expected_start_string_1)
-            expected_start_string_2 = "default:web-"
-            assert from_host_2.startswith(expected_start_string_2)
+            assert from_host.startswith(expected_start_string_1)
 
     # Clean up
     res = subprocess.run(["illuminatio", "clean"], capture_output=True)
