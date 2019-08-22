@@ -1,11 +1,13 @@
 from os import path
 
-import yaml
 import pytest
+import re
 import subprocess
+import yaml
 from kubernetes import client, config
 from create_from_yaml import create_from_yaml
 
+# TODO consider removing the raw stdout output of each test
 
 def validate_illuminatio_was_successful(results_dict):
     if results_dict["cases"] is None:
@@ -21,13 +23,10 @@ def validate_illuminatio_was_successful(results_dict):
                     raise ValueError("Error: One or more test cases of illuminatio have failed")
 
 
-@pytest.mark.e2e
-def test_deny_all_traffic_to_an_application():
+def create_resources_and_run_illuminatio(resource_manifest, results_yaml_file):
     config.load_kube_config()
     k8s_client = client.ApiClient()
-    manifest = "e2e-manifests/01-deny-all-traffic-to-an-application.yml"
-    create_from_yaml(k8s_client, manifest, verbose=False, wait_until_ready=True)
-    results_yaml_file = "result.yml"
+    create_from_yaml(k8s_client, resource_manifest, verbose=False, wait_until_ready=True)
     # run illuminatio and store the results to a yaml file
     res = subprocess.run(["illuminatio", "clean", "run", "--runner-image=localhost:5000/illuminatio-runner:dev",
                           "-o", results_yaml_file],
@@ -35,8 +34,29 @@ def test_deny_all_traffic_to_an_application():
                          timeout=120)
     assert res.returncode == 0
 
+
+def cleanup_resources(resource_manifest):
+    # delete illuminatio resources
+    res = subprocess.run(["illuminatio", "clean"], capture_output=True)
+    assert res.returncode == 0
+    print(res.stdout)
+
+    # delete test resources
+    res = subprocess.run(["kubectl", "delete", "-f", resource_manifest],
+                         capture_output=True,
+                         timeout=120)
+
+    assert res.returncode == 0
+    print(res.stdout)
+
+
+@pytest.mark.e2e
+def test_deny_all_traffic_to_an_application():
+    resource_manifest = "e2e-manifests/01-deny-all-traffic-to-an-application.yml"
+    results_yaml_file = "result.yml"
+    create_resources_and_run_illuminatio(resource_manifest, results_yaml_file)
+
     # evaluate the results of illuminatio
-    
     with open(path.abspath(results_yaml_file)) as f:
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
@@ -60,40 +80,44 @@ def test_deny_all_traffic_to_an_application():
             # not None if regex matches
             assert regex_expected_start_string_1.search(from_host_1)
 
-    # Clean up
-    res = subprocess.run(["illuminatio", "clean"], capture_output=True)
-    assert res.returncode == 0
-    print(res.stdout)
+    cleanup_resources(resource_manifest)
 
-    # Clean up
-    res = subprocess.run(["kubectl", "delete", "-f", manifest],
-                         capture_output=True,
-                         timeout=60)
-
-    assert res.returncode == 0
-    print(res.stdout)
 
 @pytest.mark.e2e
 def test_limit_traffic_to_an_application():
-    config.load_kube_config()
-    k8s_client = client.ApiClient()
-    manifest = "e2e-manifests/02-limit-traffic-to-an-application.yml"
-    create_from_yaml(k8s_client, manifest, verbose=False, wait_until_ready=True)
+    resource_manifest = "e2e-manifests/02-limit-traffic-to-an-application.yml"
     results_yaml_file = "result.yml"
-    # run illuminatio and store the results to a yaml file
-    res = subprocess.run(["illuminatio", "clean", "run", "--runner-image=localhost:5000/illuminatio-runner:dev",
-                          "-o", results_yaml_file],
-                         capture_output=True,
-                         timeout=60)
-    assert res.returncode == 0
+    create_resources_and_run_illuminatio(resource_manifest, results_yaml_file)
 
     # evaluate the results of illuminatio
-    
+
     with open(path.abspath(results_yaml_file)) as f:
         yaml_document = yaml.safe_load_all(f)
         for results_dict in yaml_document:
             validate_illuminatio_was_successful(results_dict)
-            expected_dict = {'cases': {'default:app=bookstore': {'default:app=bookstore,role=api': {'*': {'success': True}}}, 'default:illuminatio-inverted-app=bookstore': {'default:app=bookstore,role=api': {'-*': {'success': True}}}, 'illuminatio-inverted-default:app=bookstore': {'default:app=bookstore,role=api': {'-*': {'success': True}}}, 'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {'default:app=bookstore,role=api': {'-*': {'success': True}}}}, 'results': {'mappings': {'ports': {'default:app=bookstore': {'default:app=bookstore,role=api': {'*': '80'}}, 'default:illuminatio-inverted-app=bookstore': {'default:app=bookstore,role=api': {'-*': '-80'}}, 'illuminatio-inverted-default:app=bookstore': {'default:app=bookstore,role=api': {'-*': '-80'}}, 'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {'default:app=bookstore,role=api': {'-*': '-80'}}}, 'toHost': {'default:app=bookstore': {'default:app=bookstore,role=api': 'default:apiserver'}, 'default:illuminatio-inverted-app=bookstore': {'default:app=bookstore,role=api': 'default:apiserver'}, 'illuminatio-inverted-default:app=bookstore': {'default:app=bookstore,role=api': 'default:apiserver'}, 'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {'default:app=bookstore,role=api': 'default:apiserver'}}}}}
+            expected_dict = {'cases': {'default:app=bookstore': {
+                'default:app=bookstore,role=api': {'*': {'success': True}}},
+                'default:illuminatio-inverted-app=bookstore': {
+                  'default:app=bookstore,role=api': {'-*': {'success': True}}},
+                'illuminatio-inverted-default:app=bookstore': {
+                  'default:app=bookstore,role=api': {'-*': {'success': True}}},
+                'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {
+                  'default:app=bookstore,role=api': {'-*': {'success': True}}}},
+                  'results': {'mappings': {'ports': {'default:app=bookstore': {
+                    'default:app=bookstore,role=api': {'*': '80'}},
+                    'default:illuminatio-inverted-app=bookstore': {
+                      'default:app=bookstore,role=api': {'-*': '-80'}},
+                    'illuminatio-inverted-default:app=bookstore': {
+                    'default:app=bookstore,role=api': {'-*': '-80'}},
+                    'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {
+                      'default:app=bookstore,role=api': {'-*': '-80'}}},
+                      'toHost': {'default:app=bookstore': {'default:app=bookstore,role=api':
+                                 'default:apiserver'}, 'default:illuminatio-inverted-app=bookstore': {
+                          'default:app=bookstore,role=api': 'default:apiserver'},
+                          'illuminatio-inverted-default:app=bookstore': {
+                            'default:app=bookstore,role=api': 'default:apiserver'},
+                          'illuminatio-inverted-default:illuminatio-inverted-app=bookstore': {
+                              'default:app=bookstore,role=api': 'default:apiserver'}}}}}
             # exclude irrelevant information
             del results_dict["runtimes"]
             del results_dict["results"]["raw-results"]
@@ -117,15 +141,4 @@ def test_limit_traffic_to_an_application():
             assert regex_expected_start_string_3.search(from_host_3)
             assert regex_expected_start_string_4.search(from_host_4)
 
-    # Clean up
-    res = subprocess.run(["illuminatio", "clean"], capture_output=True)
-    assert res.returncode == 0
-    print(res.stdout)
-
-    # Clean up
-    res = subprocess.run(["kubectl", "delete", "-f", manifest],
-                         capture_output=True,
-                         timeout=60)
-
-    assert res.returncode == 0
-    print(res.stdout)
+    cleanup_resources(resource_manifest)
