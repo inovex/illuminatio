@@ -20,7 +20,6 @@ def init_role_binding_for_service_account(namespace, name, sa_name):
     """
     Creates, initializes and returns a ClusterRoleBinding for the illuminatio service account
     """
-    # role binding for account, granting it admin rights for the moment (TODO limit rights)
     rb_labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST, ROLE_LABEL: "runner-rb"}
     rb_meta = k8s.client.V1ObjectMeta(name=name, labels=rb_labels)
     role_ref = k8s.client.V1RoleRef(name="illuminatio", api_group="rbac.authorization.k8s.io", kind="ClusterRole")
@@ -85,6 +84,6 @@ def init_svc(host: Host, additional_selector_labels, svc_labels, name, port_nums
 
 def labels_to_string(labels):
     """
-    Concatenates a list of labels to a single string
+    Concatenates a list of labels to a single string to match the labelselector pattern
     """
     return ",".join([str(k) + "=" + str(v) for k, v in labels.items()]) if labels else "*"

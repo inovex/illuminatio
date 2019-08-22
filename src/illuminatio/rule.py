@@ -1,5 +1,5 @@
 """
-file for network rules related things
+file for the creation of networking rules
 """
 from collections import namedtuple
 import kubernetes as k8s
@@ -87,7 +87,7 @@ class Rule:
         return cls(concerns, allowed)
 
 
-# helper function:
+# helper function
 def build_connections(verb, target, ports):
     """
     helper function to build Connection tuples
