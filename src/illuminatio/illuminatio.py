@@ -150,11 +150,11 @@ def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, p
             for port, mapped_port in port_mappings[sender_pod][receiver_pod].items():
                 # fetch and print metadata for each request
                 LOGGER.debug("port: %s", port)
-                LOGGER.debug("mapped_port: %s", str(mapped_port))
-                LOGGER.debug("sender_pod: %s", str(sender_pod))
-                LOGGER.debug("receiver_pod: %s", str(receiver_pod))
-                LOGGER.debug("mapped_sender_pod: %s", str(mapped_sender_pod))
-                LOGGER.debug("mapped_receiver_pod: %s", str(mapped_receiver_pod))
+                LOGGER.debug("mapped_port: %s", mapped_port)
+                LOGGER.debug("sender_pod: %s", sender_pod)
+                LOGGER.debug("receiver_pod: %s", receiver_pod)
+                LOGGER.debug("mapped_sender_pod: %s", mapped_sender_pod)
+                LOGGER.debug("mapped_receiver_pod: %s", mapped_receiver_pod)
                 LOGGER.debug("raw_results: %s", str(raw_results))
                 if mapped_port in raw_results[mapped_sender_pod][mapped_receiver_pod]:
                     # fetch all requests from desired ports

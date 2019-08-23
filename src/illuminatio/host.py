@@ -1,5 +1,5 @@
 """
-file for all kinds of hosts on which network tests can be performed
+File for all kinds of hosts on which network tests can be performed
 """
 from abc import ABC
 

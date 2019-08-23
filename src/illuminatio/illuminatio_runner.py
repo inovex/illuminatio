@@ -142,7 +142,7 @@ def run_tests_for_target(enter_net_ns_cmd, ports, target):
             LOGGER.error(prc.stderr)
             LOGGER.debug(prc)
             return {port_string: {"success": False,
-                                  "error": "Couldn't nmap host {} with hostname {}".format(target, svc_dns_entry)}}
+                                  "error": "Couldn't nmap host %s with hostname %s" % (target, svc_dns_entry)}}
 
         LOGGER.info("finished running nmap")
         LOGGER.debug("Error log: %s", prc.stderr)
@@ -262,8 +262,7 @@ def get_cri_network_namespace(host_namespace, host_name):
     cmd1 = ["crictl", "pods", "--name=" + str(host_name), "--namespace=" + str(host_namespace), "-q", "--no-trunc"]
     prc1 = subprocess.run(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc1.returncode:
-        LOGGER.error("Getting pods for name %s in namespace %s", host_name, host_namespace
-                     + " failed! output:")
+        LOGGER.error("Getting pods for name %s in namespace %s failed! output:", host_name, host_namespace)
         LOGGER.error(prc1.stderr)
     pod_id = prc1.stdout.strip()
     # ToDo error handling

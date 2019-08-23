@@ -1,5 +1,5 @@
 """
-file containing all utilities to interact with test case related kubernetes resources
+File containing all utilities to interact with test case related kubernetes resources
 """
 
 import time
@@ -71,20 +71,20 @@ class NetworkTestOrchestrator:
         self._current_services = []
         self.current_namespaces = []
         self.runner_daemon_set = None
-        self.oci_image = {}
+        self.oci_images = {}
         self.logger = log
 
     def set_runner_image(self, runner_image):
         """
         Updates the runner docker image
         """
-        self.oci_image["runner"] = runner_image
+        self.oci_images["runner"] = runner_image
 
     def set_target_image(self, target_image):
         """
         Updates the target docker image
         """
-        self.oci_image["target"] = target_image
+        self.oci_images["target"] = target_image
 
     def refresh_cluster_resources(self, api: k8s.client.CoreV1Api):
         """
@@ -104,7 +104,7 @@ class NetworkTestOrchestrator:
         self.current_namespaces = namespaces
 
     def _rewrite_ports_for_host(self, port_list, services_for_host):
-        self.logger.debug("Rewriting portList " + str(port_list))
+        self.logger.debug("Rewriting portList %s", str(port_list))
         if not services_for_host:
             # assign random port, a service with matching port will be created
             return {p: ("-" if "-" in p else "") + str(rand_port()) for p in port_list}
@@ -112,7 +112,7 @@ class NetworkTestOrchestrator:
         wild_card_ports = {p for p in port_list if "*" in p}
         numbered_ports = {p for p in port_list if "*" not in p}
         service_ports = [p for svc in services_for_host for p in svc.spec.ports]
-        self.logger.debug("Svc ports: " + str(service_ports))
+        self.logger.debug("Svc ports: %s", str(service_ports))
         for wildcard_port in wild_card_ports:
             prefix = "-" if "-" in wildcard_port else ""
             # choose any port for wildcard
@@ -137,22 +137,22 @@ class NetworkTestOrchestrator:
         for host_string in target_dict.keys():
             host = Host.from_identifier(host_string)
             if isinstance(host, GenericClusterHost):
-                self.logger.debug("Found GenericClusterHost " + str(
-                    host) + ". Rewriting it to a ClusterHost in default namespace now.")
+                self.logger.debug("Found GenericClusterHost %s,"
+                                  "Rewriting it to a ClusterHost in default namespace now.", str(host))
                 host = ClusterHost("default", host.pod_labels)
             if not isinstance(host, ClusterHost):
                 raise ValueError("Only ClusterHost targets are supported by this Orchestrator. Host: " + str(
                     host) + ", hostString: " + host_string)
-            self.logger.debug("Searching service for host " + str(host))
+            self.logger.debug("Searching service for host %s", str(host))
             services_for_host = [svc for svc in self._current_services if host.matches(svc)]
-            self.logger.debug("Found services {} for host {} ".format([svc.metadata for svc in services_for_host],
-                                                                      host))
+            self.logger.debug("Found services %s for host %s ",
+                              [svc.metadata for svc in services_for_host], host)
             rewritten_ports = self._rewrite_ports_for_host(target_dict[host_string], services_for_host)
-            self.logger.debug("Rewritten ports: " + str(rewritten_ports))
+            self.logger.debug("Rewritten ports: %s", str(rewritten_ports))
             port_dict_per_host[host_string] = rewritten_ports
             if not services_for_host:
                 gen_name = PROJECT_PREFIX + "-test-target-pod-"
-                target_container = k8s.client.V1Container(image=self.oci_image["target"], name="runner")
+                target_container = k8s.client.V1Container(image=self.oci_images["target"], name="runner")
                 pod_labels_tuple = (ROLE_LABEL, "test_target_pod")
                 target_pod = create_pod_manifest(host=host, additional_labels={pod_labels_tuple[0]: pod_labels_tuple[1],
                                                                                CLEANUP_LABEL: CLEANUP_ALWAYS},
@@ -169,16 +169,16 @@ class NetworkTestOrchestrator:
                 service_names_per_host[host_string] = target_pod_namespace + ":" + service_name
                 resp = api.create_namespaced_pod(namespace=target_pod_namespace, body=target_pod)
                 if isinstance(resp, k8s.client.V1Pod):
-                    self.logger.debug("Target pod " + resp.metadata.name + " created succesfully")
+                    self.logger.debug("Target pod %s created succesfully", resp.metadata.name)
                     self._current_pods.append(resp)
                 else:
-                    self.logger.error("Failed to create pod! Resp: " + str(resp))
+                    self.logger.error("Failed to create pod! Resp: %s", str(resp))
                 resp = api.create_namespaced_service(namespace=host.namespace, body=svc)
                 if isinstance(resp, k8s.client.V1Service):
-                    self.logger.debug("Target svc " + resp.metadata.name + " created succesfully")
+                    self.logger.debug("Target svc %s created succesfully", resp.metadata.name)
                     self._current_services.append(resp)
                 else:
-                    self.logger.error("Failed to create target svc! Resp: " + str(resp))
+                    self.logger.error("Failed to create target svc! Resp: %s", str(resp))
             else:
                 service_names_per_host[host_string] = services_for_host[0].metadata.namespace + ":" + services_for_host[
                     0].metadata.name
@@ -191,32 +191,32 @@ class NetworkTestOrchestrator:
         port_mappings = {}
         for from_host_string, target_dict in cases_dict.items():
             from_host = Host.from_identifier(from_host_string)
-            self.logger.debug("Searching pod for host " + str(from_host))
+            self.logger.debug("Searching pod for host %s", str(from_host))
             if not isinstance(from_host, (ClusterHost, GenericClusterHost)):
                 raise ValueError("Only ClusterHost and GenericClusterHost fromHosts are supported by this Orchestrator")
             namespaces_for_host = self._find_or_create_namespace_for_host(from_host, api)
             from_host = ClusterHost(namespaces_for_host[0].metadata.name, from_host.pod_labels)
-            self.logger.debug("Updated fromHost with found namespace: " + str(from_host))
+            self.logger.debug("Updated fromHost with found namespace: %s", str(from_host))
             pods_for_host = [pod for pod in self._current_pods if from_host.matches(pod)]
             # create pod if none for fromHost is in cluster (and add it to podsForHost)
             if not pods_for_host:
-                self.logger.debug("Creating dummy pod for host " + str(from_host))
+                self.logger.debug("Creating dummy pod for host %s", str(from_host))
                 additional_labels = {ROLE_LABEL: "from_host_dummy", CLEANUP_LABEL: CLEANUP_ALWAYS}
                 # TODO replace 'dummy' with a more suitable name to prevent potential conflicts
-                container = k8s.client.V1Container(image=self.oci_image["target"], name="dummy")
+                container = k8s.client.V1Container(image=self.oci_images["target"], name="dummy")
                 dummy = create_pod_manifest(from_host, additional_labels, PROJECT_PREFIX + "-dummy-", container)
                 resp = api.create_namespaced_pod(dummy.metadata.namespace, dummy)
                 if isinstance(resp, k8s.client.V1Pod):
-                    self.logger.debug("Dummy pod " + resp.metadata.name + " created succesfully")
+                    self.logger.debug("Dummy pod %s created succesfully", resp.metadata.name)
                     pods_for_host = [resp]
                     self._current_pods.append(resp)
                 else:
-                    self.logger.error("Failed to create dummy pod! Resp: " + str(resp))
+                    self.logger.error("Failed to create dummy pod! Resp: %s", str(resp))
             else:
-                self.logger.debug("Pods matching " + str(from_host) + " already exist: " + str(pods_for_host))
+                self.logger.debug("Pods matching %s already exist: ", str(from_host), str(pods_for_host))
             # resolve target names for fromHost and add them to resolved cases dict
             pod_identifier = pods_for_host[0].metadata.namespace + ":" + pods_for_host[0].metadata.name
-            self.logger.debug("Mapped pod_identifier: " + str(pod_identifier))
+            self.logger.debug("Mapped pod_identifier: %s", str(pod_identifier))
             from_host_mappings[from_host_string] = pod_identifier
             names_per_host, port_names_per_host = self._get_target_names_creating_them_if_missing(target_dict, api)
             to_host_mappings[from_host_string] = names_per_host
@@ -227,12 +227,11 @@ class NetworkTestOrchestrator:
 
     def _find_or_create_namespace_for_host(self, from_host, api):
         namespaces_for_host = [ns for ns in self.current_namespaces if from_host.matches(ns)]
-        self.logger.debug("Found {} namespaces for host {}: {}"
-                          .format(len(namespaces_for_host), from_host,
-                                  [ns.metadata.name for ns in namespaces_for_host]))
+        self.logger.debug("Found %s namespaces for host %s: %s", len(namespaces_for_host),#
+                          from_host, [ns.metadata.name for ns in namespaces_for_host])
         if namespaces_for_host:
             return namespaces_for_host
-        self.logger.debug("Creating namespace for host " + str(from_host))
+        self.logger.debug("Creating namespace for host %s", str(from_host))
         ns_labels = {ROLE_LABEL: "testing_namespace", CLEANUP_LABEL: CLEANUP_ALWAYS}
         if isinstance(from_host, GenericClusterHost):
             namespace_name = convert_to_resource_name(labels_to_string(from_host.namespace_labels))
@@ -240,21 +239,25 @@ class NetworkTestOrchestrator:
                 ns_labels[key] = value
         else:
             namespace_name = from_host.namespace
-        self.logger.debug("Generated namespace name '" + str(namespace_name) + "' for host " + str(from_host))
+        self.logger.debug("Generated namespace name '%s' for host %s", str(namespace_name), str(from_host))
         resp = api.create_namespace(
             k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name=namespace_name, labels=ns_labels)))
         if isinstance(resp, k8s.client.V1Namespace):
             self.logger.debug(
-                "Test namespace " + resp.metadata.name + " created succesfully, adding it to namespace list")
+                "Test namespace %s created succesfully, adding it to namespace list", resp.metadata.name)
             self.current_namespaces.append(resp)
             time.sleep(1)
-            while not api.list_namespaced_service_account(resp.metadata.name,
-                                                          field_selector="metadata.name=default").items:
-                self.logger.debug(
-                    "Waiting for kubernetes to create default service account for namespace " + resp.metadata.name)
-                time.sleep(2)
+            while True:
+                try:
+                    api.read_namespaced_service_account("default", resp.metadata.name)
+                except k8s.client.rest.ApiException as api_exception:
+                    self.logger.debug(
+                      "Waiting for kubernetes to create default service account for namespace %s", resp.metadata.name)
+                    if api_exception.reason != "Not Found":
+                        raise api_exception
+                    time.sleep(2)
             return [resp]
-        self.logger.error("Failed to create test namespace for {}! Resp: {}".format(from_host, resp))
+        self.logger.error("Failed to create test namespace for %s! Resp: %s", from_host, resp)
         return []
 
     def create_and_launch_daemon_set_runners(self, apps_api: k8s.client.AppsV1Api, core_api: k8s.client.CoreV1Api):
@@ -263,12 +266,12 @@ class NetworkTestOrchestrator:
         """
         supported_cases = [case for case in self.test_cases if _hosts_are_in_cluster(case)]
         filtered_cases = [case for case in self.test_cases if case not in supported_cases]
-        self.logger.debug("Filtered " + str(len(filtered_cases)) + " test cases: " + str(filtered_cases))
+        self.logger.debug("Filtered %s test cases: ", str(len(filtered_cases)), str(filtered_cases))
         cases_dict = merge_in_dict(supported_cases)
-        self.logger.debug("Created casesDict: " + str(cases_dict) + " from " + str(supported_cases))
+        self.logger.debug("Created casesDict: %s from ", str(cases_dict), str(supported_cases))
         concrete_cases, from_host_mappings, to_host_mappings, port_mappings = \
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
-        self.logger.debug("concreteCases: " + str(concrete_cases))
+        self.logger.debug("concreteCases: %s", str(concrete_cases))
         _create_project_namespace_if_missing(core_api)
         config_map_name = PROJECT_PREFIX + "-cases-cfgmap"
         self._create_or_update_case_config_map(config_map_name, concrete_cases, core_api)
@@ -286,12 +289,14 @@ class NetworkTestOrchestrator:
                 isinstance(c.fromHost, ClusterHost) and isinstance(c.toHost, ClusterHost)]
 
     def collect_results(self, api: k8s.client.CoreV1Api):
-        """ Queries pods of runner daemon set and waits for a corresponding configmap for each to be filled.
-            Returns the merged data of all configMaps. """
+        """
+        Queries pods of runner daemon set and waits for a corresponding configmap for each to be filled.
+        Returns the merged data of all configMaps.
+        """
         # Todo fix me!
         # api.list_node(label_selector="!node-role.kubernetes.io/master").items
         non_master_nodes = api.list_node().items
-        self.logger.debug("Found " + str(len(non_master_nodes)) + " non master nodes")
+        self.logger.debug("Found %s non master nodes", str(len(non_master_nodes)))
         daemon_pods = []
         # we re-request daemon pods until the number exactly match because pods are sometimes overprovisioned
         # and then immediately deleted, causing the target number of ConfigMaps to never be reached
@@ -304,7 +309,7 @@ class NetworkTestOrchestrator:
                 if isinstance(self.runner_daemon_set, k8s.client.V1DaemonSet):
                     break
             except k8s.client.rest.ApiException as api_exception:
-                self.logger.info("exception occured!")
+                self.logger.info("Exception occured!")
                 if api_exception.reason != "Not Found":
                     raise api_exception
             time.sleep(1)
@@ -312,7 +317,7 @@ class NetworkTestOrchestrator:
         while len(daemon_pods) != len(non_master_nodes):
             daemon_pods = api.list_namespaced_pod(PROJECT_NAMESPACE, label_selector=labels_to_string(
                 self.runner_daemon_set.spec.selector.match_labels)).items
-            self.logger.debug("Found " + str(len(daemon_pods)) + " daemon runner pods")
+            self.logger.debug("Found %s daemon runner pods", str(len(daemon_pods)))
             time.sleep(2)
         expected_result_map_names = [d.metadata.name + "-results" for d in daemon_pods]
         result_config_maps = []
@@ -326,11 +331,11 @@ class NetworkTestOrchestrator:
                     pass
                 else:
                     raise api_exception
-            self.logger.debug("Map names: " + str([m.metadata.name for m in result_config_maps]))
-            self.logger.debug("Expected names: " + str(expected_result_map_names))
+            self.logger.debug("Map names: %s", str([m.metadata.name for m in result_config_maps]))
+            self.logger.debug("Expected names: %s", str(expected_result_map_names))
             time.sleep(2)
         yamls = [yaml.safe_load(c.data["results"]) for c in result_config_maps]
-        self.logger.debug("Found following yamls in result config maps:" + str(yamls))
+        self.logger.debug("Found following yamls in result config maps:%s", str(yamls))
         times = {c.metadata.name: yaml.safe_load(c.data["runtimes"])
                  for c in result_config_maps if "runtimes" in c.data}
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
@@ -351,21 +356,21 @@ class NetworkTestOrchestrator:
         # adapt non-static values
         daemon_set_dict["metadata"]["name"] = daemon_set_name
         daemon_set_dict["metadata"]["namespace"] = PROJECT_NAMESPACE
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_image["runner"]
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_images["runner"]
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["imagePullPolicy"] = "Always"
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["name"] = "runner"
         daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
         daemon_set_dict["spec"]["template"]["spec"]["volumes"][0]["configMap"]["name"] = config_map_name
         daemon_set_dict["spec"]["template"]["spec"]["dnsPolicy"] = "ClusterFirst"
         daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = PROJECT_PREFIX + "-ds-runner"
-        self.logger.debug("daemonset_dict:\n%s" % daemon_set_dict)
+        self.logger.debug("daemonset_dict:\n%s", daemon_set_dict)
         # create daemon set
         daemonset = api.create_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, body=daemon_set_dict)
         if isinstance(daemonset, k8s.client.V1DaemonSet):
-            self.logger.debug("Succesfully created test runner DaemonSet " + daemonset.metadata.name)
+            self.logger.debug("Succesfully created test runner DaemonSet %s", daemonset.metadata.name)
             self.runner_daemon_set = daemonset
         else:
-            self.logger.error("Failed to create test runner DaemonSet: " + str(daemonset))
+            self.logger.error("Failed to create test runner DaemonSet: %s", str(daemonset))
 
     def _create_daemon_set_if_missing(self, service_account_name, config_map_name, api: k8s.client.AppsV1Api):
         # Use a Kubernetes Manifest as template and replace requiered parts:
@@ -374,10 +379,10 @@ class NetworkTestOrchestrator:
             # read existing daemon set
             daemonset = api.read_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, name=DAEMONSET_NAME)
             if isinstance(daemonset, k8s.client.V1DaemonSet):
-                self.logger.debug("Succesfully read existing test runner DaemonSet " + daemonset.metadata.name)
+                self.logger.debug("Succesfully read existing test runner DaemonSet %s", daemonset.metadata.name)
                 self.runner_daemon_set = daemonset
             else:
-                self.logger.error("Failed to read existing test runner DaemonSet: " + str(daemonset))
+                self.logger.error("Failed to read existing test runner DaemonSet: %s", str(daemonset))
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
                 self.create_daemonset(DAEMONSET_NAME, service_account_name, config_map_name, api)
@@ -421,7 +426,7 @@ class NetworkTestOrchestrator:
                 crb = create_role_binding_manifest_for_service_account(namespace, crb_name, service_account_name)
                 rbac_api.create_cluster_role_binding(crb)
             else:
-                self.logger.info("exception reason: " + api_exception.reason)
+                self.logger.info("Exception reason: %s", api_exception.reason)
                 raise api_exception
 
     def _create_missing_cluster_role(self):
@@ -431,11 +436,11 @@ class NetworkTestOrchestrator:
             rbac_api.create_cluster_role(body=cluster_role_dict)
         except k8s.client.rest.ApiException as api_exception:
             json_body = json.loads(api_exception.body)
-            self.logger.debug("ApiException Body:\n%s\n" % json_body)
+            self.logger.debug("ApiException Body:\n%s\n", json_body)
             if json_body.get("reason", "") == "AlreadyExists":
                 self.logger.info("Using existing cluster role")
             else:
-                print("Error creating cluster role: %s\n" % api_exception)
+                self.logger.error("Error creating cluster role: %s\n", api_exception)
 
     def _create_missing_service_account(self, api, service_account_name, namespace):
         """
@@ -452,7 +457,7 @@ class NetworkTestOrchestrator:
                 if isinstance(resp, k8s.client.V1ServiceAccount):
                     self.logger.debug("Succesfully created ServiceAccount for namespace %s", namespace)
                 else:
-                    self.logger.error("Could not create ServiceAccount for namespace %s Resp: %s", namespace, str(resp))
+                    self.logger.error("Could not create ServiceAccount for namespace %s Resp: %s", namespace, resp)
             else:
                 raise api_exception
 

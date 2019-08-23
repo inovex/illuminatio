@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-mandatory file for this python module
+Mandatory file for this python module
 """
 from pkg_resources import get_distribution, DistributionNotFound
 
