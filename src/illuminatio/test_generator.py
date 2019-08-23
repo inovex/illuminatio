@@ -223,9 +223,9 @@ def invert_host(host):
 
 def invert_cluster_host(host: ClusterHost):
     """
-    Returns a list of ClusterHosts with\n
-    once inverted pod label selectors,\n
-    once inverted namespace label selectors\n
+    Returns a list of ClusterHosts with
+    once inverted pod label selectors,
+    once inverted namespace label selectors
     and once both
     """
     if host.pod_labels == {}:
@@ -239,9 +239,9 @@ def invert_cluster_host(host: ClusterHost):
 
 def invert_generic_cluster_host(host: GenericClusterHost):
     """
-    Returns a list of GenericClusterHosts with\n
-    once inverted pod label selectors,\n
-    once inverted namespace label selectors\n
+    Returns a list of GenericClusterHosts with
+    once inverted pod label selectors,
+    once inverted namespace label selectors
     and once both
     """
     if host == GenericClusterHost({}, {}):

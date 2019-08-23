@@ -1,5 +1,5 @@
 """
-file for the creation of networking rules
+File for the creation of networking rules
 """
 from collections import namedtuple
 import kubernetes as k8s
@@ -22,14 +22,14 @@ Conn = namedtuple("Connection", ["direction", "targets", "ports"])
 
 def dict_mapper(obj):
     """
-    converts an object to a dictionary if possible
+    Converts an object to a dictionary if possible
     """
     return obj.to_dict() if hasattr(obj, "to_dict") else obj
 
 
 class Connection(Conn):
     """
-    class for interaction with Connection tuples
+    Class for interaction with Connection tuples
     """
     def to_dict(self) -> dict:
         """
@@ -42,7 +42,7 @@ class Connection(Conn):
 # main class
 class Rule:
     """
-    class for networking rules
+    Class for networking rules
     """
 
     def __init__(self, concerns, allowed=None):
@@ -61,14 +61,14 @@ class Rule:
 
     def to_dict(self) -> dict:
         """
-        converts a rule into a dictionary
+        Converts a rule into a dictionary
         """
         return {AFFECTED_POD_IDENTIFIER: self.concerns, "allowed": list(map(dict_mapper, self.allowed))}
 
     @classmethod
     def from_network_policy(cls, net_pol: k8s.client.V1NetworkPolicy):
         """
-        returns a class containing the concerns and rules of a given NetworkPolicy
+        Returns a class containing the concerns and rules of a given NetworkPolicy
         """
         concerns = {NAMESPACE: net_pol.metadata.namespace}
         if net_pol.spec.pod_selector.match_labels is not None:
@@ -90,7 +90,7 @@ class Rule:
 # helper function
 def build_connections(verb, target, ports):
     """
-    helper function to build Connection tuples
+    Helper function to build Connection tuples
     """
     out = []
     port_list = [p.port for p in ports] if (ports is not None) else [MATCH_ALL_WILDCARD]

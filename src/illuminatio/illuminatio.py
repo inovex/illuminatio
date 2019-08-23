@@ -25,7 +25,7 @@ click_log.basic_config(LOGGER)
 @click.option('--incluster', default=False, is_flag=True)
 def cli(incluster):
     """
-    load suitable kubeconfig
+    Load suitable kubeconfig
     """
     if incluster:
         k8s.config.load_incluster_config()
@@ -118,8 +118,6 @@ def execute_tests(cases, orch):
     """
     Executes all tests with given test cases
     """
-    # TODO: add a setter, initially the orchestrator was meant to be instantiated at this point,
-    # but to pass click_logging's logger it was changed to be instantiated earlier
     orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
     from_host_mappings, to_host_mappings, port_mappings = orch.create_and_launch_daemon_set_runners(
@@ -136,7 +134,7 @@ def execute_tests(cases, orch):
 
 def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, port_mappings):
     """
-    transforms all requests from raw into a more convenient format
+    Transforms all requests from raw into a more convenient format
     """
     transformed = {}
     LOGGER.debug("Raw results: %s", str(raw_results))
@@ -174,7 +172,7 @@ def render_results(results, run_time, trailing_spaces=2):
     Prints test results in a readable way
     """
     num_tests = len([p for f in results for t in results[f] for p in results[f][t]])
-    LOGGER.info("Finished running %s tests in %.4f seconds", str(num_tests), run_time)
+    LOGGER.info("Finished running %d tests in %.4f seconds", num_tests, run_time)
     if num_tests > 0:
         # this format expects 4 positional argument and a keyword widths argument w
         line_format = '{0:{w[0]}}{1:{w[1]}}{2:{w[2]}}{3:{w[3]}}'
@@ -206,7 +204,7 @@ def render_cases(cases, run_time, trailing_spaces=2):
     widths = [max([len(el) for el in l]) + trailing_spaces for l in zip(*case_string_tuples)]
     # formats string to choose each element of the given tuple or array with the according width element
     line_format = '{0[0]:{w[0]}}{0[1]:{w[1]}}{0[2]:{w[2]}}'
-    LOGGER.info("Generated %s cases in %.4f seconds", str(len(cases)), run_time)
+    LOGGER.info("Generated %d cases in %.4f seconds", len(cases), run_time)
     if cases:
         LOGGER.info(line_format.format(("FROM", "TO", "PORT"), w=widths))
         for case in case_string_tuples:
@@ -215,7 +213,7 @@ def render_cases(cases, run_time, trailing_spaces=2):
 
 def simplify_successful_results(results):
     """
-    removes all information besides whether the run was successful from given results
+    Removes all information besides whether the run was successful from given results
     """
     for from_host in results:
         for to_host in results[from_host]:
@@ -232,7 +230,7 @@ def simplify_successful_results(results):
               help='Whether to delete all resources or only those with cleanup policy \'on_request\'.')
 def clean(hard):
     """
-    deletes all or only specific resources created by illuminatio
+    Deletes all or only specific resources created by illuminatio
     """
     clean_up_policies = [CLEANUP_ON_REQUEST, CLEANUP_ALWAYS] if hard else [CLEANUP_ALWAYS]
     LOGGER.info("Starting cleaning resources with policies %s", clean_up_policies)

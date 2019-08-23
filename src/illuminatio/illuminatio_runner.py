@@ -16,9 +16,10 @@ import yaml
 import click
 import click_log
 import docker
-from illuminatio.host import Host, ConcreteClusterHost
-from illuminatio.k8s_util import init_test_output_config_map
 import kubernetes as k8s
+
+from illuminatio.host import Host, ConcreteClusterHost
+from illuminatio.k8s_util import create_test_output_config_map_manifest
 
 LOGGER = logging.getLogger(__name__)
 click_log.basic_config(LOGGER)
@@ -27,7 +28,7 @@ CASE_FILE_PATH = "/etc/config/cases.yaml"
 
 def build_result_string(port, target, should_be_blocked, was_blocked):
     """
-    builds and returns a test result string
+    Builds and returns a test result string
     """
     was_successful = should_be_blocked == was_blocked
     title = "Test " + target + ":" + ("-" if should_be_blocked else "") + port + (
@@ -84,17 +85,17 @@ def run_all_tests():
     return results, test_runtimes
 
 
-def get_pods_contained_in_both_lists(first_pod_list, second_pod_list):
+def get_pods_contained_in_both_lists(sender_pods, pods_on_node):
     """
     Returns a list with pods contained in both given lists
     """
-    sender_pods_on_node = [pod for pod in first_pod_list if pod_list_contains_pod(pod, second_pod_list)]
+    sender_pods_on_node = [pod for pod in sender_pods if pod_list_contains_pod(pod, pods_on_node)]
     return sender_pods_on_node
 
 
 def run_tests_for_sender_pod(sender_pod, cases):
     """
-    Runs a bunch of test cases from the network namespace of a given pod.
+    Runs test cases from the network namespace of a given pod.
     """
     from_host_string = sender_pod.to_identifier()
     runtimes = {}
@@ -198,8 +199,10 @@ def extract_results_from_nmap_xml_file(result_file, port_on_nums, target):
 
 
 def get_domain_name_for(host_string):
-    """ Replaces namespace:serviceName syntax with serviceName.namespace one,
-        appending default as namespace if None exists """
+    """
+    Replaces namespace:serviceName syntax with serviceName.namespace one,
+    appending default as namespace if None exists
+    """
     return ".".join(reversed((("" if ":" in host_string else "default:") + host_string).split(":")))
 
 
@@ -259,7 +262,7 @@ def get_cri_network_namespace(host_namespace, host_name):
     cmd1 = ["crictl", "pods", "--name=" + str(host_name), "--namespace=" + str(host_namespace), "-q", "--no-trunc"]
     prc1 = subprocess.run(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc1.returncode:
-        LOGGER.error("Getting pods for name %s in namespace %s", str(host_name), str(host_namespace)
+        LOGGER.error("Getting pods for name %s in namespace %s", host_name, host_namespace
                      + " failed! output:")
         LOGGER.error(prc1.stderr)
     pod_id = prc1.stdout.strip()
@@ -267,7 +270,7 @@ def get_cri_network_namespace(host_namespace, host_name):
     cmd2 = ["crictl", "inspectp", pod_id]
     prc2 = subprocess.run(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc2.returncode:
-        LOGGER.error("Getting pods network namespace for pod %s failed! output:", str(pod_id))
+        LOGGER.error("Getting pods network namespace for pod %s failed! output:", pod_id)
         LOGGER.error(prc2.stderr)
     net_ns = extract_network_namespace(prc2.stdout)
     return net_ns
@@ -275,7 +278,7 @@ def get_cri_network_namespace(host_namespace, host_name):
 
 def build_nsenter_cmd_for_pod(pod_namespace, pod_name):
     """
-    returns the entire nsenter command to jump into the pod's network namespace
+    Returns the entire nsenter command to jump into the pod's network namespace
     """
     container_runtime_name = os.environ["CONTAINER_RUNTIME_NAME"]
     if container_runtime_name == "containerd":
@@ -295,7 +298,7 @@ def get_pods_on_node():
     Returns all pods on the node of the pod
     """
     hostname = os.environ.get("RUNNER_NODE")
-    LOGGER.debug("RUNNER_NODE=%s", str(hostname))
+    LOGGER.debug("RUNNER_NODE=%s", hostname)
     k8s.config.load_incluster_config()
     api = k8s.client.CoreV1Api()
     # ToDo error handling!
@@ -310,7 +313,7 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     api = k8s.client.CoreV1Api()
 
     LOGGER.info("Storing output to ConfigMap")
-    cfg_map = init_test_output_config_map(namespace, name, data=yaml.dump(results))
+    cfg_map = create_test_output_config_map_manifest(namespace, name, data=yaml.dump(results))
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
     try:

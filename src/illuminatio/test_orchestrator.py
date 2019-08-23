@@ -9,8 +9,8 @@ import yaml
 
 import kubernetes as k8s
 from illuminatio.host import ClusterHost, GenericClusterHost, Host
-from illuminatio.k8s_util import init_pod, init_role_binding_for_service_account, \
-    init_service_account_for_runners, init_svc, labels_to_string, update_role_binding
+from illuminatio.k8s_util import create_pod_manifest, create_role_binding_manifest_for_service_account, \
+    create_service_account_manifest_for_runners, create_service_manifest, labels_to_string, update_role_binding_manifest
 from illuminatio.test_case import merge_in_dict
 from illuminatio.util import PROJECT_NAMESPACE, PROJECT_PREFIX, CLEANUP_LABEL, ROLE_LABEL, CLEANUP_ALWAYS, \
     CLEANUP_ON_REQUEST, DAEMONSET_NAME
@@ -71,20 +71,20 @@ class NetworkTestOrchestrator:
         self._current_services = []
         self.current_namespaces = []
         self.runner_daemon_set = None
-        self.docker_image = {}
+        self.oci_image = {}
         self.logger = log
 
     def set_runner_image(self, runner_image):
         """
         Updates the runner docker image
         """
-        self.docker_image["runner"] = runner_image
+        self.oci_image["runner"] = runner_image
 
     def set_target_image(self, target_image):
         """
         Updates the target docker image
         """
-        self.docker_image["target"] = target_image
+        self.oci_image["target"] = target_image
 
     def refresh_cluster_resources(self, api: k8s.client.CoreV1Api):
         """
@@ -132,7 +132,7 @@ class NetworkTestOrchestrator:
         return rewritten_ports
 
     def _get_target_names_creating_them_if_missing(self, target_dict, api: k8s.client.CoreV1Api):
-        svc_names_per_host = {}
+        service_names_per_host = {}
         port_dict_per_host = {}
         for host_string in target_dict.keys():
             host = Host.from_identifier(host_string)
@@ -152,20 +152,21 @@ class NetworkTestOrchestrator:
             port_dict_per_host[host_string] = rewritten_ports
             if not services_for_host:
                 gen_name = PROJECT_PREFIX + "-test-target-pod-"
-                target_container = k8s.client.V1Container(image=self.docker_image["target"], name="runner")
+                target_container = k8s.client.V1Container(image=self.oci_image["target"], name="runner")
                 pod_labels_tuple = (ROLE_LABEL, "test_target_pod")
-                target_pod = init_pod(host=host, additional_labels={pod_labels_tuple[0]: pod_labels_tuple[1],
-                                                                    CLEANUP_LABEL: CLEANUP_ALWAYS},
-                                      generate_name=gen_name,
-                                      container=target_container)
+                target_pod = create_pod_manifest(host=host, additional_labels={pod_labels_tuple[0]: pod_labels_tuple[1],
+                                                                               CLEANUP_LABEL: CLEANUP_ALWAYS},
+                                                 generate_name=gen_name,
+                                                 container=target_container)
                 target_ports = [int(port.replace("-", "")) for port in port_dict_per_host[host_string].values()]
                 # ToDo we should use the cluser ip instead of the DNS names
                 # so we don't need the lookups
-                svc_name = "svc-" + convert_to_resource_name(host.to_identifier())
-                svc = init_svc(host, {pod_labels_tuple[0]: pod_labels_tuple[1]},
-                               {ROLE_LABEL: "test_target_svc", CLEANUP_LABEL: CLEANUP_ALWAYS}, svc_name, target_ports)
+                service_name = "svc-" + convert_to_resource_name(host.to_identifier())
+                svc = create_service_manifest(host, {pod_labels_tuple[0]: pod_labels_tuple[1]},
+                                              {ROLE_LABEL: "test_target_svc", CLEANUP_LABEL: CLEANUP_ALWAYS},
+                                              service_name, target_ports)
                 target_pod_namespace = host.namespace
-                svc_names_per_host[host_string] = target_pod_namespace + ":" + svc_name
+                service_names_per_host[host_string] = target_pod_namespace + ":" + service_name
                 resp = api.create_namespaced_pod(namespace=target_pod_namespace, body=target_pod)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug("Target pod " + resp.metadata.name + " created succesfully")
@@ -179,9 +180,9 @@ class NetworkTestOrchestrator:
                 else:
                     self.logger.error("Failed to create target svc! Resp: " + str(resp))
             else:
-                svc_names_per_host[host_string] = services_for_host[0].metadata.namespace + ":" + services_for_host[
+                service_names_per_host[host_string] = services_for_host[0].metadata.namespace + ":" + services_for_host[
                     0].metadata.name
-        return svc_names_per_host, port_dict_per_host
+        return service_names_per_host, port_dict_per_host
 
     def _find_or_create_cluster_resources_for_cases(self, cases_dict, api: k8s.client.CoreV1Api):
         resolved_cases = {}
@@ -201,8 +202,9 @@ class NetworkTestOrchestrator:
             if not pods_for_host:
                 self.logger.debug("Creating dummy pod for host " + str(from_host))
                 additional_labels = {ROLE_LABEL: "from_host_dummy", CLEANUP_LABEL: CLEANUP_ALWAYS}
-                container = k8s.client.V1Container(image=self.docker_image["target"], name="dummy")
-                dummy = init_pod(from_host, additional_labels, PROJECT_PREFIX + "-dummy-", container)
+                # TODO replace 'dummy' with a more suitable name to prevent potential conflicts
+                container = k8s.client.V1Container(image=self.oci_image["target"], name="dummy")
+                dummy = create_pod_manifest(from_host, additional_labels, PROJECT_PREFIX + "-dummy-", container)
                 resp = api.create_namespaced_pod(dummy.metadata.namespace, dummy)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug("Dummy pod " + resp.metadata.name + " created succesfully")
@@ -349,7 +351,7 @@ class NetworkTestOrchestrator:
         # adapt non-static values
         daemon_set_dict["metadata"]["name"] = daemon_set_name
         daemon_set_dict["metadata"]["namespace"] = PROJECT_NAMESPACE
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.docker_image["runner"]
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_image["runner"]
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["imagePullPolicy"] = "Always"
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["name"] = "runner"
         daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
@@ -411,12 +413,12 @@ class NetworkTestOrchestrator:
         crb_name = PROJECT_PREFIX + "-runner-crb"
         try:
             cluster_role_binding = rbac_api.read_cluster_role_binding(name=crb_name)
-            cluster_role_binding = update_role_binding(cluster_role_binding, namespace, service_account_name)
+            cluster_role_binding = update_role_binding_manifest(cluster_role_binding, namespace, service_account_name)
             rbac_api.patch_cluster_role_binding(crb_name, cluster_role_binding)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
                 self.logger.info("Creating cluster role binding")
-                crb = init_role_binding_for_service_account(namespace, crb_name, service_account_name)
+                crb = create_role_binding_manifest_for_service_account(namespace, crb_name, service_account_name)
                 rbac_api.create_cluster_role_binding(crb)
             else:
                 self.logger.info("exception reason: " + api_exception.reason)
@@ -445,7 +447,7 @@ class NetworkTestOrchestrator:
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
                 # it does not exists, so we have to freshly create it
-                service_account = init_service_account_for_runners(service_account_name, namespace)
+                service_account = create_service_account_manifest_for_runners(service_account_name, namespace)
                 resp = api.create_namespaced_service_account(namespace, service_account)
                 if isinstance(resp, k8s.client.V1ServiceAccount):
                     self.logger.debug("Succesfully created ServiceAccount for namespace %s", namespace)
