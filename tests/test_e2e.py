@@ -30,7 +30,7 @@ def validate_illuminatio_was_successful(results_dict):
 def create_resources_and_run_illuminatio(resource_manifest, results_yaml_file):
     config.load_kube_config()
     k8s_client = client.ApiClient()
-    create_from_yaml(k8s_client, resource_manifest, verbose=False, wait_until_ready=True)
+    create_from_yaml(k8s_client, resource_manifest, wait_until_ready=True)
     # run illuminatio and store the results to a yaml file
     res = subprocess.run(["illuminatio", "clean", "run", "--runner-image=localhost:5000/illuminatio-runner:dev",
                           "-o", results_yaml_file],
