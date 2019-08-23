@@ -28,7 +28,7 @@ minikube start \
 # Setup the minikube docker registry and calico
 minikube addons enable registry
 
-if [[ -n ${CI} ]];
+if [[ -n "${CI:-}" ]];
 then
     sudo chown -R travis: /home/travis/.minikube/
 fi
@@ -37,7 +37,7 @@ kubectl apply -f "https://docs.projectcalico.org/${CALICO_VERSION}/getting-start
 kubectl apply -f local_dev/docker-registry.yml
 
 # Configure containerd to use the local registry
-if [[ -n ${CI} ]];
+if [[ -n "${CI:-}" ]];
 then
     sudo mkdir -p /etc/containerd
     sudo tee /etc/containerd/config.toml <<EOF
