@@ -6,6 +6,8 @@ import yaml
 from kubernetes import client
 from kubernetes.utils.create_from_yaml import FailToCreateError
 
+# TODO consider upstreaming this
+
 
 def create_from_yaml(
         k8s_client,
