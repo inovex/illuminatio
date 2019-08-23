@@ -33,7 +33,6 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
 @click.command()
 @click_log.simple_verbosity_option(logger)
 def cli():
-    run_times = {"overall": "error"}
     if not os.path.exists(case_file_path):
         raise RuntimeError("Could not find cases.yaml in %s!" % case_file_path)
     results, test_run_times = run_all_tests()
@@ -47,7 +46,7 @@ def cli():
     logger.debug("Output EnvVars: RUNNER_NAMESPACE=%s, RUNNER_NAME=%s", namespace, name)
     if namespace is not None and name is not None:
         store_results_to_cfg_map(results, namespace, name + "-results",
-                                 {"overall": run_times["overall"], "tests": test_run_times})
+                                 {"tests": test_run_times})
     logger.info("Finished running tests. Results:")
     logger.info(results)
     # Sleep some time until container is killed. TODO: continuous mode ???
@@ -269,10 +268,18 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     cfg_map = init_test_output_config_map(namespace, name, data=yaml.dump(results))
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
-    config_map_in_cluster = api.list_namespaced_config_map(namespace, field_selector="metadata.name=" + name).items
-    if config_map_in_cluster:
+    try:
         api_response = api.patch_namespaced_config_map(name, namespace, cfg_map)
         logger.info(api_response)
-    else:
-        api_response = api.create_namespaced_config_map(namespace, cfg_map)
-        logger.info(api_response)
+    except k8s.client.rest.ApiException as e:
+        json_body = json.loads(e.body)
+        logger.debug("ApiException Body:\n%s\n" % json_body)
+        if json_body.get("code") == 404:
+            logger.info("Creating new ConfigMap")
+            api_response = api.create_namespaced_config_map(namespace, cfg_map)
+            logger.debug(api_response)
+        else:
+            logger.error("Code was: " + json_body.get("code"))
+            logger.error("An error occured while checking for an existing ConfigMap")
+            exit(1)
+            # TODO add retry logic e.g. with https://pypi.org/project/retry/

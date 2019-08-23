@@ -67,8 +67,8 @@ Test your newly created NetworkPolicy:
 ```bash
 illuminatio clean run
 Starting cleaning resources with policies ['on-request', 'always']
-Deleting namespacess [] with cleanup policy on-request
-Deleting namespacess [] with cleanup policy always
+Deleting namespaces [] with cleanup policy on-request
+Deleting namespaces [] with cleanup policy always
 Deleting DSs in default with cleanup policy on-request
 Deleting pods in default with cleanup policy on-request
 Deleting svcs in default with cleanup policy on-request
@@ -140,6 +140,19 @@ Commands:
   clean
   run
 ```
+
+## Compatibility
+
+illuminatio 1.1 was tested using:
+- python 3.5.2
+- pip 19.2.1
+
+illuminatio 1.1 is confirmed to be working properly with the following kubernetes environments:
+
+- minikube v0.34.1, kubernetes v1.13.3
+- Google Kubernetes Engine, v1.12.8-gke.10
+- kubeadm 1.15.0-00, kubernetes v1.15.2
+
 
 ## References
 

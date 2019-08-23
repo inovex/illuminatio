@@ -149,9 +149,9 @@ class GenericClusterHost(Host):
             return (obj.metadata.labels is not None
                     and all(item in obj.metadata.labels.items() for item in self.namespace_labels.items()))
         else:
-            # we need to request the namepsace from the cluster to match the labels TODO: find better solution
+            # we need to request the namespace from the cluster to match the labels TODO: find better solution
             namespace = \
-                k8s.client.CoreV1Api().list_namespace(field_selector="metadata.name=" + obj.metadata.namespace).items[0]
+                k8s.client.CoreV1Api().read_namespace(obj.metadata.namespace)
             namespace_matches = (namespace.metadata.labels is not None and
                                  all(item in namespace.metadata.labels.items() for item in
                                      self.namespace_labels.items()))
