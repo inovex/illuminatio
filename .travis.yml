@@ -186,37 +186,42 @@ jobs:
 
     # merely build the image for untagged commits
     - stage: build
-      name: "build image"
+      name: "build images"
       if: (tag IS blank)
       sudo: required
       services:
         - docker
       script:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
+      - docker build -t "${TRAVIS_REPO_SLUG}":latest .
 
-    # build and push the latest image for master commits
+    # build and push the latest images for master commits
     - stage: build
-      name: "push latest image"
+      name: "push latest images"
       if: (branch = master AND NOT type = pull_request)
       sudo: required
       services:
         - docker
       script:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
+      - docker build -t "${TRAVIS_REPO_SLUG}":latest .
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
+      - docker push "${TRAVIS_REPO_SLUG}":latest
 
     # build and push the tagged image for tagged commits
     - stage: build
-      name: "push tagged image"
+      name: "push tagged images"
       if: (tag IS present)
       sudo: required
       services:
         - docker
       script:
       - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
+      - docker build -t "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}" .
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
+      - docker push "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}"
 
     # merely build the python package for untagged commits
     - stage: build
