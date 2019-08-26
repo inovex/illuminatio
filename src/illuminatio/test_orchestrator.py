@@ -51,7 +51,7 @@ def _hosts_are_in_cluster(case):
                 for host in [case.from_host, case.to_host]])
 
 
-# TODO refactor with above method / at least use already polled namespaces in self._currentNamespaces
+# TODO build and use an internal cache containing all namespaces to work on
 def _create_project_namespace_if_missing(api: k8s.client.CoreV1Api):
     namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
     namespace_list = api.list_namespace(label_selector=labels_to_string(namespace_labels))
