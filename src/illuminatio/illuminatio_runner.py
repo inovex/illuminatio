@@ -2,12 +2,11 @@
 This file contains the implementation of the illuminatio runner which
 actively executes network policy tests inside the kubernetes cluster itself
 """
-
 import json
 import logging
 import os
-import subprocess
 import socket
+import subprocess
 import tempfile
 import time
 from xml.etree import ElementTree
@@ -17,6 +16,7 @@ import click
 import click_log
 import docker
 import kubernetes as k8s
+from nsenter import Namespace
 
 from illuminatio.host import Host, ConcreteClusterHost
 from illuminatio.k8s_util import create_test_output_config_map_manifest
@@ -100,20 +100,19 @@ def run_tests_for_sender_pod(sender_pod, cases):
     """
     from_host_string = sender_pod.to_identifier()
     runtimes = {}
-    nsenter_cmd = build_nsenter_cmd_for_pod(sender_pod.namespace, sender_pod.name)
+    network_ns = get_network_ns_of_pod(sender_pod.namespace, sender_pod.name)
+    # TODO check if network ns is None -> HostNetwork is set
     results = {}
     for target, ports in cases[from_host_string].items():
         start_time = time.time()
-        results[target] = run_tests_for_target(nsenter_cmd, ports, target)
+        results[target] = run_tests_for_target(network_ns, ports, target)
         runtimes[target] = time.time() - start_time
     return results, runtimes
 
 
-def run_tests_for_target(enter_net_ns_cmd, ports, target):
+def run_tests_for_target(network_ns, ports, target):
     """
-    This function executes the given command to jump into a desired network namespace
-    from which it then does an nmap scan on several ports against a target.
-    The results are converted from XML and returned as a dictionary.
+    Enters a desired network namespace and attempts to reach a target on a list of ports.
     """
     # resolve host directly here
     # https://stackoverflow.com/questions/2805231/how-can-i-do-dns-lookups-in-python-including-referring-to-etc-hosts
@@ -134,11 +133,13 @@ def run_tests_for_target(enter_net_ns_cmd, ports, target):
         # remove the need for nmap!
         # e.g. https://gist.github.com/betrcode/0248f0fda894013382d7
         # nmap that target TODO: handle None ip
+        # Replace bare nmap call with a better integrated solution like: https://pypi.org/project/python-nmap/ ?
         nmap_cmd = ["nmap", "-oX", result_file.name, "-Pn", "-p", port_string, svc_ip]
-        cmd = enter_net_ns_cmd + nmap_cmd
-        LOGGER.info("running nmap with cmd %s", cmd)
-        prc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if prc.returncode:
+        LOGGER.info("running nmap with cmd %s", nmap_cmd)
+        prc = None
+        with Namespace(network_ns, 'net'):
+            prc = subprocess.run(nmap_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if prc is None or prc.returncode:
             LOGGER.error("Executing nmap in foreign net ns failed! output:")
             LOGGER.error(prc.stderr)
             LOGGER.debug(prc)
@@ -240,10 +241,9 @@ def get_docker_network_namespace(pod_namespace, pod_name):
     return net_ns
 
 
-def extract_network_namespace(inspectp_result):
+def extract_cri_network_namespace(inspectp_result):
     """
-    Extracts the network namespace information from
-    a 'crictl inspectp' result
+    Extracts the the path of the network namespace of a pod's crictl inspectp output.
     """
     json_object = json.loads(inspectp_result)
     net_ns = None
@@ -252,6 +252,7 @@ def extract_network_namespace(inspectp_result):
             continue
         net_ns = namespace["path"]
         break
+
     return net_ns
 
 
@@ -272,13 +273,13 @@ def get_cri_network_namespace(host_namespace, host_name):
     if prc2.returncode:
         LOGGER.error("Getting pods network namespace for pod %s failed! output:", pod_id)
         LOGGER.error(prc2.stderr)
-    net_ns = extract_network_namespace(prc2.stdout)
-    return net_ns
+
+    return extract_cri_network_namespace(prc2.stdout)
 
 
-def build_nsenter_cmd_for_pod(pod_namespace, pod_name):
+def get_network_ns_of_pod(pod_namespace, pod_name):
     """
-    Returns the entire nsenter command to jump into the pod's network namespace
+    Returns the network namespace of a pod
     """
     container_runtime_name = os.environ["CONTAINER_RUNTIME_NAME"]
     if container_runtime_name == "containerd":
@@ -288,14 +289,13 @@ def build_nsenter_cmd_for_pod(pod_namespace, pod_name):
     else:
         # TODO add more runtimes to support
         raise ValueError("the container runtime '%s' is not supported" % container_runtime_name)
-    # make use of https://github.com/zalando/python-nsenter + ns_type netns should be enough
-    # --> https://github.com/zalando/python-nsenter/blob/master/nsenter/__init__.py#L42-L45
-    return ["nsenter", "-t", net_ns, "--net", "--"]
+
+    return net_ns
 
 
 def get_pods_on_node():
     """
-    Returns all pods on the node of the pod
+    Returns all pods on the node of this pod
     """
     hostname = os.environ.get("RUNNER_NODE")
     LOGGER.debug("RUNNER_NODE=%s", hostname)
