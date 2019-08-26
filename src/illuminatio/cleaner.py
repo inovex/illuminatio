@@ -34,6 +34,10 @@ class Cleaner:
         Deletes all services in a list of namespaces
         """
         def delete_collection_namespaced_service(namespace, label_selector=None):
+            """
+            Wrapper Method for deleting namespaced services by label,
+            as delete_namespaced_service does not provide this feature.
+            """
             if label_selector is None:
                 label_selector = labels_to_string({CLEANUP_LABEL: cleanup_policy})
             responses = []
