@@ -181,7 +181,7 @@ The logo was created by Pia Blum.
 ## Contributing
 
 We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
-
+This project uses the [standard github flow](https://help.github.com/en/articles/creating-a-pull-request-from-a-fork).
 For more information on developing illuminatio refer to [the development docs](docs/developing.md).
 
 ## License
