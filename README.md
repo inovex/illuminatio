@@ -143,16 +143,18 @@ Commands:
 
 ## Docker Usage
 
-Using an online cluster:
+Note: If you are using a minikube cluster make sure to use the following configuration:
 ```
-docker run -it -v ~/.kube:/root/config:ro -v ~/.minikube:/root/.minikube:ro inovex/illuminatio clean run
+minikube config set embed-certs true
+```
+Also make sure to pass the `--net=host` flag, otherwise your docker container will not be able to reach the VM hosting your cluster.
+```
+docker run -it --net=host -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
-Using minikube:
-Make sure to replace all absolute paths in your kubeconfig with paths that are relative to your kubeconfig:
-`/home/user/.minikube` -> `../.minikube`
+For clusters on external machines you can omit the flag:
 ```
-docker run -it --net=host -v ~/.kube:/root/.kube:ro -v ~/.minikube:/root/.minikube:ro inovex/illuminatio illuminatio clean run
+docker run -it -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
 ## Compatibility

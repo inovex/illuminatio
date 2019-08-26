@@ -7,6 +7,7 @@ CALICO_VERSION="${CALICO_VERSION:-v3.8}"
 
 # Setup minikube
 minikube delete
+minikube config set embed-certs true
 minikube start \
     --memory 4096 \
     --cpus 4 \
