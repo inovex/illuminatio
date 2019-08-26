@@ -100,7 +100,8 @@ class Cleaner:
         """
         responses = []
         for namespace in namespaces:
-            self.logger.info("Deleting %s in with cleanup policy %s", resource_name, str(namespace), cleanup_policy)
+            self.logger.info("Deleting %s in namespace %s with cleanup policy %s",
+                             resource_name, str(namespace), cleanup_policy)
             try:
                 resp = method(namespace, label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy}))
                 responses.append(resp)

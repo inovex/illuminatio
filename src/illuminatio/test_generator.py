@@ -134,7 +134,7 @@ class NetworkTestCaseGenerator:
                     # All hosts are allowed to reach (on some ports or all) => results from ALLOW all
                     if "*" in ports_per_host[match_all_host]:
                         self.logger.info("Not generating negative tests for host %s"
-                          "as all connections to it are allowed", str(host))
+                                         "as all connections to it are allowed", str(host))
                     else:
                         cases.append(NetworkTestCase(match_all_host, host,
                                                      rand_port(ports_per_host[match_all_host]), False))

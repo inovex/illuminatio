@@ -252,7 +252,7 @@ class NetworkTestOrchestrator:
                     api.read_namespaced_service_account("default", resp.metadata.name)
                 except k8s.client.rest.ApiException as api_exception:
                     self.logger.debug(
-                      "Waiting for kubernetes to create default service account for namespace %s", resp.metadata.name)
+                        "Waiting for kubernetes to create default service account for namespace %s", resp.metadata.name)
                     if api_exception.reason != "Not Found":
                         raise api_exception
                     time.sleep(2)
