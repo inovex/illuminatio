@@ -341,8 +341,7 @@ class NetworkTestOrchestrator:
             logger.error("Failed to create test runner DaemonSet: " + str(daemonset))
 
     def _create_daemon_set_if_missing(self, service_account_name, config_map_name, api: k8s.client.AppsV1Api):
-        # Use a Kubernetes Manifest as template and replace requiered parts:
-        # e.g. https://github.com/kubernetes-client/python/blob/master/examples/create_deployment_from_yaml.py
+        # Use a Kubernetes Manifest as template and replace required parts
         try:
             # read existing daemon set
             daemonset = api.read_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, name=DAEMONSET_NAME)
