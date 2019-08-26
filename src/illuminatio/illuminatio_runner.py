@@ -11,9 +11,15 @@ import tempfile
 import time
 from xml.etree import ElementTree
 import yaml
+<<<<<<< HEAD
 
 import click
 import click_log
+=======
+from nsenter import Namespace
+from illuminatio.host import Host, ConcreteClusterHost
+from illuminatio.k8s_util import init_test_output_config_map
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
 import docker
 import kubernetes as k8s
 from nsenter import Namespace
@@ -100,7 +106,11 @@ def run_tests_for_sender_pod(sender_pod, cases):
     """
     from_host_string = sender_pod.to_identifier()
     runtimes = {}
+<<<<<<< HEAD
     network_ns = get_network_ns_of_pod(sender_pod.namespace, sender_pod.name)
+=======
+    network_ns = get_network_ns_of_pod(from_pod.namespace, from_pod.name)
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
     # TODO check if network ns is None -> HostNetwork is set
     results = {}
     for target, ports in cases[from_host_string].items():
@@ -111,9 +121,12 @@ def run_tests_for_sender_pod(sender_pod, cases):
 
 
 def run_tests_for_target(network_ns, ports, target):
+<<<<<<< HEAD
     """
     Enters a desired network namespace and attempts to reach a target on a list of ports.
     """
+=======
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
     # resolve host directly here
     # https://stackoverflow.com/questions/2805231/how-can-i-do-dns-lookups-in-python-including-referring-to-etc-hosts
     LOGGER.info("Target: %s", target)
@@ -135,14 +148,24 @@ def run_tests_for_target(network_ns, ports, target):
         # nmap that target TODO: handle None ip
         # Replace bare nmap call with a better integrated solution like: https://pypi.org/project/python-nmap/ ?
         nmap_cmd = ["nmap", "-oX", result_file.name, "-Pn", "-p", port_string, svc_ip]
+<<<<<<< HEAD
         LOGGER.info("running nmap with cmd %s", nmap_cmd)
+=======
+        logger.info("running nmap with cmd %s", nmap_cmd)
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
         prc = None
         with Namespace(network_ns, 'net'):
             prc = subprocess.run(nmap_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if prc is None or prc.returncode:
+<<<<<<< HEAD
             LOGGER.error("Executing nmap in foreign net ns failed! output:")
             LOGGER.error(prc.stderr)
             LOGGER.debug(prc)
+=======
+            logger.error("Executing nmap in foreign net ns failed! output:")
+            logger.error(prc.stderr)
+            logger.debug(prc)
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
             return {port_string: {"success": False,
                                   "error": "Couldn't nmap host %s with hostname %s" % (target, svc_dns_entry)}}
 
@@ -241,11 +264,16 @@ def get_docker_network_namespace(pod_namespace, pod_name):
     return net_ns
 
 
+<<<<<<< HEAD
 def extract_cri_network_namespace(inspectp_result):
     """
     Extracts the the path of the network namespace of a pod's crictl inspectp output.
     """
     json_object = json.loads(inspectp_result)
+=======
+def get_network_namespace(inspectp_result):
+    js = json.loads(inspectp_result)
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
     net_ns = None
     for namespace in json_object["info"]["runtimeSpec"]["linux"]["namespaces"]:
         if namespace["type"] != "network":
@@ -271,16 +299,27 @@ def get_cri_network_namespace(host_namespace, host_name):
     cmd2 = ["crictl", "inspectp", pod_id]
     prc2 = subprocess.run(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc2.returncode:
+<<<<<<< HEAD
         LOGGER.error("Getting pods network namespace for pod %s failed! output:", pod_id)
         LOGGER.error(prc2.stderr)
+=======
+        logger.error("Getting pods network namespace for pod " + str(pod_id) + " failed! output:")
+        logger.error(prc2.stderr)
+
+    return get_network_namespace(prc2.stdout)
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
 
     return extract_cri_network_namespace(prc2.stdout)
 
+<<<<<<< HEAD
 
 def get_network_ns_of_pod(pod_namespace, pod_name):
     """
     Returns the network namespace of a pod
     """
+=======
+def get_network_ns_of_pod(pod_namespace, pod_name):
+>>>>>>> ce30cfc5fcd1865c188f1c7fae16d35f3e8da6ca
     container_runtime_name = os.environ["CONTAINER_RUNTIME_NAME"]
     if container_runtime_name == "containerd":
         net_ns = get_cri_network_namespace(pod_namespace, pod_name)
