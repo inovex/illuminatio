@@ -141,6 +141,22 @@ Commands:
   run
 ```
 
+## Docker Usage
+
+Note: If you are using a minikube cluster make sure to use the following configuration:
+```
+minikube config set embed-certs true
+```
+Also make sure to pass the `--net=host` flag, otherwise your docker container will not be able to reach the VM hosting your cluster.
+```
+docker run -it --net=host -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
+```
+
+For clusters on external machines you merely need the kubeconfig:
+```
+docker run -it -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
+```
+
 ## Compatibility
 
 illuminatio 1.1 was tested using:
