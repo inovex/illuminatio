@@ -152,7 +152,7 @@ Also make sure to pass the `--net=host` flag, otherwise your docker container wi
 docker run -it --net=host -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
-For clusters on external machines you can omit the flag:
+For clusters on external machines you merely need the kubeconfig:
 ```
 docker run -it -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
 ```
