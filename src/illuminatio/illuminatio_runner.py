@@ -89,6 +89,7 @@ def get_pods_contained_in_both_lists(sender_pods, pods_on_node):
     """
     Returns a list with pods contained in both given lists
     """
+    # TODO: do this is a more performant way, e.g. convert one list into a dict
     sender_pods_on_node = [pod for pod in sender_pods if pod_list_contains_pod(pod, pods_on_node)]
     return sender_pods_on_node
 
