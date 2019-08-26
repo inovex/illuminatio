@@ -227,7 +227,7 @@ class NetworkTestOrchestrator:
 
     def _find_or_create_namespace_for_host(self, from_host, api):
         namespaces_for_host = [ns for ns in self.current_namespaces if from_host.matches(ns)]
-        self.logger.debug("Found %s namespaces for host %s: %s", len(namespaces_for_host),#
+        self.logger.debug("Found %s namespaces for host %s: %s", len(namespaces_for_host),
                           from_host, [ns.metadata.name for ns in namespaces_for_host])
         if namespaces_for_host:
             return namespaces_for_host
