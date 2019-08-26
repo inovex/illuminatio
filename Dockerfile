@@ -1,5 +1,5 @@
 # latest base image without vulnerabilities
-FROM python:3.5.7-alpine3.10
+FROM python:3.7.4-alpine3.10
 
 COPY . /illuminatio
 COPY .git /illuminatio/.git
