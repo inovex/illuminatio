@@ -110,8 +110,8 @@ The following commands are executed inside the minikube vm
 
 ```bash
 # Add the following lines -> see https://github.com/kubernetes/minikube/issues/3444
-sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml  
-sudo sed -i '56i\       [plugins.cri.registry.mirrors."localhost"]' /etc/containerd/config.toml  
+sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml
+sudo sed -i '56i\       [plugins.cri.registry.mirrors."localhost"]' /etc/containerd/config.toml
 # Finally restart the containerd service
 sudo systemctl restart containerd
 # Check everything is working
