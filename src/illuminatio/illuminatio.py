@@ -73,7 +73,7 @@ def run(outfile, brief, dry, runner_image, target_image):
     # Generate Test cases
     generator = NetworkTestCaseGenerator(LOGGER)
     cases, gen_run_times = generator.generate_test_cases(net_pols.items, orch.current_namespaces)
-    LOGGER.info("Got cases: %s", str(cases))
+    LOGGER.info("Got cases: %s", cases)
     case_time = time.time()
     runtimes["generate"] = case_time - start_time
     render_cases(cases, case_time - start_time)
@@ -91,7 +91,7 @@ def run(outfile, brief, dry, runner_image, target_image):
     runtimes["run"] = result_time - start_time
     if brief:
         simplify_successful_results(results)
-    LOGGER.info("TestResults: %s", str(results))
+    LOGGER.info("TestResults: %s", results)
     if outfile:
         # write output
         LOGGER.info("Writing results to file %s", outfile)
@@ -190,7 +190,7 @@ def render_results(results, run_time, trailing_spaces=2):
                     success = results[from_host][to_host][port]["success"]
                     success_string = "success" if success else "failure"
                     if not success and "error" in results[from_host][to_host][port]:
-                        success_string = "ERR: " + results[from_host][to_host][port]["error"]
+                        success_string = "ERR: %s" % results[from_host][to_host][port]["error"]
                     LOGGER.info(line_format.format(from_host, to_host, port, success_string, w=widths))
 
 

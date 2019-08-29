@@ -82,7 +82,7 @@ class NetworkTestCaseGenerator:
                             case = NetworkTestCase(other_host, rule_host, on_port, True)
                             incoming_test_cases.append(case)
                         else:
-                            raise ValueError("Direction '" + connection.direction + "' unknown!")
+                            raise ValueError("Direction '%s' unknown!" % connection.direction)
         positive_test_time = time.time()
         runtimes["positiveTestGen"] = positive_test_time - net_pol_parsing_time
         negative_test_cases, negative_test_gen_runtimes = self.generate_negative_cases_for_incoming_cases(
@@ -229,10 +229,11 @@ def invert_cluster_host(host: ClusterHost):
     and once both
     """
     if host.pod_labels == {}:
-        return [ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, {})]
+        return [ClusterHost("%s%s" % (INVERTED_ATTRIBUTE_PREFIX, host.namespace), {})]
 
-    inverted_hosts = [ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, host.pod_labels),
-                      ClusterHost(INVERTED_ATTRIBUTE_PREFIX + host.namespace, invert_label_selector(host.pod_labels)),
+    inverted_hosts = [ClusterHost("%s%s" % (INVERTED_ATTRIBUTE_PREFIX, host.namespace), host.pod_labels),
+                      ClusterHost("%s%s" % (INVERTED_ATTRIBUTE_PREFIX, host.namespace),
+                                  invert_label_selector(host.pod_labels)),
                       ClusterHost(host.namespace, invert_label_selector(host.pod_labels))]
     return inverted_hosts
 
@@ -259,7 +260,7 @@ def invert_label_selector(labels):
     """
     Inverts a label selector
     """
-    return {INVERTED_ATTRIBUTE_PREFIX + k: v for k, v in labels.items()}
+    return {"%s%s" % (INVERTED_ATTRIBUTE_PREFIX, k): v for k, v in labels.items()}
 
 
 def label_selector_overlap(label_selector_1, label_selector_2):
