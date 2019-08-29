@@ -33,9 +33,9 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
     was_successful = should_be_blocked == was_blocked
     title = "Test %s:%s%s%s" % (target, ("-" if should_be_blocked else ""),
                                 port, (" succeeded" if was_successful else " failed"))
-    details = ("Could" + ("n't" if was_blocked else "") + " reach " + target + " on port " + port +
-               ". Expected target to " + ("not " if should_be_blocked else "") + "be reachable")
-    return title + "\n" + details
+    details = ("Could%s reach %s on port %s. Expected target to %sbe reachable") % (
+        ("n't" if was_blocked else ""), target, port, ("not " if should_be_blocked else ""))
+    return "%s\n%s" % (title, details)
 
 
 @click.command()
@@ -57,7 +57,7 @@ def cli():
         LOGGER.error("Could not store output to ConfigMap, as env vars are not set")
     LOGGER.debug("Output EnvVars: RUNNER_NAMESPACE=%s, RUNNER_NAME=%s", namespace, name)
     if namespace is not None and name is not None:
-        store_results_to_cfg_map(results, namespace, name + "-results",
+        store_results_to_cfg_map(results, namespace, "%s-results" % name,
                                  {"overall": run_times["overall"], "tests": test_run_times})
     LOGGER.info("Finished running tests. Results:")
     LOGGER.info(results)
@@ -205,7 +205,7 @@ def get_domain_name_for(host_string):
     Replaces namespace:serviceName syntax with serviceName.namespace one,
     appending default as namespace if None exists
     """
-    return ".".join(reversed((("" if ":" in host_string else "default:") + host_string).split(":")))
+    return ".".join(reversed(("%s%s" % (("" if ":" in host_string else "default:"), host_string)).split(":")))
 
 
 def get_docker_network_namespace(pod_namespace, pod_name):
@@ -229,7 +229,7 @@ def get_docker_network_namespace(pod_namespace, pod_name):
     client = docker.from_env()
     LOGGER.info("fetching pause containers")
     pause_containers = client.containers.list(
-        filters={"label": ["io.kubernetes.docker.type=podsandbox", "io.kubernetes.pod.uid="+pod_uid]})
+        filters={"label": ["io.kubernetes.docker.type=podsandbox", "io.kubernetes.pod.uid=%s" % pod_uid]})
     if len(pause_containers) != 1:
         raise ValueError("There should be only one pause container, found %d of them." % len(pause_containers))
     container = pause_containers[0]
@@ -302,7 +302,7 @@ def get_pods_on_node():
     k8s.config.load_incluster_config()
     api = k8s.client.CoreV1Api()
     # ToDo error handling!
-    return api.list_pod_for_all_namespaces(field_selector="spec.nodeName==" + hostname)
+    return api.list_pod_for_all_namespaces(field_selector="spec.nodeName==%s" % hostname)
 
 
 def store_results_to_cfg_map(results, namespace, name, runtimes=None):

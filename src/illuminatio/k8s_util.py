@@ -86,4 +86,4 @@ def labels_to_string(labels):
     """
     Concatenates a list of labels to a single string to match the labelselector pattern
     """
-    return ",".join([str(k) + "=" + str(v) for k, v in labels.items()]) if labels else "*"
+    return ",".join(["%s=%s" % (str(k), str(v)) for k, v in labels.items()]) if labels else "*"

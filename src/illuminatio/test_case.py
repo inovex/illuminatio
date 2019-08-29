@@ -24,7 +24,7 @@ class NetworkTestCase:
         self.to_host = to_host
         self._on_port = on_port
         self._should_connect = should_connect
-        self.port_string = ("" if self._should_connect else "-") + str(self._on_port)
+        self.port_string = "%s%s" % (("" if self._should_connect else "-"), str(self._on_port))
 
     def __eq__(self, other):
         if isinstance(other, NetworkTestCase):
@@ -34,8 +34,8 @@ class NetworkTestCase:
         return False
 
     def __str__(self):
-        return ("NetworkTestCase(from=" + str(self.from_host) + ", to=" + str(self.to_host) +
-                ", port=" + self.port_string + ")")
+        return "NetworkTestCase(from=%s, to=%s, port=%s)" % (
+            str(self.from_host), str(self.to_host), self.port_string)
 
     def __repr__(self):
         return self.__str__()
