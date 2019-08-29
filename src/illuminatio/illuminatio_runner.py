@@ -161,9 +161,9 @@ def pod_list_contains_pod(pod, pod_list):
     if isinstance(pod, ConcreteClusterHost):
         is_on_node = any([pod == pod_on_node for pod_on_node in pod_list])
         if is_on_node:
-            LOGGER.debug("Pod %s in namespace %s was found", str(pod.name), str(pod.namespace))
+            LOGGER.debug("Pod %s in namespace %s was found", pod.name, pod.namespace)
         else:
-            LOGGER.debug("Pod %s in namespace %s isn't on this node", str(pod.name), str(pod.namespace))
+            LOGGER.debug("Pod %s in namespace %s isn't on this node", pod.name, pod.namespace)
         return is_on_node
 
     LOGGER.error("Found non-ConcreteClusterHost host in cases: %s", pod)
@@ -178,14 +178,14 @@ def extract_results_from_nmap_xml_file(result_file, port_on_nums, target):
     hosts = [h for h in xml.getroot().iter("host")]
     if len(hosts) != 1:
         LOGGER.error(
-            "Fund %s a single host in nmap results but expected only one target to be probed", str(len(hosts)))
+            "Fund %s a single host in nmap results but expected only one target to be probed", len(hosts))
         port_string = ",".join(port_on_nums.keys())
         return {
             port_string: {"success": False,
-                          "error": "Found " + str(len(hosts)) + " hosts in nmap results, expected 1."}}
+                          "error": "Found %s hosts in nmap results, expected 1." % str(len(hosts))}}
     host_element = hosts[0]
     host_names = [hn.get("name") for hn in host_element.iter("hostname")]
-    LOGGER.debug("Found names %s for target %s", str(host_names), str(target))
+    LOGGER.debug("Found names %s for target %s", host_names, target)
     results = {}
     for port_element in host_element.iter("port"):
         port = port_element.get("portid")

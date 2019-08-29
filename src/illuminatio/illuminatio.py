@@ -137,10 +137,10 @@ def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, p
     Transforms all requests from raw into a more convenient format
     """
     transformed = {}
-    LOGGER.debug("Raw results: %s", str(raw_results))
-    LOGGER.debug("fromHostMappings: %s", str(sender_pod_mappings))
-    LOGGER.debug("toHostMappings: %s", str(receiver_pod_mappings))
-    LOGGER.debug("portMappings: %s", str(port_mappings))
+    LOGGER.debug("Raw results: %s", raw_results)
+    LOGGER.debug("fromHostMappings: %s", sender_pod_mappings)
+    LOGGER.debug("toHostMappings: %s", receiver_pod_mappings)
+    LOGGER.debug("portMappings: %s", port_mappings)
 
     # iterate over all requests
     for sender_pod, mapped_sender_pod in sender_pod_mappings.items():
@@ -155,7 +155,7 @@ def transform_results(raw_results, sender_pod_mappings, receiver_pod_mappings, p
                 LOGGER.debug("receiver_pod: %s", receiver_pod)
                 LOGGER.debug("mapped_sender_pod: %s", mapped_sender_pod)
                 LOGGER.debug("mapped_receiver_pod: %s", mapped_receiver_pod)
-                LOGGER.debug("raw_results: %s", str(raw_results))
+                LOGGER.debug("raw_results: %s", raw_results)
                 if mapped_port in raw_results[mapped_sender_pod][mapped_receiver_pod]:
                     # fetch all requests from desired ports
                     transformed[sender_pod][receiver_pod][port] = \

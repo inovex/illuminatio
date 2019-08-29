@@ -60,11 +60,11 @@ class NetworkTestCaseGenerator:
         other_hosts = []
         outgoing_test_cases = []
         incoming_test_cases = []
-        self.logger.debug("Generating test cases for %s", str(network_policies))
+        self.logger.debug("Generating test cases for %s", network_policies)
         rules = [Rule.from_network_policy(netPol) for netPol in network_policies]
         net_pol_parsing_time = time.time()
         runtimes["parse"] = net_pol_parsing_time - start_time
-        self.logger.debug("Rule: %s", str(rules))
+        self.logger.debug("Rule: %s", rules)
         for rule in rules:
             rule_host = ClusterHost(rule.concerns["namespace"], rule.concerns["podLabels"])
             if rule_host not in isolated_hosts:
@@ -134,7 +134,7 @@ class NetworkTestCaseGenerator:
                     # All hosts are allowed to reach (on some ports or all) => results from ALLOW all
                     if "*" in ports_per_host[match_all_host]:
                         self.logger.info("Not generating negative tests for host %s"
-                                         "as all connections to it are allowed", str(host))
+                                         "as all connections to it are allowed", host)
                     else:
                         cases.append(NetworkTestCase(match_all_host, host,
                                                      rand_port(ports_per_host[match_all_host]), False))
@@ -151,9 +151,9 @@ class NetworkTestCaseGenerator:
                         for h in inverted_hosts}
                     overlap_calc_time = time.time()
                     runtimes[host_string]["overlapCalc"] = overlap_calc_time - host_inversion_time
-                    self.logger.debug("InvertedHosts: %s", str(inverted_hosts))
+                    self.logger.debug("InvertedHosts: %s", inverted_hosts)
                     negative_test_targets = [h for h in inverted_hosts if len(overlaps_for_inverted_hosts[h]) <= 1]
-                    self.logger.debug("NegativeTestTargets: %s", str(negative_test_targets))
+                    self.logger.debug("NegativeTestTargets: %s", negative_test_targets)
                     # now remove the inverted hosts that are reachable
                     for target in negative_test_targets:
                         ports_for_inverted_hosts_original_host = ports_per_host[hosts_on_inverted[target]]
