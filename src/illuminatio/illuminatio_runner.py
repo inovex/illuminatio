@@ -31,8 +31,8 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
     Builds and returns a test result string
     """
     was_successful = should_be_blocked == was_blocked
-    title = "Test " + target + ":" + ("-" if should_be_blocked else "") + port + (
-        " succeeded" if was_successful else " failed")
+    title = "Test %s:%s%s%s" % (target, ("-" if should_be_blocked else ""),
+                                port, (" succeeded" if was_successful else " failed"))
     details = ("Could" + ("n't" if was_blocked else "") + " reach " + target + " on port " + port +
                ". Expected target to " + ("not " if should_be_blocked else "") + "be reachable")
     return title + "\n" + details
@@ -74,7 +74,7 @@ def run_all_tests():
     results = {}
     with open(CASE_FILE_PATH, "r") as yaml_file:
         cases = yaml.safe_load(yaml_file)
-        LOGGER.debug("Cases: %s", str(cases))
+        LOGGER.debug("Cases: %s", cases)
         test_runtimes = {}
         all_sender_pods = [Host.from_identifier(from_host_string) for from_host_string in cases]
         sender_pods_on_node = get_pods_contained_in_both_lists(all_sender_pods, pods_on_node)
@@ -149,7 +149,7 @@ def run_tests_for_target(network_ns, ports, target):
         LOGGER.info("finished running nmap")
         LOGGER.debug("Error log: %s", prc.stderr)
         # when not using shell the output from nmap contains \\n instead of newline characters
-        LOGGER.info("Stdout: %s", str(prc.stdout).split("\\n"))
+        LOGGER.info("Stdout: %s", prc.stdout).split("\\n")
         return extract_results_from_nmap_xml_file(result_file, port_on_nums, target)
 
 
@@ -261,7 +261,7 @@ def get_cri_network_namespace(host_namespace, host_name):
     Fetches and returns the path of the network namespace
     This function only works for runtimes that are CRI compliant e.g. containerd
     """
-    cmd1 = ["crictl", "pods", "--name=" + str(host_name), "--namespace=" + str(host_namespace), "-q", "--no-trunc"]
+    cmd1 = ["crictl", "pods", "--name=%s" % str(host_name), "--namespace=%s" % str(host_namespace), "-q", "--no-trunc"]
     prc1 = subprocess.run(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc1.returncode:
         LOGGER.error("Getting pods for name %s in namespace %s failed! output:", host_name, host_namespace)

@@ -108,8 +108,8 @@ class ClusterHost(Host):
 
     def to_identifier(self):
         return "%s:%s" % (str(self.namespace), ("*" if not self.pod_labels else
-                          ",".join(["%s=%s" % (str(k).strip(), str(v).strip())
-                                    for k, v in self.pod_labels.items()])))
+                                                ",".join(["%s=%s" % (str(k).strip(), str(v).strip())
+                                                          for k, v in self.pod_labels.items()])))
 
     def matches(self, obj):
         if obj is None:
@@ -177,12 +177,12 @@ class GenericClusterHost(Host):
     def to_identifier(self):
         return ("%s:%s" % (("*" if not self.namespace_labels else ",".join(
             ["%s=%s" % (str(k).strip(), str(v).strip()) for k, v in self.namespace_labels.items()])),
-            ("*" if not self.pod_labels else ",".join(["%s=%s" % (str(k).strip(), str(v).strip())
-             for k, v in self.pod_labels.items()]))))
+                           ("*" if not self.pod_labels else ",".join(["%s=%s" % (str(k).strip(), str(v).strip())
+                                                                      for k, v in self.pod_labels.items()]))))
 
     def __str__(self):
         return "GenericClusterHost(namespaceLabels=%s, podLabels=%s)" % (
-          str(self.namespace_labels), str(self.pod_labels))
+            str(self.namespace_labels), str(self.pod_labels))
 
     def __repr__(self):
         return self.__str__()

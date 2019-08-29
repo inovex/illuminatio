@@ -37,7 +37,7 @@ def get_manifest(yaml_filename):
     Reads a manifest from the illuminatio installation directory into a dictionary
     """
     manifests_path = 'manifests/'
-    data = get_data('illuminatio', "%s%s", (manifests_path, yaml_filename))
+    data = get_data('illuminatio', "%s%s" % (manifests_path, yaml_filename))
     daemonset_manifest = None
     try:
         daemonset_manifest = yaml.safe_load(data)
