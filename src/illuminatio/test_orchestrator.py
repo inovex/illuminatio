@@ -107,7 +107,7 @@ class NetworkTestOrchestrator:
         self.logger.debug("Rewriting portList %s", port_list)
         if not services_for_host:
             # assign random port, a service with matching port will be created
-            return {p: ("-" if "-" in p else "") + str(rand_port()) for p in port_list}
+            return {p: "%s%s" % (("-" if "-" in p else ""), str(rand_port())) for p in port_list}
         rewritten_ports = {}
         wild_card_ports = {p for p in port_list if "*" in p}
         numbered_ports = {p for p in port_list if "*" not in p}
@@ -142,7 +142,7 @@ class NetworkTestOrchestrator:
                 host = ClusterHost("default", host.pod_labels)
             if not isinstance(host, ClusterHost):
                 raise ValueError("Only ClusterHost targets are supported by this Orchestrator."
-                    " Host: %s, hostString: %s" % (host, host_string))
+                                 " Host: %s, hostString: %s" % (host, host_string))
             self.logger.debug("Searching service for host %s", host)
             services_for_host = [svc for svc in self._current_services if host.matches(svc)]
             self.logger.debug("Found services %s for host %s ",
