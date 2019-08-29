@@ -76,10 +76,10 @@ class ConcreteClusterHost(Host):
         return hash(str(self))
 
     def to_identifier(self):
-        return str(self.namespace) + ":" + str(self.name)
+        return "%s:%s" % (str(self.namespace), str(self.name))
 
     def __str__(self):
-        return "ConcreteClusterHost(namespace=" + str(self.namespace) + ", name=" + str(self.name) + ")"
+        return "ConcreteClusterHost(namespace=%s, name=%s)" % (str(self.namespace), str(self.name))
 
     def __repr__(self):
         return self.__str__()
@@ -107,9 +107,9 @@ class ClusterHost(Host):
         return hash(str(self))
 
     def to_identifier(self):
-        return (str(self.namespace) + ":" + ("*" if not self.pod_labels else
-                                             ",".join([str(k).strip() + "=" + str(v).strip() for k, v in
-                                                       self.pod_labels.items()])))
+        return "%s:%s" % (str(self.namespace), ("*" if not self.pod_labels else
+                          ",".join(["%s=%s" % (str(k).strip(), str(v).strip())
+                                    for k, v in self.pod_labels.items()])))
 
     def matches(self, obj):
         if obj is None:
@@ -124,10 +124,10 @@ class ClusterHost(Host):
                     and all(item in obj.spec.selector.items() for item in self.pod_labels.items()))
         if isinstance(obj, k8s.client.V1Namespace):
             return obj.metadata.name == self.namespace
-        raise ValueError("Cannot match object of type " + type(obj))
+        raise ValueError("Cannot match object of type %s" % type(obj))
 
     def __str__(self):
-        return "ClusterHost(namespace=" + str(self.namespace) + ", podLabels=" + str(self.pod_labels) + ")"
+        return "ClusterHost(namespace=%s, podLabels=%s)" % (str(self.namespace), str(self.pod_labels))
 
     def __repr__(self):
         return self.__str__()
@@ -175,14 +175,14 @@ class GenericClusterHost(Host):
         raise TypeError("obj is neither a pod nor a service")
 
     def to_identifier(self):
-        return (("*" if not self.namespace_labels else ",".join(
-            [str(k).strip() + "=" + str(v).strip() for k, v in self.namespace_labels.items()])) + ":" +
-                ("*" if not self.pod_labels else ",".join(
-                    [str(k).strip() + "=" + str(v).strip() for k, v in self.pod_labels.items()])))
+        return ("%s:%s" % (("*" if not self.namespace_labels else ",".join(
+            ["%s=%s" % (str(k).strip(), str(v).strip()) for k, v in self.namespace_labels.items()])),
+            ("*" if not self.pod_labels else ",".join(["%s=%s" % (str(k).strip(), str(v).strip())
+             for k, v in self.pod_labels.items()]))))
 
     def __str__(self):
-        return "GenericClusterHost(namespaceLabels=" + str(self.namespace_labels) + ", podLabels=" + str(
-            self.pod_labels) + ")"
+        return "GenericClusterHost(namespaceLabels=%s, podLabels=%s)" % (
+          str(self.namespace_labels), str(self.pod_labels))
 
     def __repr__(self):
         return self.__str__()
@@ -196,7 +196,7 @@ class ExternalHost(Host):
         self.ip_address = ip_address
 
     def __str__(self):
-        return "ExternalHost(ipAddress=" + str(self.ip_address) + ")"
+        return "ExternalHost(ipAddress=%s)" % str(self.ip_address)
 
     def __repr__(self):
         return self.__str__()

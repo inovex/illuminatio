@@ -26,7 +26,7 @@ def _get_other_host_from(connection_targets, rule_namespace):
         return ClusterHost(rule_namespace, connection_targets[pod_labels])
     if connection_targets == {}:
         return GenericClusterHost({}, {})
-    raise ValueError("Unknown combination of field in connection " + str(connection_targets))
+    raise ValueError("Unknown combination of field in connection %s" % connection_targets)
 
 
 def get_namespace_label_strings(namespace_labels, namespaces):
@@ -218,7 +218,7 @@ def invert_host(host):
         return invert_generic_cluster_host(host)
     if isinstance(host, ClusterHost):
         return invert_cluster_host(host)
-    raise ValueError("Host " + str(host) + " is of unsupported type")
+    raise ValueError("Host %s is of unsupported type" % host)
 
 
 def invert_cluster_host(host: ClusterHost):

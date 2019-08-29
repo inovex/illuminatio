@@ -37,7 +37,7 @@ def get_manifest(yaml_filename):
     Reads a manifest from the illuminatio installation directory into a dictionary
     """
     manifests_path = 'manifests/'
-    data = get_data('illuminatio', manifests_path + yaml_filename)
+    data = get_data('illuminatio', "%s%s", (manifests_path, yaml_filename))
     daemonset_manifest = None
     try:
         daemonset_manifest = yaml.safe_load(data)
@@ -112,7 +112,7 @@ class NetworkTestOrchestrator:
         wild_card_ports = {p for p in port_list if "*" in p}
         numbered_ports = {p for p in port_list if "*" not in p}
         service_ports = [p for svc in services_for_host for p in svc.spec.ports]
-        self.logger.debug("Svc ports: %s", str(service_ports))
+        self.logger.debug("Svc ports: %s", service_ports)
         for wildcard_port in wild_card_ports:
             prefix = "-" if "-" in wildcard_port else ""
             # choose any port for wildcard
@@ -125,7 +125,7 @@ class NetworkTestOrchestrator:
             # resulting in test to 53 being written despite no service matching them existing.
             # That error should be handled in test generation, an exception here would be fine
             if service_ports_for_port:
-                rewritten_ports[port] = prefix + str(service_ports_for_port[0].port)
+                rewritten_ports[port] = "%s%s" % (prefix, str(service_ports_for_port[0].port))
             else:
                 # TODO change to exception, handle it higher up
                 rewritten_ports[port] = "err"
@@ -196,7 +196,7 @@ class NetworkTestOrchestrator:
                 raise ValueError("Only ClusterHost and GenericClusterHost fromHosts are supported by this Orchestrator")
             namespaces_for_host = self._find_or_create_namespace_for_host(from_host, api)
             from_host = ClusterHost(namespaces_for_host[0].metadata.name, from_host.pod_labels)
-            self.logger.debug("Updated fromHost with found namespace: %s", str(from_host))
+            self.logger.debug("Updated fromHost with found namespace: %s", from_host)
             pods_for_host = [pod for pod in self._current_pods if from_host.matches(pod)]
             # create pod if none for fromHost is in cluster (and add it to podsForHost)
             if not pods_for_host:
@@ -266,12 +266,12 @@ class NetworkTestOrchestrator:
         """
         supported_cases = [case for case in self.test_cases if _hosts_are_in_cluster(case)]
         filtered_cases = [case for case in self.test_cases if case not in supported_cases]
-        self.logger.debug("Filtered %s test cases: ", str(len(filtered_cases)), str(filtered_cases))
+        self.logger.debug("Filtered %s test cases: ", len(filtered_cases), filtered_cases)
         cases_dict = merge_in_dict(supported_cases)
         self.logger.debug("Created casesDict: %s from ", cases_dict, supported_cases)
         concrete_cases, from_host_mappings, to_host_mappings, port_mappings = \
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
-        self.logger.debug("concreteCases: %s", str(concrete_cases))
+        self.logger.debug("concreteCases: %s", concrete_cases)
         _create_project_namespace_if_missing(core_api)
         config_map_name = PROJECT_PREFIX + "-cases-cfgmap"
         self._create_or_update_case_config_map(config_map_name, concrete_cases, core_api)
