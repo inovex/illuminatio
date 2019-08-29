@@ -151,7 +151,7 @@ class NetworkTestOrchestrator:
             self.logger.debug("Rewritten ports: %s", rewritten_ports)
             port_dict_per_host[host_string] = rewritten_ports
             if not services_for_host:
-                gen_name = PROJECT_PREFIX + "-test-target-pod-"
+                gen_name = "%s-test-target-pod-" % PROJECT_PREFIX
                 target_container = k8s.client.V1Container(image=self.oci_images["target"], name="runner")
                 pod_labels_tuple = (ROLE_LABEL, "test_target_pod")
                 target_pod = create_pod_manifest(host=host, additional_labels={pod_labels_tuple[0]: pod_labels_tuple[1],
@@ -161,12 +161,12 @@ class NetworkTestOrchestrator:
                 target_ports = [int(port.replace("-", "")) for port in port_dict_per_host[host_string].values()]
                 # ToDo we should use the cluser ip instead of the DNS names
                 # so we don't need the lookups
-                service_name = "svc-" + convert_to_resource_name(host.to_identifier())
+                service_name = "svc-%s" % convert_to_resource_name(host.to_identifier())
                 svc = create_service_manifest(host, {pod_labels_tuple[0]: pod_labels_tuple[1]},
                                               {ROLE_LABEL: "test_target_svc", CLEANUP_LABEL: CLEANUP_ALWAYS},
                                               service_name, target_ports)
                 target_pod_namespace = host.namespace
-                service_names_per_host[host_string] = target_pod_namespace + ":" + service_name
+                service_names_per_host[host_string] = "%s:%s" % (target_pod_namespace, service_name)
                 resp = api.create_namespaced_pod(namespace=target_pod_namespace, body=target_pod)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug("Target pod %s created succesfully", resp.metadata.name)
@@ -180,8 +180,8 @@ class NetworkTestOrchestrator:
                 else:
                     self.logger.error("Failed to create target svc! Resp: %s", resp)
             else:
-                service_names_per_host[host_string] = services_for_host[0].metadata.namespace + ":" + services_for_host[
-                    0].metadata.name
+                service_names_per_host[host_string] = "%s:%s" % (
+                    services_for_host[0].metadata.namespace, services_for_host[0].metadata.name)
         return service_names_per_host, port_dict_per_host
 
     def _find_or_create_cluster_resources_for_cases(self, cases_dict, api: k8s.client.CoreV1Api):
@@ -204,7 +204,7 @@ class NetworkTestOrchestrator:
                 additional_labels = {ROLE_LABEL: "from_host_dummy", CLEANUP_LABEL: CLEANUP_ALWAYS}
                 # TODO replace 'dummy' with a more suitable name to prevent potential conflicts
                 container = k8s.client.V1Container(image=self.oci_images["target"], name="dummy")
-                dummy = create_pod_manifest(from_host, additional_labels, PROJECT_PREFIX + "-dummy-", container)
+                dummy = create_pod_manifest(from_host, additional_labels, "%s-dummy-" % PROJECT_PREFIX, container)
                 resp = api.create_namespaced_pod(dummy.metadata.namespace, dummy)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug("Dummy pod %s created succesfully", resp.metadata.name)
@@ -215,7 +215,7 @@ class NetworkTestOrchestrator:
             else:
                 self.logger.debug("Pods matching %s already exist: ", from_host, pods_for_host)
             # resolve target names for fromHost and add them to resolved cases dict
-            pod_identifier = pods_for_host[0].metadata.namespace + ":" + pods_for_host[0].metadata.name
+            pod_identifier = "%s:%s" % (pods_for_host[0].metadata.namespace, pods_for_host[0].metadata.name)
             self.logger.debug("Mapped pod_identifier: %s", pod_identifier)
             from_host_mappings[from_host_string] = pod_identifier
             names_per_host, port_names_per_host = self._get_target_names_creating_them_if_missing(target_dict, api)
@@ -273,10 +273,10 @@ class NetworkTestOrchestrator:
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
         self.logger.debug("concreteCases: %s", concrete_cases)
         _create_project_namespace_if_missing(core_api)
-        config_map_name = PROJECT_PREFIX + "-cases-cfgmap"
+        config_map_name = "%s-cases-cfgmap" % PROJECT_PREFIX
         self._create_or_update_case_config_map(config_map_name, concrete_cases, core_api)
 
-        service_account_name = PROJECT_PREFIX + "-runner"
+        service_account_name = "%s-runner" % PROJECT_PREFIX
         self._create_missing_service_account(core_api, service_account_name, PROJECT_NAMESPACE)
         self._create_missing_cluster_role()
         self._create_missing_cluster_role_binding(service_account_name, PROJECT_NAMESPACE)
@@ -319,7 +319,7 @@ class NetworkTestOrchestrator:
                 self.runner_daemon_set.spec.selector.match_labels)).items
             self.logger.debug("Found %s daemon runner pods", len(daemon_pods))
             time.sleep(2)
-        expected_result_map_names = [d.metadata.name + "-results" for d in daemon_pods]
+        expected_result_map_names = ["%s-results" % d.metadata.name for d in daemon_pods]
         result_config_maps = []
         # retry polling results until they are all returned
         while len(result_config_maps) < len(daemon_pods):
@@ -362,7 +362,7 @@ class NetworkTestOrchestrator:
         daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
         daemon_set_dict["spec"]["template"]["spec"]["volumes"][0]["configMap"]["name"] = config_map_name
         daemon_set_dict["spec"]["template"]["spec"]["dnsPolicy"] = "ClusterFirst"
-        daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = PROJECT_PREFIX + "-ds-runner"
+        daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = "%s-ds-runner" % PROJECT_PREFIX
         self.logger.debug("daemonset_dict:\n%s", daemon_set_dict)
         # create daemon set
         daemonset = api.create_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, body=daemon_set_dict)
@@ -415,7 +415,7 @@ class NetworkTestOrchestrator:
     def _create_missing_cluster_role_binding(self, service_account_name, namespace):
         rbac_api = k8s.client.RbacAuthorizationV1Api()
         # TODO consider extracting crb_name into a cli parameter
-        crb_name = PROJECT_PREFIX + "-runner-crb"
+        crb_name = "%s-runner-crb" % PROJECT_PREFIX
         try:
             cluster_role_binding = rbac_api.read_cluster_role_binding(name=crb_name)
             cluster_role_binding = update_role_binding_manifest(cluster_role_binding, namespace, service_account_name)
