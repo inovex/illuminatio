@@ -149,7 +149,7 @@ def run_tests_for_target(network_ns, ports, target):
         LOGGER.info("finished running nmap")
         LOGGER.debug("Error log: %s", prc.stderr)
         # when not using shell the output from nmap contains \\n instead of newline characters
-        LOGGER.info("Stdout: %s", prc.stdout).split("\\n")
+        LOGGER.info("Stdout: %s", str(prc.stdout).split("\\n")
         return extract_results_from_nmap_xml_file(result_file, port_on_nums, target)
 
 
