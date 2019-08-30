@@ -3,7 +3,7 @@ google-auth==1.5.1
 python-dateutil==2.7.3
 pyyaml==4.2b4
 oauthlib==3.0.0
-kubernetes==10.0.0
+kubernetes==10.0.1
 click==6.7
 click_log==0.3.2
 docker==3.7.0
