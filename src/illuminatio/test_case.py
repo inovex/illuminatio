@@ -1,10 +1,15 @@
+"""
+File containing utilities for NetworkTestCases
+"""
 from typing import List
 import yaml
 from illuminatio.host import Host
 
 
 class NetworkTestCase:
-    """ Class that encompasses a single network test case. """
+    """
+    Class that describes a single network test case
+    """
 
     def __init__(self, from_host: Host, to_host: Host, on_port, should_connect):
         if from_host is None:
@@ -19,7 +24,7 @@ class NetworkTestCase:
         self.to_host = to_host
         self._on_port = on_port
         self._should_connect = should_connect
-        self.port_string = ("" if self._should_connect else "-") + str(self._on_port)
+        self.port_string = "%s%s" % (("" if self._should_connect else "-"), str(self._on_port))
 
     def __eq__(self, other):
         if isinstance(other, NetworkTestCase):
@@ -29,59 +34,86 @@ class NetworkTestCase:
         return False
 
     def __str__(self):
-        return ("NetworkTestCase(from=" + str(self.from_host) + ", to=" + str(self.to_host) +
-                ", port=" + self.port_string + ")")
+        return "NetworkTestCase(from=%s, to=%s, port=%s)" % (
+            str(self.from_host), str(self.to_host), self.port_string)
 
     def __repr__(self):
         return self.__str__()
 
-    def matches(self, objs):
-        return self.from_host_matches_any(objs) and self.to_host_matches_any(objs)
+    def matches(self, pods):
+        """
+        Checks whether both sender and target pod are contained in a given list
+        """
+        return self.from_host_matches_any(pods) and self.to_host_matches_any(pods)
 
-    def from_host_matches_any(self, objs):
-        return any([self.from_host.matches(obj) for obj in objs])
+    def from_host_matches_any(self, pods):
+        """
+        Checks whether a list contains the sender pod
+        """
+        return any([self.from_host.matches(pod) for pod in pods])
 
-    def to_host_matches_any(self, objs):
-        return any([self.to_host.matches(obj) for obj in objs])
+    def to_host_matches_any(self, pods):
+        """
+        Checks whether a list contains the target pod
+        """
+        return any([self.to_host.matches(pod) for pod in pods])
 
     def stringify_members(self):
+        """
+        Returns the stringified components of a NetworkTestCase
+        """
         return self.from_host.to_identifier(), self.to_host.to_identifier(), self.port_string
 
     @classmethod
-    def from_stringified_members(cls, from_host_string, to_host_string, port_string):
-        from_host = Host.from_identifier(from_host_string)
-        to_host = Host.from_identifier(to_host_string)
+    def from_stringified_members(cls, sender_pod_string, target_pod_string, port_string):
+        """
+        Creates a NetworkTestCase affecting the connectability from one pod to another on a specific port
+        """
+        sender_pod = Host.from_identifier(sender_pod_string)
+        target_pod = Host.from_identifier(target_pod_string)
         if "-" not in port_string:
-            return NetworkTestCase(from_host, to_host, port_string, True)
-        return NetworkTestCase(from_host, to_host, port_string[1:], False)
+            return NetworkTestCase(sender_pod, target_pod, port_string, True)
+        return NetworkTestCase(sender_pod, target_pod, port_string[1:], False)
 
 
 def merge_in_dict(cases: List[NetworkTestCase]):
+    """
+    Converts a list of NetworkTestCases into a dictionary
+    """
     out = {}
-    for fromHost, toHost, port in [case.stringify_members() for case in cases]:
-        if fromHost in out.keys():
-            if toHost in out[fromHost].keys():
-                out[fromHost][toHost].append(port)
+    for from_host, to_host, port in [case.stringify_members() for case in cases]:
+        if from_host in out.keys():
+            if to_host in out[from_host].keys():
+                out[from_host][to_host].append(port)
             else:
-                out[fromHost][toHost] = [port]
+                out[from_host][to_host] = [port]
         else:
-            out[fromHost] = {toHost: [port]}
+            out[from_host] = {to_host: [port]}
     return out
 
 
 def to_yaml(cases: List[NetworkTestCase]):
+    """
+    Converts a list of NetworkTestCases into a yaml string
+    """
     return yaml.dump(merge_in_dict(cases))
 
 
-def triples_from_dict(yaml_dict: dict):
+def triples_from_dict(dictionary: dict):
+    """
+    Converts a dictionary into a list of triples
+    """
     out = []
-    for from_key in yaml_dict.keys():
-        for to_key in yaml_dict[from_key].keys():
-            for port in yaml_dict[from_key][to_key]:
+    for from_key in dictionary.keys():
+        for to_key in dictionary[from_key].keys():
+            for port in dictionary[from_key][to_key]:
                 out.append((from_key, to_key, port))
     return out
 
 
 def from_yaml(yaml_string) -> List[NetworkTestCase]:
+    """
+    Converts a yaml string into a list of NetworkTestCases
+    """
     return [NetworkTestCase.from_stringified_members(f, t, p)
             for f, t, p in triples_from_dict(yaml.safe_load(yaml_string))]
