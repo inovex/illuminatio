@@ -11,6 +11,13 @@ jobs:
       - sudo apt-get install shellcheck -y
       script: find . -name "*.sh" -print0 |  xargs -0 -n1  shellcheck
 
+    - stage: "Check"
+      name: "Markdown Validate"
+      language: ruby
+      before_install:
+      - gem install mdl
+      script: mdl -r "~MD013" .
+
     - stage: "Test"
       name: "test:pycodestyle:3.5"
       sudo: required

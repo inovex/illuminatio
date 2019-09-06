@@ -144,22 +144,27 @@ Commands:
 ## Docker Usage
 
 Note: If you are using a minikube cluster make sure to use the following configuration:
-```
+
+```bash
 minikube config set embed-certs true
 ```
+
 Also make sure to pass the `--net=host` flag, otherwise your docker container will not be able to reach the VM hosting your cluster.
-```
+
+```bash
 docker run -it --net=host -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
 For clusters on external machines you merely need the kubeconfig:
-```
+
+```bash
 docker run -it -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
 ## Compatibility
 
 illuminatio 1.1 was tested using:
+
 - python 3.5.2
 - pip 19.2.1
 
@@ -169,14 +174,14 @@ illuminatio 1.1 is confirmed to be working properly with the following kubernete
 - Google Kubernetes Engine, v1.12.8-gke.10
 - kubeadm 1.15.0-00, kubernetes v1.15.2
 
-
 ## References
 
 The logo was created by Pia Blum.
 
-- Example Network Policies are inspired by:
+Example Network Policies are inspired by
 [kubernetes-network-policy-recipes](https://github.com/ahmetb/kubernetes-network-policy-recipes)
-- Presentation from [ContainerDays 2019](https://www.youtube.com/watch?v=eEkTvAez8HA&list=PLHhKcdBlprMdg-fwPD1b3IjBRR_Ga09H0&index=36), [slides](https://www.inovex.de/de/content-pool/vortraege/network-policies)
+
+Presentation from [ContainerDays 2019](https://www.youtube.com/watch?v=eEkTvAez8HA&list=PLHhKcdBlprMdg-fwPD1b3IjBRR_Ga09H0&index=36), [slides](https://www.inovex.de/de/content-pool/vortraege/network-policies)
 
 ## Contributing
 
