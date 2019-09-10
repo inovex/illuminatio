@@ -266,9 +266,9 @@ class NetworkTestOrchestrator:
         """
         supported_cases = [case for case in self.test_cases if _hosts_are_in_cluster(case)]
         filtered_cases = [case for case in self.test_cases if case not in supported_cases]
-        self.logger.debug("Filtered %s test cases: ", len(filtered_cases), filtered_cases)
+        self.logger.debug("Filtered %s test cases: %s", len(filtered_cases), filtered_cases)
         cases_dict = merge_in_dict(supported_cases)
-        self.logger.debug("Created casesDict: %s from ", cases_dict, supported_cases)
+        self.logger.debug("Created casesDict: %s from %s", cases_dict, supported_cases)
         concrete_cases, from_host_mappings, to_host_mappings, port_mappings = \
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
         self.logger.debug("concreteCases: %s", concrete_cases)

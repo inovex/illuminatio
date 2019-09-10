@@ -73,7 +73,7 @@ def run(outfile, brief, dry, runner_image, target_image):
     # Generate Test cases
     generator = NetworkTestCaseGenerator(LOGGER)
     cases, gen_run_times = generator.generate_test_cases(net_pols.items, orch.current_namespaces)
-    LOGGER.info("Got cases: %s", cases)
+    LOGGER.debug("Got cases: %s", cases)
     case_time = time.time()
     runtimes["generate"] = case_time - start_time
     render_cases(cases, case_time - start_time)
@@ -205,6 +205,7 @@ def render_cases(cases, run_time, trailing_spaces=2):
     # formats string to choose each element of the given tuple or array with the according width element
     line_format = '{0[0]:{w[0]}}{0[1]:{w[1]}}{0[2]:{w[2]}}'
     LOGGER.info("Generated %d cases in %.4f seconds", len(cases), run_time)
+    LOGGER.info("")
     if cases:
         LOGGER.info(line_format.format(("FROM", "TO", "PORT"), w=widths))
         for case in case_string_tuples:

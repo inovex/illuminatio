@@ -122,7 +122,7 @@ class NetworkTestCaseGenerator:
             allowed_hosts_with_ports = [(test_case.from_host, test_case.port_string)
                                         for test_case in incoming_test_cases if
                                         test_case.to_host in overlaps_per_host[host]]
-            self.logger.debug(allowed_hosts_with_ports)
+            self.logger.debug("allowed_hosts_with_ports=%s", allowed_hosts_with_ports)
             reaching_host_find_time = time.time()
             runtimes[host_string]["findReachingHosts"] = reaching_host_find_time - host_start_time
             if allowed_hosts_with_ports:
