@@ -127,8 +127,8 @@ class NetworkTestCaseGenerator:
             runtimes[host_string]["findReachingHosts"] = reaching_host_find_time - host_start_time
             if allowed_hosts_with_ports:
                 allowed_hosts, _ = zip(*allowed_hosts_with_ports)
-                ports_per_host = {allowed_host: [port for _host, port in allowed_hosts_with_ports if _host == allowed_host]
-                                  for allowed_host in allowed_hosts}
+                ports_per_host = {host: [port for _host, port in allowed_hosts_with_ports if _host == host]
+                                  for host in allowed_hosts}
                 match_all_host = GenericClusterHost({}, {})
                 if match_all_host in allowed_hosts:
                     # All hosts are allowed to reach (on some ports or all) => results from ALLOW all
