@@ -91,7 +91,7 @@ def run(outfile, brief, dry, runner_image, target_image):
     runtimes["run"] = result_time - start_time
     if brief:
         simplify_successful_results(results)
-    LOGGER.info("TestResults: %s", results)
+    LOGGER.debug("TestResults: %s", results)
     if outfile:
         # write output
         LOGGER.info("Writing results to file %s", outfile)

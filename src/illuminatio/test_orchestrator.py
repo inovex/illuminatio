@@ -421,7 +421,7 @@ class NetworkTestOrchestrator:
             rbac_api.patch_cluster_role_binding(crb_name, cluster_role_binding)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
-                self.logger.info("Creating cluster role binding")
+                self.logger.debug("Creating cluster role binding")
                 crb = create_role_binding_manifest_for_service_account(namespace, crb_name, service_account_name)
                 rbac_api.create_cluster_role_binding(crb)
             else:
@@ -437,7 +437,7 @@ class NetworkTestOrchestrator:
             json_body = json.loads(api_exception.body)
             self.logger.debug("ApiException Body:\n%s\n", json_body)
             if json_body.get("reason", "") == "AlreadyExists":
-                self.logger.info("Using existing cluster role")
+                self.logger.debug("Using existing cluster role")
             else:
                 self.logger.error("Error creating cluster role: %s\n", api_exception)
 
