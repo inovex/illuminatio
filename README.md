@@ -174,6 +174,17 @@ illuminatio 1.1 is confirmed to be working properly with the following kubernete
 - Google Kubernetes Engine, v1.12.8-gke.10
 - kubeadm 1.15.0-00, kubernetes v1.15.2
 
+### PodSecurityPolicy
+
+If your cluster has the [PodSecurityPolcy](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#podsecuritypolicy) Admission Controller you must ensure that illuminatio has the following rights to be created:
+
+- Wants to run as root
+- Needs the `SYS_ADMIN` capability
+- Needs `allowPrivilegeEscalation: true`
+- Needs access to the `hostPath` for the network namespaces and the cri socket
+
+For more details look at the [illuminatio DaemonSet](src/illuminatio/manifests/containerd-daemonset.yaml)
+
 ## References
 
 The logo was created by Pia Blum.
