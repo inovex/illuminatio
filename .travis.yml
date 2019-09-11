@@ -119,9 +119,13 @@ jobs:
       language: python
       python:
       - "3.7"
+      before_script:
+      - pip install codecov
       script:
       - pip3 freeze
       - python setup.py test --addopts --runslow
+      after_script:
+      - codecov
 
     - stage: e2e
       name: "docker - calico e2e Tests"
