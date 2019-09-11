@@ -1,6 +1,7 @@
 # Illuminatio - The kubernetes network policy validator
 
 [![Build Status](https://travis-ci.org/inovex/illuminatio.svg?branch=master)](https://travis-ci.org/inovex/illuminatio)
+[![codecov](https://codecov.io/gh/inovex/illuminatio/branch/master/graph/badge.svg)](https://codecov.io/gh/inovex/illuminatio)
 
 ![alt text](/logo/logo_small.png)
 
