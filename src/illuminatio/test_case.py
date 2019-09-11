@@ -64,6 +64,11 @@ class NetworkTestCase:
         """
         return self.from_host.to_identifier(), self.to_host.to_identifier(), self.port_string
 
+    def __lt__(self, other):
+        if isinstance(other, NetworkTestCase):
+            return str(self) < str(other)
+        raise TypeError("'<' not supported between instances of 'NetworkTestCase' and %s" % type(other))
+
     @classmethod
     def from_stringified_members(cls, sender_pod_string, target_pod_string, port_string):
         """
