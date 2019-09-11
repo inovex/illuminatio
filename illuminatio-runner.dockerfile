@@ -1,4 +1,4 @@
-FROM python:3.7-alpine AS builder
+FROM python:3.7.4-alpine3.10 AS builder
 
 RUN apk add --no-cache git alpine-sdk libffi-dev openssl-dev python3-dev && \
     mkdir -p /wheels
@@ -8,7 +8,7 @@ COPY ./requirements.txt /wheels/requirements.txt
 RUN pip3 wheel -r ./requirements.txt
 
 # Actual Runner image
-FROM python:3.7-alpine
+FROM python:3.7.4-alpine3.10
 
 COPY --from=builder /wheels /wheels
 

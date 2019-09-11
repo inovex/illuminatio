@@ -176,13 +176,14 @@ illuminatio 1.1 is confirmed to be working properly with the following kubernete
 
 ### PodSecurityPolicy
 
-If your cluster has the [PodSecurityPolcy](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#podsecuritypolicy) Admission Controller you must ensure that illuminatio has the following rights to be created:
+If your cluster has the [PodSecurityPolicy](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#podsecuritypolicy) Admission Controller you must ensure that the illuminatio runner has the following rights to be created:
 
 - Wants to run as root
 - Needs the `SYS_ADMIN` capability
 - Needs `allowPrivilegeEscalation: true`
 - Needs access to the `hostPath` for the network namespaces and the cri socket
 
+A `PodSecurityPolicy` granting these privileges needs to be bound to the `illuminatio-runner` `ServiceAccount` in the `illuminatio` namespace.
 For more details look at the [illuminatio DaemonSet](src/illuminatio/manifests/containerd-daemonset.yaml)
 
 ## References
