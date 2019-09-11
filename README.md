@@ -143,23 +143,22 @@ Commands:
 
 ## Docker Usage
 
-Note: If you are using a minikube cluster make sure to use the following configuration:
+Instead of installing the `illumnatio` cli on your machine you can also use our Docker image.
+You will need to provide the `kubeconfig` to the container and probably some certificates:
 
 ```bash
-minikube config set embed-certs true
+docker run -ti -v ~/.kube:/home/illuminatio/.kube:ro inovex/illuminatio clean run
 ```
 
-Also make sure to pass the `--net=host` flag, otherwise your docker container will not be able to reach the VM hosting your cluster.
+### Minikube
+
+Minikube will store the certificates in the users home so we need to pass these to the container:
 
 ```bash
-docker run -it --net=host -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
+docker run -ti -v "${HOME}/.minikube":"${HOME}/.minikube" -v "${HOME}/.kube:"/home/illuminatio/.kube:ro inovex/illuminatio clean run
 ```
 
-For clusters on external machines you merely need the kubeconfig:
-
-```bash
-docker run -it -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
-```
+If the minikube VM is not reachable from your container try to pass the `--net=host` flag to the docker run command.
 
 ## Compatibility
 
@@ -173,6 +172,18 @@ illuminatio 1.1 is confirmed to be working properly with the following kubernete
 - minikube v0.34.1, kubernetes v1.13.3
 - Google Kubernetes Engine, v1.12.8-gke.10
 - kubeadm 1.15.0-00, kubernetes v1.15.2
+
+### PodSecurityPolicy
+
+If your cluster has the [PodSecurityPolicy](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#podsecuritypolicy) Admission Controller you must ensure that the illuminatio runner has the following rights to be created:
+
+- Wants to run as root
+- Needs the `SYS_ADMIN` capability
+- Needs `allowPrivilegeEscalation: true`
+- Needs access to the `hostPath` for the network namespaces and the cri socket
+
+A `PodSecurityPolicy` granting these privileges needs to be bound to the `illuminatio-runner` `ServiceAccount` in the `illuminatio` namespace.
+For more details look at the [illuminatio DaemonSet](src/illuminatio/manifests/containerd-daemonset.yaml)
 
 ## References
 
