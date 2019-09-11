@@ -143,23 +143,22 @@ Commands:
 
 ## Docker Usage
 
-Note: If you are using a minikube cluster make sure to use the following configuration:
+Instead of installing the `illumnatio` cli on you machine you can also use our Docker image.
+You will need to provide the `kubeconfig` to the container and probably some certificates:
 
 ```bash
-minikube config set embed-certs true
+docker run -ti -v ~/.kube:/home/illuminatio/.kube:ro inovex/illuminatio clean run
 ```
 
-Also make sure to pass the `--net=host` flag, otherwise your docker container will not be able to reach the VM hosting your cluster.
+### Minikube
+
+Minikube will store the certificates in the users home so we need to pass these to the container:
 
 ```bash
-docker run -it --net=host -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
+docker run -ti -v "${HOME}/.minikube":"${HOME}/.minikube" -v "${HOME}/.kube:"/home/illuminatio/.kube:ro inovex/illuminatio clean run
 ```
 
-For clusters on external machines you merely need the kubeconfig:
-
-```bash
-docker run -it -v ~/.kube:/root/.kube:ro inovex/illuminatio illuminatio clean run
-```
+If the minikube is VM is not reachable from your container try to pass the `--net=host` flag to the docker run command.
 
 ## Compatibility
 
