@@ -143,7 +143,7 @@ Commands:
 
 ## Docker Usage
 
-Instead of installing the `illumnatio` cli on you machine you can also use our Docker image.
+Instead of installing the `illumnatio` cli on your machine you can also use our Docker image.
 You will need to provide the `kubeconfig` to the container and probably some certificates:
 
 ```bash
