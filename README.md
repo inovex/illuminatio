@@ -158,7 +158,7 @@ Minikube will store the certificates in the users home so we need to pass these 
 docker run -ti -v "${HOME}/.minikube":"${HOME}/.minikube" -v "${HOME}/.kube:"/home/illuminatio/.kube:ro inovex/illuminatio clean run
 ```
 
-If the minikube is VM is not reachable from your container try to pass the `--net=host` flag to the docker run command.
+If the minikube VM is not reachable from your container try to pass the `--net=host` flag to the docker run command.
 
 ## Compatibility
 
