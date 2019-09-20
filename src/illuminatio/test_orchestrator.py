@@ -93,28 +93,38 @@ class NetworkTestOrchestrator:
         self._current_services = svcs
         self.current_namespaces = namespaces
 
-    def ensure_project_namespace_exists(self, api: k8s.client.CoreV1Api):
+    def namespace_exists(self, name, api: k8s.client.CoreV1Api):
         """
-        Creates the illuminatio namespace if missing
+        Check if a namespace exists
         """
-        # Check if we have the namespace in our cache
         for namespace in self.current_namespaces:
-            if namespace.metadata.name != PROJECT_NAMESPACE:
+            if namespace.metadata.name != name:
                 continue
 
-            self.logger.debug(f"Found namespace {PROJECT_NAMESPACE} in cache")
-            return
-
-        # Should we also ensure that the namespace has these labels?
-        namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
+            self.logger.debug(f"Found namespace {name} in cache")
+            return True
 
         try:
-            api.read_namespace(name=PROJECT_NAMESPACE)
+            api.read_namespace(name=name)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
-                api.create_namespace(name=PROJECT_NAMESPACE, labels=namespace_labels)
-            else:
-                raise api_exception
+                return False
+
+            raise api_exception
+
+        return True
+
+    def create_namespace(self, name, api: k8s.client.CoreV1Api):
+        """
+        Creates aa namespace with the according labels
+        """
+        # Should we also ensure that the namespace has these labels?
+        namespace_labels = { CLEANUP_LABEL: CLEANUP_ON_REQUEST }
+        try:
+            api.create_namespace(name=name, labels=namespace_labels)
+        except k8s.client.rest.ApiException as api_exception:
+            self.logger.error(api_exception)
+            exit(1)
 
     def _rewrite_ports_for_host(self, port_list, services_for_host):
         self.logger.debug("Rewriting portList %s", port_list)

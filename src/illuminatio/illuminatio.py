@@ -116,8 +116,13 @@ def execute_tests(cases, orch):
     """
     orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
+    # namespace should be an argument !
+    # -> illuminatio
+    namespace_name = "illuminatio"
 
-    orch.ensure_project_namespace_exists(core_api)
+    if not orch.namespace_exists(namespace_name, core_api):
+        orch.create_namespace(namespace_name, core_api)
+
     from_host_mappings, to_host_mappings, port_mappings, cfgmap = orch.ensure_cases_are_generated(core_api)
     pod_selector = orch.ensure_daemonset_is_ready(
         cfgmap,
