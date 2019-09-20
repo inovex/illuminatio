@@ -235,7 +235,7 @@ class NetworkTestOrchestrator:
                 additional_labels = {ROLE_LABEL: "from_host_dummy", CLEANUP_LABEL: CLEANUP_ALWAYS}
                 # TODO replace 'dummy' with a more suitable name to prevent potential conflicts
                 container = k8s.client.V1Container(image=self.oci_images["target"], name="dummy")
-                dummy = create_pod_manifest(from_host, additional_labels, "%s-dummy-" % PROJECT_PREFIX, container)
+                dummy = create_pod_manifest(from_host, additional_labels, f"{PROJECT_PREFIX}-dummy-", container)
                 resp = api.create_namespaced_pod(dummy.metadata.namespace, dummy)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug("Dummy pod %s created succesfully", resp.metadata.name)
