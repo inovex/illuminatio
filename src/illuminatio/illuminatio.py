@@ -116,7 +116,11 @@ def execute_tests(cases, orch):
     """
     orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
-    from_host_mappings, to_host_mappings, port_mappings, pod_selector = orch.create_and_launch_daemon_set_runners(
+
+    orch.ensure_project_namespace_exists(core_api)
+    from_host_mappings, to_host_mappings, port_mappings, cfgmap = orch.ensure_cases_are_generated(core_api)
+    pod_selector = orch.ensure_daemonset_is_ready(
+        cfgmap,
         k8s.client.AppsV1Api(),
         core_api)
     resource_creation_time = time.time()

@@ -51,16 +51,6 @@ def _hosts_are_in_cluster(case):
                 for host in [case.from_host, case.to_host]])
 
 
-# TODO build and use an internal cache containing all namespaces to work on
-def _create_project_namespace_if_missing(api: k8s.client.CoreV1Api):
-    namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
-    namespace_list = api.list_namespace(label_selector=labels_to_string(namespace_labels))
-    if not namespace_list.items:
-        namespace = k8s.client.V1Namespace(
-            metadata=k8s.client.V1ObjectMeta(name=PROJECT_NAMESPACE, labels=namespace_labels))
-        api.create_namespace(namespace)
-
-
 class NetworkTestOrchestrator:
     """
     Class for handling test case related kubernetes resources
@@ -102,6 +92,29 @@ class NetworkTestOrchestrator:
         self._current_pods = pods
         self._current_services = svcs
         self.current_namespaces = namespaces
+
+    def ensure_project_namespace_exists(self, api: k8s.client.CoreV1Api):
+        """
+        Creates the illuminatio namespace if missing
+        """
+        # Check if we have the namespace in our cache
+        for namespace in self.current_namespaces:
+            if namespace.metadata.name != PROJECT_NAMESPACE:
+                continue
+
+            self.logger.debug(f"Found namespace {PROJECT_NAMESPACE} in cache")
+            return
+
+        # Should we also ensure that the namespace has these labels?
+        namespace_labels = {ROLE_LABEL: "daemon-runner-namespace", CLEANUP_LABEL: CLEANUP_ON_REQUEST}
+
+        try:
+            api.read_namespace(name=PROJECT_NAMESPACE)
+        except k8s.client.rest.ApiException as api_exception:
+            if api_exception.reason == "Not Found":
+                api.create_namespace(name=PROJECT_NAMESPACE, labels=namespace_labels)
+            else:
+                raise api_exception
 
     def _rewrite_ports_for_host(self, port_list, services_for_host):
         self.logger.debug("Rewriting portList %s", port_list)
@@ -260,11 +273,11 @@ class NetworkTestOrchestrator:
         self.logger.error("Failed to create test namespace for %s! Resp: %s", from_host, resp)
         return []
 
-    def create_and_launch_daemon_set_runners(self, apps_api: k8s.client.AppsV1Api, core_api: k8s.client.CoreV1Api):
+    def ensure_cases_are_generated(self, core_api: k8s.client.CoreV1Api):
         """
-        Ensures that all required resources for illuminatio are created
+        Ensures that all required resources for testing are created
         """
-        # TODO move this in an extra method
+        # TODO split up this method
         supported_cases = [case for case in self.test_cases if _hosts_are_in_cluster(case)]
         filtered_cases = [case for case in self.test_cases if case not in supported_cases]
         self.logger.debug("Filtered %s test cases: %s", len(filtered_cases), filtered_cases)
@@ -273,21 +286,30 @@ class NetworkTestOrchestrator:
         concrete_cases, from_host_mappings, to_host_mappings, port_mappings = \
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
         self.logger.debug("concreteCases: %s", concrete_cases)
-        _create_project_namespace_if_missing(core_api)
         config_map_name = "%s-cases-cfgmap" % PROJECT_PREFIX
         self._create_or_update_case_config_map(config_map_name, concrete_cases, core_api)
 
+        return from_host_mappings, to_host_mappings, port_mappings, config_map_name
+
+    def ensure_daemonset_is_ready(self,
+                                  config_map_name,
+                                  apps_api: k8s.client.AppsV1Api,
+                                  core_api: k8s.client.CoreV1Api):
+        """
+        Ensures that all required resources for illuminatio are created
+        """
         # Actual DaemonSet creation
         service_account_name = f"{PROJECT_PREFIX}-runner"
         self._ensure_service_account_exists(core_api, service_account_name, PROJECT_NAMESPACE)
         self._ensure_cluster_role_exists()
         self._ensure_cluster_role_binding_exists(service_account_name, PROJECT_NAMESPACE)
-        # TODO ensure DaemonSet
+
+        # Ensure that our DaemonSet and the Pods are running/ready
         daemonset_name = f"{PROJECT_PREFIX}-runner"
         self._ensure_daemonset_exists(daemonset_name, service_account_name, config_map_name, apps_api)
         pod_selector = self._ensure_daemonset_ready(daemonset_name, apps_api)
 
-        return from_host_mappings, to_host_mappings, port_mappings, pod_selector
+        return pod_selector
 
     def _filter_cluster_cases(self):
         return [c for c in self.test_cases if
@@ -380,7 +402,7 @@ class NetworkTestOrchestrator:
         tries = 0
         sleep_time = 5
 
-        self.logger.info("Ensure that Pods of DaemonSet {daemonset_name} are ready")
+        self.logger.info(f"Ensure that Pods of DaemonSet {daemonset_name} are ready")
         while tries <= max_tries:
             try:
                 daemonset = api.read_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, name=daemonset_name)

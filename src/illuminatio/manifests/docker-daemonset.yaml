@@ -75,4 +75,3 @@ spec:
           path: /var/run/docker/netns
           type: Directory
         name: net-ns
-        
