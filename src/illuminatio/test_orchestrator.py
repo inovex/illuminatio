@@ -119,7 +119,7 @@ class NetworkTestOrchestrator:
         Creates aa namespace with the according labels
         """
         # Should we also ensure that the namespace has these labels?
-        namespace_labels = { CLEANUP_LABEL: CLEANUP_ON_REQUEST }
+        namespace_labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST}
         try:
             api.create_namespace(name=name, labels=namespace_labels)
         except k8s.client.rest.ApiException as api_exception:

@@ -25,6 +25,7 @@ def test__refreshClusterResourcess_emptyListApiObjectsReturned_extractsEmptyList
     assert orch._current_pods is not None
     assert not orch._current_pods
 
+
 def test_ensure_project_namespace_exists_in_cache():
     orch = createOrchestrator([])
     api_mock = k8s.client.CoreV1Api()
@@ -36,6 +37,7 @@ def test_ensure_project_namespace_exists_in_cache():
 
     orch.refresh_cluster_resources(api_mock)
     assert orch.namespace_exists("illuminatio", None)
+
 
 def test_ensure_project_namespace_exists_not_in_cache():
     orch = createOrchestrator([])
@@ -50,5 +52,6 @@ def test_ensure_project_namespace_exists_not_in_cache():
     # Ensure that the cache is empty
     assert orch.current_namespaces is not None
     assert not orch.current_namespaces
-    api_mock.read_namespace = MagicMock(return_value=k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="illuminatio")))
+    ns = k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="illuminatio"))
+    api_mock.read_namespace = MagicMock(return_value=ns)
     assert orch.namespace_exists("illuminatio", api_mock)
