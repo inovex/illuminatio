@@ -114,7 +114,7 @@ class NetworkTestOrchestrator:
 
         return True
 
-    def create_namespace(self, name, api: k8s.client.CoreV1Api, labels={}):
+    def create_namespace(self, name, api: k8s.client.CoreV1Api, labels=None):
         """
         Creates aa namespace with the according labels
         """
