@@ -286,7 +286,7 @@ class NetworkTestOrchestrator:
         concrete_cases, from_host_mappings, to_host_mappings, port_mappings = \
             self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
         self.logger.debug("concreteCases: %s", concrete_cases)
-        config_map_name = "%s-cases-cfgmap" % PROJECT_PREFIX
+        config_map_name = f"{PROJECT_PREFIX}-cases-cfgmap"
         self._create_or_update_case_config_map(config_map_name, concrete_cases, core_api)
 
         return from_host_mappings, to_host_mappings, port_mappings, config_map_name

@@ -62,6 +62,7 @@ def cli():
     LOGGER.info("Finished running tests. Results:")
     LOGGER.info(results)
     # Sleep some time until container is killed. TODO: continuous mode ???
+    # TODO we sould watch for ConfigMap changes and restart the test cases
     time.sleep(60 * 60 * 24)
 
 
