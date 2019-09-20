@@ -35,7 +35,23 @@ or directly from the repository:
 git clone https://github.com/inovex/illuminatio
 cd illuminatio
 python3 setup.py install
-cd ..
+```
+
+### Kubectl plugin
+
+In order to use `illuminatio` as a [kubectl plugin](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins) run the following command:
+
+```bash
+ln -s $(which illuminatio) /usr/local/bin/kubectl-illuminatio
+```
+
+And now cross check that the plugin exists:
+
+```bash
+kubectl plugin list --name-only | grep illuminatio
+The following compatible plugins are available:
+
+kubectl-illuminatio
 ```
 
 ## Example Usage
