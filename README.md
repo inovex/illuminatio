@@ -18,7 +18,7 @@ Follow these instructions to get Illuminatio up and running.
 
 ## Prerequisites
 
-- Python 3
+- Python 3.6 or greater
 - Pip 3
 
 ## Installation
