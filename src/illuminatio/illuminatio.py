@@ -55,7 +55,6 @@ def run(outfile, brief, dry, runner_image, target_image):
     """
     Runs illuminatio with given docker images for the runner and target pod
     """
-    click.echo()
     runtimes = {}
     start_time = time.time()
     LOGGER.info("Starting test generation and run.")
@@ -77,10 +76,8 @@ def run(outfile, brief, dry, runner_image, target_image):
     case_time = time.time()
     runtimes["generate"] = case_time - start_time
     render_cases(cases, case_time - start_time)
-    click.echo()
     if dry:
         LOGGER.info("Skipping test execution as --dry was set")
-        click.echo()
         return
     results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases, orch)
     runtimes["resource-creation"] = resource_creation_time - case_time
@@ -111,7 +108,6 @@ def run(outfile, brief, dry, runner_image, target_image):
     result_duration = result_time - case_time
     render_results(results, result_duration)
     # clean(True)
-    click.echo()
 
 
 def execute_tests(cases, orch):
@@ -120,11 +116,11 @@ def execute_tests(cases, orch):
     """
     orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
-    from_host_mappings, to_host_mappings, port_mappings = orch.create_and_launch_daemon_set_runners(
+    from_host_mappings, to_host_mappings, port_mappings, pod_selector = orch.create_and_launch_daemon_set_runners(
         k8s.client.AppsV1Api(),
         core_api)
     resource_creation_time = time.time()
-    raw_results, runtimes = orch.collect_results(core_api)
+    raw_results, runtimes = orch.collect_results(pod_selector, core_api)
     result_collection_time = time.time()
     additional_data = {"raw-results": raw_results,
                        "mappings": {"fromHost": from_host_mappings, "toHost": to_host_mappings, "ports": port_mappings}}

@@ -4,7 +4,6 @@ Contains several illuminatio constants especially names and some util functions
 from random import choice
 
 PROJECT_PREFIX = "illuminatio"
-DAEMONSET_NAME = "%s-runner" % PROJECT_PREFIX
 PROJECT_NAMESPACE = PROJECT_PREFIX
 CLEANUP_LABEL = "%s-cleanup" % PROJECT_PREFIX
 ROLE_LABEL = "%s-role" % PROJECT_PREFIX
