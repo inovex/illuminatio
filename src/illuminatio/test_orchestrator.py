@@ -114,14 +114,22 @@ class NetworkTestOrchestrator:
 
         return True
 
-    def create_namespace(self, name, api: k8s.client.CoreV1Api):
+    def create_namespace(self, name, api: k8s.client.CoreV1Api, labels={}):
         """
         Creates aa namespace with the according labels
         """
         # Should we also ensure that the namespace has these labels?
-        namespace_labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST}
+        if labels:
+            labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST}
+
+        namespace = k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name=name, labels=labels))
+
         try:
-            api.create_namespace(name=name, labels=namespace_labels)
+            resp = api.create_namespace(body=namespace)
+            self.logger.debug(f"Created namespace {resp.metadata.name}")
+            self.current_namespaces.append(resp)
+
+            return resp
         except k8s.client.rest.ApiException as api_exception:
             self.logger.error(api_exception)
             exit(1)
@@ -254,8 +262,9 @@ class NetworkTestOrchestrator:
                           from_host, [ns.metadata.name for ns in namespaces_for_host])
         if namespaces_for_host:
             return namespaces_for_host
+
         self.logger.debug("Creating namespace for host %s", from_host)
-        ns_labels = {ROLE_LABEL: "testing_namespace", CLEANUP_LABEL: CLEANUP_ALWAYS}
+        ns_labels = {CLEANUP_LABEL: CLEANUP_ALWAYS}
         if isinstance(from_host, GenericClusterHost):
             namespace_name = convert_to_resource_name(labels_to_string(from_host.namespace_labels))
             for key, value in from_host.namespace_labels.items():
@@ -263,25 +272,9 @@ class NetworkTestOrchestrator:
         else:
             namespace_name = from_host.namespace
         self.logger.debug("Generated namespace name '%s' for host %s", namespace_name, from_host)
-        resp = api.create_namespace(
-            k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name=namespace_name, labels=ns_labels)))
-        if isinstance(resp, k8s.client.V1Namespace):
-            self.logger.debug(
-                "Test namespace %s created succesfully, adding it to namespace list", resp.metadata.name)
-            self.current_namespaces.append(resp)
-            time.sleep(1)
-            while True:
-                try:
-                    api.read_namespaced_service_account("default", resp.metadata.name)
-                    return [resp]
-                except k8s.client.rest.ApiException as api_exception:
-                    self.logger.debug(
-                        "Waiting for kubernetes to create default service account for namespace %s", resp.metadata.name)
-                    if api_exception.reason != "Not Found":
-                        raise api_exception
-                    time.sleep(2)
-        self.logger.error("Failed to create test namespace for %s! Resp: %s", from_host, resp)
-        return []
+
+        resp = self.create_namespace(namespace_name, api, labels=ns_labels)
+        return [resp]
 
     def ensure_cases_are_generated(self, core_api: k8s.client.CoreV1Api):
         """
