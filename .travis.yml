@@ -22,6 +22,7 @@ jobs:
       name: "test:pycodestyle:3.6"
       sudo: required
       language: python
+      cache: pip
       python:
        - "3.6"
       script:
@@ -32,6 +33,7 @@ jobs:
       name: "test:pycodestyle:3.7"
       sudo: required
       language: python
+      cache: pip
       python:
        - "3.7"
       script:
@@ -41,6 +43,7 @@ jobs:
     - stage: "Test"
       name: "test:pylint:3.6"
       language: python
+      cache: pip
       python:
        - "3.6"
       script:
@@ -56,6 +59,7 @@ jobs:
     - stage: "Test"
       name: "test:pylint:3.7"
       language: python
+      cache: pip
       python:
        - "3.7"
       script:
@@ -71,6 +75,7 @@ jobs:
     - stage: "Test"
       name: "test:unittest:3.6"
       language: python
+      cache: pip
       python:
       - "3.6"
       script:
@@ -80,6 +85,7 @@ jobs:
     - stage: "Test"
       name: "test:unittest:3.7"
       language: python
+      cache: pip
       python:
       - "3.7"
       before_script:
@@ -94,6 +100,7 @@ jobs:
       name: "docker - calico e2e Tests"
       sudo: required
       language: python
+      cache: pip
       python:
         - "3.7"
       # ToDo implement multiple python versions?
@@ -129,6 +136,7 @@ jobs:
       name: "containerd - calico e2e Tests"
       sudo: required
       language: python
+      cache: pip
       python:
         - "3.7"
       env:
@@ -210,6 +218,7 @@ jobs:
       name: "build python package"
       if: (tag IS blank)
       language: python
+      cache: pip
       python:
         - "3.7"
       script:
@@ -220,6 +229,7 @@ jobs:
       name: "upload python package"
       if: (tag IS present)
       language: python
+      cache: pip
       python:
         - "3.7"
       script:
