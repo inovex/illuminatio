@@ -359,7 +359,6 @@ class NetworkTestOrchestrator:
                  for c in result_config_maps if "runtimes" in c.data}
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
 
-    # TODO add unit tests !!!
     def create_daemonset_manifest(self, daemon_set_name, service_account_name, config_map_name, container_runtime):
         """
         Creates a DaemonSet manifest on basis of the project's manifest files and the current
