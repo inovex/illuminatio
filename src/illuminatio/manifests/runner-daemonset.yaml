@@ -37,8 +37,6 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: CONTAINER_RUNTIME_NAME
-          value: containerd
         image: localhost:5000/illuminatio-runner:dev
         imagePullPolicy: Always
         name: runner
@@ -49,30 +47,8 @@ spec:
           capabilities:
             add:
               - SYS_ADMIN
-        volumeMounts:
-        - mountPath: /etc/config/
-          name: cases-volume
-        - mountPath: /var/run/dockershim.sock
-          name: cri-socket
-          readOnly: true
-        - mountPath: /var/run/netns
-          name: net-ns
-          readOnly: true
       dnsPolicy: ClusterFirst
       hostPID: true
       serviceAccount: illuminatio-runner
       terminationGracePeriodSeconds: 30
       # TODO can we add here liveness and readiness checks?
-      volumes:
-      - configMap:
-          defaultMode: 420
-          name: illuminatio-cases-cfgmap
-        name: cases-volume
-      - hostPath:
-          path: /run/containerd/containerd.sock
-          type: Socket
-        name: cri-socket
-      - hostPath:
-          path: /var/run/netns
-          type: Directory
-        name: net-ns

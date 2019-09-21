@@ -359,37 +359,84 @@ class NetworkTestOrchestrator:
                  for c in result_config_maps if "runtimes" in c.data}
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
 
-    def create_daemonset(self, daemon_set_name, service_account_name, config_map_name, api):
+    # TODO add unit tests !!!
+    def create_daemonset_manifest(self, daemon_set_name, service_account_name, config_map_name):
         """
-        Creates a DaemonSet on basis of the project's manifest files
+        Creates a DaemonSet manifest on basis of the project's manifest files and the current
+        container runtime
         """
         # Todo should be templated !
         container_runtime_version = get_container_runtime()
+        daemon_set_dict = get_manifest("runner-daemonset.yaml")
+        cri_socket = ""
+        runtime = ""
+        netns_path = "/var/run/netns"
+
         if container_runtime_version.startswith("docker"):
-            daemon_set_dict = get_manifest("docker-daemonset.yaml")
+            netns_path = "/var/run/docker/netns"
+            cri_socket = "/var/run/docker.sock"
+            runtime = "docker"
         elif container_runtime_version.startswith("containerd"):
-            daemon_set_dict = get_manifest("containerd-daemonset.yaml")
+            cri_socket = "/run/containerd/containerd.sock"
+            runtime = "containerd"
+        elif container_runtime_version.startswith("crio"):
+            cri_socket = "/var/run/crio/crio.sock"
+            runtime = "containerd"
         else:
             raise NotImplementedError(f"Unsupported container runtime: {container_runtime_version}")
 
         # adapt non-static values
         daemon_set_dict["metadata"]["name"] = daemon_set_name
         daemon_set_dict["metadata"]["namespace"] = PROJECT_NAMESPACE
+
+        # CONTAINER_RUNTIME_NAME
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_images["runner"]
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["imagePullPolicy"] = "Always"
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["name"] = "runner"
+        runtime_env = k8s.client.V1EnvVar(name="CONTAINER_RUNTIME_NAME", value=runtime)
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["env"].append(runtime_env)
         daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
-        daemon_set_dict["spec"]["template"]["spec"]["volumes"][0]["configMap"]["name"] = config_map_name
-        daemon_set_dict["spec"]["template"]["spec"]["dnsPolicy"] = "ClusterFirst"
-        daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = "%s-ds-runner" % PROJECT_PREFIX
+
+        # Create Volumes for illuminatio
+        cm_volume = k8s.client.V1Volume(name="cases-volume",
+                                        config_map=k8s.client.V1ConfigMapVolumeSource(
+                                            default_mode=420,
+                                            name=config_map_name))
+        net_ns_volume = k8s.client.V1Volume(name="cri-socket",
+                                            host_path=k8s.client.V1HostPathVolumeSource(
+                                                path=cri_socket,
+                                                type="Socket"))
+        cri_socket_volume = k8s.client.V1Volume(name="net-ns",
+                                                host_path=k8s.client.V1HostPathVolumeSource(
+                                                    path=netns_path,
+                                                    type="Directory"))
+
+        # Create the VolumeMounts
+        cm_mount = k8s.client.V1VolumeMount(mount_path="/etc/config/", name="cases-volume")
+        net_ns_mount = k8s.client.V1VolumeMount(mount_path=cri_socket, name="cri-socket", read_only=True)
+        cri_socket_mount = k8s.client.V1VolumeMount(mount_path=netns_path, name="net-ns", read_only=True)
+
+        # Add Volumes to spec
+        daemon_set_dict["spec"]["template"]["spec"]["volumes"].append(cm_volume)
+        daemon_set_dict["spec"]["template"]["spec"]["volumes"].append(net_ns_volume)
+        daemon_set_dict["spec"]["template"]["spec"]["volumes"].append(cri_socket_volume)
+
+        # Add VolumeMounts to spec
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append(cm_mount)
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append(net_ns_mount)
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append(cri_socket_mount)
+
+        daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = f"{PROJECT_PREFIX}-ds-runner"
         self.logger.debug("daemonset_dict:\n%s", daemon_set_dict)
-        # create daemon set
-        daemonset = api.create_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, body=daemon_set_dict)
-        if isinstance(daemonset, k8s.client.V1DaemonSet):
-            self.logger.debug("Succesfully created test runner DaemonSet %s", daemonset.metadata.name)
-            self.runner_daemon_set = daemonset
-        else:
-            self.logger.error("Failed to create test runner DaemonSet: %s", daemonset)
+
+        return daemon_set_dict
+
+    def create_daemonset(self, daemon_manifest, api):
+        """
+        Creates a DaemonSet on basis of the DaemonSet manifest
+        """
+        try:
+            api.create_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, body=daemon_manifest)
+        except k8s.client.rest.ApiException as api_exception:
+            self.logger.error(api_exception)
 
     def _ensure_daemonset_exists(self,
                                  daemonset_name,
@@ -401,7 +448,8 @@ class NetworkTestOrchestrator:
             api.read_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, name=daemonset_name)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
-                self.create_daemonset(daemonset_name, service_account_name, config_map_name, api)
+                daemonset_manifest = self.create_daemonset_manifest(daemonset_name, service_account_name, config_map_name)
+                self.create_daemonset(daemonset_manifest, api)
             else:
                 raise api_exception
 

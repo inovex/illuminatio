@@ -13,10 +13,6 @@ minikube start \
     --cpus 4 \
     --network-plugin=cni \
     --container-runtime=containerd \
-    --cri-socket=/run/containerd/containerd.sock \
-    --extra-config=kubelet.container-runtime=remote \
-    --extra-config=kubelet.container-runtime-endpoint=unix:///run/containerd/containerd.sock \
-    --extra-config=kubelet.image-service-endpoint=unix:///run/containerd/containerd.sock \
     --extra-config=kubelet.network-plugin=cni \
     --extra-config=kubelet.pod-cidr=192.168.0.0/16 \
     --extra-config=controller-manager.allocate-node-cidrs=true \
@@ -51,8 +47,8 @@ else
     minikube ssh <<EOF
 # the following commands are executed inside the minikube vm
 # Add the following lines -> see https://github.com/kubernetes/minikube/issues/3444
-sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml  
-sudo sed -i '56i\       [plugins.cri.registry.mirrors."localhost"]' /etc/containerd/config.toml  
+sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml
+sudo sed -i '56i\       [plugins.cri.registry.mirrors."localhost"]' /etc/containerd/config.toml
 # Finally restart the containerd service
 sudo systemctl restart containerd
 exit
