@@ -13,6 +13,7 @@ E2E_RUNNER_IMAGE = "localhost:5000/illuminatio-runner:dev"
 @pytest.fixture
 def load_kube_config():
     config.load_kube_config()
+<<<<<<< HEAD
 
 
 @pytest.fixture
@@ -82,3 +83,33 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps
         print("Expected:\n")
         print(yaml.dump(expected))
         raise e
+=======
+    k8s_client = client.ApiClient()
+    corev1 = client.CoreV1Api()
+
+    corev1.create_namespace(client.V1Namespace(
+        metadata=client.V1ObjectMeta(
+            name=namespace,
+            labels={"illuminatio-e2e": namespace})))
+    utils.create_from_yaml(k8s_client,
+                           "e2e-manifests/01-deny-all-traffic-to-an-application.yml",
+                           namespace=namespace)
+
+    # ToDo add sleep or wait until all resources are up otherwise we have a race condition
+    # ToDo handle execptions
+    res = subprocess.run(["illuminatio", "run", "--runner-image=localhost:5000/illuminatio-runner:dev"],
+                         capture_output=True,
+                         timeout=120)
+
+    assert res.returncode == 0
+    # ToDo evaluate result
+    print(res.stdout)
+
+    # Clean up
+    res = subprocess.run(["illuminatio", "clean"], capture_output=True)
+    assert res.returncode == 0
+    print(res.stdout)
+
+    # Clean up
+    corev1.delete_namespace(name=namespace)
+>>>>>>> Update the e2e test time for containerd
