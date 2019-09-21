@@ -48,7 +48,7 @@ def create_test_output_config_map_manifest(namespace, name, data=None):
     return cfg_map
 
 
-def create_pod_manifest(host: Host, additional_labels, generate_name, container, sa_name="default"):
+def create_pod_manifest(host: Host, additional_labels, generate_name, container):
     """
     Creates a pod manifest with given parameters
     """
@@ -60,7 +60,7 @@ def create_pod_manifest(host: Host, additional_labels, generate_name, container,
     pod.metadata = k8s.client.V1ObjectMeta(generate_name=generate_name,
                                            namespace=host.namespace,
                                            labels=labels)
-    pod.spec = k8s.client.V1PodSpec(containers=[container], service_account_name=sa_name)
+    pod.spec = k8s.client.V1PodSpec(containers=[container], automount_service_account_token=False)
     return pod
 
 

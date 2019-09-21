@@ -19,17 +19,6 @@ jobs:
       script: mdl -r "~MD013" .
 
     - stage: "Test"
-      name: "test:pycodestyle:3.5"
-      sudo: required
-      language: python
-      python:
-       - "3.5"
-      script:
-      - pip3 freeze
-      - python setup.py test
-      - make lint
-
-    - stage: "Test"
       name: "test:pycodestyle:3.6"
       sudo: required
       language: python
@@ -50,21 +39,6 @@ jobs:
       - pip3 freeze
       - python setup.py test
       - make lint
-
-    - stage: "Test"
-      name: "test:pylint:3.5"
-      language: python
-      python:
-       - "3.5"
-      script:
-      - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
-      - pip3 freeze
-      - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt
-      - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
-      - echo "Pylint score was $score"
-      - mkdir -p public
-      - mv pylint.txt public/pylint.txt
-      - anybadge --value=$score --file=public/pylint.svg pylint
 
     - stage: "Test"
       name: "test:pylint:3.6"
@@ -95,15 +69,6 @@ jobs:
       - mkdir -p public
       - mv pylint.txt public/pylint.txt
       - anybadge --value=$score --file=public/pylint.svg pylint
-
-    - stage: "Test"
-      name: "test:unittest:3.5"
-      language: python
-      python:
-      - "3.5"
-      script:
-      - pip3 freeze
-      - python setup.py test --addopts --runslow
 
     - stage: "Test"
       name: "test:unittest:3.6"
@@ -152,11 +117,15 @@ jobs:
       - minikube config set vm-driver none
       - sudo -H -E ./local_dev/start_docker.sh
       - pip install -r requirements.txt
+      - pip install codecov
       - python setup.py install
 
       script:
       # run illuminatio e2e tests
       - ./local_dev/run_e2e_tests.sh
+
+      after_script:
+      - codecov
 
     - stage: e2e
       name: "containerd - calico e2e Tests"
@@ -189,11 +158,15 @@ jobs:
       - minikube config set vm-driver none
       - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
+      - pip install codecov
       - python setup.py install
 
       script:
       # run illuminatio e2e tests
       - ./local_dev/run_e2e_tests.sh
+
+      after_script:
+      - codecov
 
     # merely build the image for untagged commits
     - stage: build

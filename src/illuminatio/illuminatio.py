@@ -15,6 +15,8 @@ from illuminatio.cleaner import Cleaner
 from illuminatio.test_generator import NetworkTestCaseGenerator
 from illuminatio.test_orchestrator import NetworkTestOrchestrator
 from illuminatio.util import CLEANUP_ALWAYS, CLEANUP_ON_REQUEST
+from termcolor import colored
+
 
 LOGGER = logging.getLogger(__name__)
 click_log.basic_config(LOGGER)
@@ -58,7 +60,6 @@ def run(outfile, brief, dry, runner_image, target_image):
     """
     Runs illuminatio with given docker images for the runner and target pod
     """
-    click.echo()
     runtimes = {}
     start_time = time.time()
     LOGGER.info("Starting test generation and run.")
@@ -80,10 +81,8 @@ def run(outfile, brief, dry, runner_image, target_image):
     case_time = time.time()
     runtimes["generate"] = case_time - start_time
     render_cases(cases, case_time - start_time)
-    click.echo()
     if dry:
         LOGGER.info("Skipping test execution as --dry was set")
-        click.echo()
         return
     results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases, orch)
     runtimes["resource-creation"] = resource_creation_time - case_time
@@ -114,7 +113,6 @@ def run(outfile, brief, dry, runner_image, target_image):
     result_duration = result_time - case_time
     render_results(results, result_duration)
     # clean(True)
-    click.echo()
 
 
 def execute_tests(cases, orch):
@@ -123,11 +121,20 @@ def execute_tests(cases, orch):
     """
     orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
-    from_host_mappings, to_host_mappings, port_mappings = orch.create_and_launch_daemon_set_runners(
+    # namespace should be an argument !
+    # -> illuminatio
+    namespace_name = "illuminatio"
+
+    if not orch.namespace_exists(namespace_name, core_api):
+        orch.create_namespace(namespace_name, core_api)
+
+    from_host_mappings, to_host_mappings, port_mappings, cfgmap = orch.ensure_cases_are_generated(core_api)
+    pod_selector = orch.ensure_daemonset_is_ready(
+        cfgmap,
         k8s.client.AppsV1Api(),
         core_api)
     resource_creation_time = time.time()
-    raw_results, runtimes = orch.collect_results(core_api)
+    raw_results, runtimes = orch.collect_results(pod_selector, core_api)
     result_collection_time = time.time()
     additional_data = {"raw-results": raw_results,
                        "mappings": {"fromHost": from_host_mappings, "toHost": to_host_mappings, "ports": port_mappings}}
@@ -175,7 +182,7 @@ def render_results(results, run_time, trailing_spaces=2):
     Prints test results in a readable way
     """
     num_tests = len([p for f in results for t in results[f] for p in results[f][t]])
-    LOGGER.info("Finished running %d tests in %.4f seconds", num_tests, run_time)
+    LOGGER.info("\nFinished running %d tests in %.4f seconds", num_tests, run_time)
     if num_tests > 0:
         # this format expects 4 positional argument and a keyword widths argument w
         line_format = '{0:{w[0]}}{1:{w[1]}}{2:{w[2]}}{3:{w[3]}}'
@@ -194,6 +201,12 @@ def render_results(results, run_time, trailing_spaces=2):
                     success_string = "success" if success else "failure"
                     if not success and "error" in results[from_host][to_host][port]:
                         success_string = "ERR: %s" % results[from_host][to_host][port]["error"]
+
+                    if success_string == "success":
+                        success_string = colored(success_string, 'green')
+                    else:
+                        success_string = colored(success_string, 'red')
+
                     LOGGER.info(line_format.format(from_host, to_host, port, success_string, w=widths))
 
 
@@ -207,12 +220,12 @@ def render_cases(cases, run_time, trailing_spaces=2):
     widths = [max([len(el) for el in l]) + trailing_spaces for l in zip(*case_string_tuples)]
     # formats string to choose each element of the given tuple or array with the according width element
     line_format = '{0[0]:{w[0]}}{0[1]:{w[1]}}{0[2]:{w[2]}}'
-    LOGGER.info("Generated %d cases in %.4f seconds", len(cases), run_time)
-    LOGGER.info("")
+    LOGGER.info("Generated %d cases in %.4f seconds\n", len(cases), run_time)
     if cases:
         LOGGER.info(line_format.format(("FROM", "TO", "PORT"), w=widths))
         for case in case_string_tuples:
             LOGGER.info(line_format.format(case, w=widths))
+    LOGGER.info("")
 
 
 def simplify_successful_results(results):

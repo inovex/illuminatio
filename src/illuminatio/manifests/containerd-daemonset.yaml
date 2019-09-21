@@ -62,6 +62,7 @@ spec:
       hostPID: true
       serviceAccount: illuminatio-runner
       terminationGracePeriodSeconds: 30
+      # TODO can we add here liveness and readiness checks?
       volumes:
       - configMap:
           defaultMode: 420
@@ -75,4 +76,3 @@ spec:
           path: /var/run/netns
           type: Directory
         name: net-ns
-        
