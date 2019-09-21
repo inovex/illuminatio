@@ -102,17 +102,19 @@ class NetworkTestOrchestrator:
                 continue
 
             self.logger.debug(f"Found namespace {name} in cache")
-            return True
+            return namespace
+
+        resp = None
 
         try:
-            api.read_namespace(name=name)
+            resp = api.read_namespace(name=name)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
-                return False
+                return None
 
             raise api_exception
 
-        return True
+        return resp
 
     def create_namespace(self, name, api: k8s.client.CoreV1Api, labels=None):
         """
@@ -272,6 +274,10 @@ class NetworkTestOrchestrator:
         else:
             namespace_name = from_host.namespace
         self.logger.debug("Generated namespace name '%s' for host %s", namespace_name, from_host)
+
+        resp = self.namespace_exists(namespace_name, api)
+        if resp:
+            return [resp]
 
         resp = self.create_namespace(namespace_name, api, labels=ns_labels)
         return [resp]

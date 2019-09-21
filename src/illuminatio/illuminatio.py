@@ -15,6 +15,8 @@ from illuminatio.cleaner import Cleaner
 from illuminatio.test_generator import NetworkTestCaseGenerator
 from illuminatio.test_orchestrator import NetworkTestOrchestrator
 from illuminatio.util import CLEANUP_ALWAYS, CLEANUP_ON_REQUEST
+from termcolor import colored
+
 
 LOGGER = logging.getLogger(__name__)
 click_log.basic_config(LOGGER)
@@ -177,7 +179,7 @@ def render_results(results, run_time, trailing_spaces=2):
     Prints test results in a readable way
     """
     num_tests = len([p for f in results for t in results[f] for p in results[f][t]])
-    LOGGER.info("Finished running %d tests in %.4f seconds", num_tests, run_time)
+    LOGGER.info("\nFinished running %d tests in %.4f seconds", num_tests, run_time)
     if num_tests > 0:
         # this format expects 4 positional argument and a keyword widths argument w
         line_format = '{0:{w[0]}}{1:{w[1]}}{2:{w[2]}}{3:{w[3]}}'
@@ -196,6 +198,12 @@ def render_results(results, run_time, trailing_spaces=2):
                     success_string = "success" if success else "failure"
                     if not success and "error" in results[from_host][to_host][port]:
                         success_string = "ERR: %s" % results[from_host][to_host][port]["error"]
+
+                    if success_string == "success":
+                        success_string = colored(success_string, 'green')
+                    else:
+                        success_string = colored(success_string, 'red')
+
                     LOGGER.info(line_format.format(from_host, to_host, port, success_string, w=widths))
 
 
@@ -209,12 +217,12 @@ def render_cases(cases, run_time, trailing_spaces=2):
     widths = [max([len(el) for el in l]) + trailing_spaces for l in zip(*case_string_tuples)]
     # formats string to choose each element of the given tuple or array with the according width element
     line_format = '{0[0]:{w[0]}}{0[1]:{w[1]}}{0[2]:{w[2]}}'
-    LOGGER.info("Generated %d cases in %.4f seconds", len(cases), run_time)
-    LOGGER.info("")
+    LOGGER.info("Generated %d cases in %.4f seconds\n", len(cases), run_time)
     if cases:
         LOGGER.info(line_format.format(("FROM", "TO", "PORT"), w=widths))
         for case in case_string_tuples:
             LOGGER.info(line_format.format(case, w=widths))
+    LOGGER.info("")
 
 
 def simplify_successful_results(results):
