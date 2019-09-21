@@ -118,7 +118,7 @@ class NetworkTestOrchestrator:
 
     def create_namespace(self, name, api: k8s.client.CoreV1Api, labels=None):
         """
-        Creates aa namespace with the according labels
+        Creates a namespace with the according labels
         """
         # Should we also ensure that the namespace has these labels?
         if labels:
@@ -307,7 +307,7 @@ class NetworkTestOrchestrator:
         """
         Ensures that all required resources for illuminatio are created
         """
-        # Actual DaemonSet creation
+        # Prerequisites for DaemonSet
         service_account_name = f"{PROJECT_PREFIX}-runner"
         self._ensure_service_account_exists(core_api, service_account_name, PROJECT_NAMESPACE)
         self._ensure_cluster_role_exists()
