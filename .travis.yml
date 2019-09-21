@@ -117,11 +117,15 @@ jobs:
       - minikube config set vm-driver none
       - sudo -H -E ./local_dev/start_docker.sh
       - pip install -r requirements.txt
+      - pip install codecov
       - python setup.py install
 
       script:
       # run illuminatio e2e tests
       - ./local_dev/run_e2e_tests.sh
+
+      after_script:
+      - codecov
 
     - stage: e2e
       name: "containerd - calico e2e Tests"
@@ -154,11 +158,15 @@ jobs:
       - minikube config set vm-driver none
       - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
+      - pip install codecov
       - python setup.py install
 
       script:
       # run illuminatio e2e tests
       - ./local_dev/run_e2e_tests.sh
+
+      after_script:
+      - codecov
 
     # merely build the image for untagged commits
     - stage: build
