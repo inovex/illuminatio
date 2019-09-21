@@ -45,7 +45,7 @@ def cli(incluster, kubeconfig):
             exit(1)
 
 
-@cli.command()
+@cli.command(short_help='create and run test cases')
 @click.option('-o', '--outfile', default=None,
               help='Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON')
 @click.option('-b/-w', '--brief/--wordy', 'brief', default=True,
@@ -58,7 +58,7 @@ def cli(incluster, kubeconfig):
               help='Target image that is used to generate pods (should have a webserver inside listening on port 80)')
 def run(outfile, brief, dry, runner_image, target_image):
     """
-    Create and execute test cases for Network Policies currently in cluster.
+    Create and execute test cases for NetworkPolicies currently in cluster.
     """
     runtimes = {}
     start_time = time.time()
@@ -242,7 +242,7 @@ def simplify_successful_results(results):
                     results[from_host][to_host][port] = {"success": False}
 
 
-@cli.command()
+@cli.command(short_help='delete test resources')
 @click.option('--hard/--soft', default=True,
               help='Whether to delete all resources or only those with cleanup policy \'on_request\'.')
 def clean(hard):
