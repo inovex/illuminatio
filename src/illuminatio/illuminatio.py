@@ -22,8 +22,11 @@ click_log.basic_config(LOGGER)
 
 @click.group(chain=True)
 @click_log.simple_verbosity_option(LOGGER, default="INFO")
-@click.option('--incluster', default=False, is_flag=True)
-def cli(incluster):
+@click.option('--incluster', default=False, is_flag=True,
+              help='Load credentials from kubernetes ServiceAccount. Cannot be used with --kubeconfig.')
+@click.option('--kubeconfig', default=None, envvar='KUBECONFIG',
+              help='Path to the kubeconfig file to use. Cannot be used with --incluster.')
+def cli(incluster, kubeconfig):
     """
     Load suitable kubeconfig
     """
@@ -31,7 +34,7 @@ def cli(incluster):
         k8s.config.load_incluster_config()
     else:
         try:
-            k8s.config.load_kube_config()
+            k8s.config.load_kube_config(config_file=kubeconfig)
         except k8s.config.ConfigException as config_error:
             LOGGER.error(config_error)
             exit(1)
