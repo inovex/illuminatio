@@ -30,7 +30,7 @@ click_log.basic_config(LOGGER)
               help='Path to the kubeconfig file to use. Cannot be used with --incluster.')
 def cli(incluster, kubeconfig):
     """
-    Load suitable kubeconfig
+    CLI for testing kubernetes NetworkPolicies.
     """
     if incluster:
         k8s.config.load_incluster_config()
@@ -58,7 +58,7 @@ def cli(incluster, kubeconfig):
               help='Target image that is used to generate pods (should have a webserver inside listening on port 80)')
 def run(outfile, brief, dry, runner_image, target_image):
     """
-    Runs illuminatio with given docker images for the runner and target pod
+    Create and execute test cases for Network Policies currently in cluster.
     """
     runtimes = {}
     start_time = time.time()
@@ -247,7 +247,7 @@ def simplify_successful_results(results):
               help='Whether to delete all resources or only those with cleanup policy \'on_request\'.')
 def clean(hard):
     """
-    Deletes all or only specific resources created by illuminatio
+    Delete resources created by illuminatio.
     """
     clean_up_policies = [CLEANUP_ON_REQUEST, CLEANUP_ALWAYS] if hard else [CLEANUP_ALWAYS]
     LOGGER.info("Starting cleaning resources with policies %s", clean_up_policies)
