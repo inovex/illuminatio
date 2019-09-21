@@ -12,6 +12,7 @@ def createOrchestrator(cases):
     orch = NetworkTestOrchestrator(cases, logging.getLogger("orchestrator_test"))
     return orch
 
+
 def get_manifest(yaml_file):
     asset_path = "tests/assets"
     daemonset_manifest = None
@@ -71,6 +72,7 @@ def test_ensure_project_namespace_exists_not_in_cache():
     assert orch.namespace_exists("illuminatio", api_mock)
     assert len(orch._current_pods) == 0
 
+
 def test_create_daemonset_manifest_docker():
     orch = createOrchestrator([])
     orch.set_runner_image("inovex/illuminatio-runner:dev")
@@ -86,6 +88,7 @@ def test_create_daemonset_manifest_docker():
                                             container_runtime)
     assert result == expected
 
+
 def test_create_daemonset_manifest_containerd():
     orch = createOrchestrator([])
     orch.set_runner_image("inovex/illuminatio-runner:dev")
@@ -100,6 +103,7 @@ def test_create_daemonset_manifest_containerd():
                                             config_map_name,
                                             container_runtime)
     assert result == expected
+
 
 def test_create_daemonset_manifest_unsupported():
     orch = createOrchestrator([])

@@ -32,20 +32,6 @@ def get_container_runtime():
     raise ValueError("Node not found")
 
 
-def get_manifest(yaml_filename):
-    """
-    Reads a manifest from the illuminatio installation directory into a dictionary
-    """
-    manifests_path = 'manifests/'
-    data = get_data('illuminatio', "%s%s" % (manifests_path, yaml_filename))
-    daemonset_manifest = None
-    try:
-        daemonset_manifest = yaml.safe_load(data)
-    except yaml.YAMLError as exc:
-        print(exc)
-    return daemonset_manifest
-
-
 def _hosts_are_in_cluster(case):
     return all([isinstance(host, (ClusterHost, GenericClusterHost))
                 for host in [case.from_host, case.to_host]])
@@ -75,6 +61,21 @@ class NetworkTestOrchestrator:
         Updates the target docker image
         """
         self.oci_images["target"] = target_image
+
+    def template_manifest(self, manifest_file, **kwargs):
+        """
+        Reads an YAML manifest and convert it to a string
+        templates all variables passed and returns a dict
+        """
+        self.logger.debug(kwargs)
+        data = get_data("illuminatio", f"manifests/{manifest_file}")
+        data_str = str(data, 'utf-8')
+
+        try:
+            return yaml.safe_load(data_str.format(**kwargs))
+        except yaml.YAMLError as exc:
+            self.logger.error(exc)
+            exit(1)
 
     def refresh_cluster_resources(self, api: k8s.client.CoreV1Api):
         """
@@ -364,7 +365,6 @@ class NetworkTestOrchestrator:
         Creates a DaemonSet manifest on basis of the project's manifest files and the current
         container runtime
         """
-        daemon_set_dict = get_manifest("runner-daemonset.yaml")
         cri_socket = ""
         runtime = ""
         netns_path = "/var/run/netns"
@@ -379,37 +379,14 @@ class NetworkTestOrchestrator:
         else:
             raise NotImplementedError(f"Unsupported container runtime: {container_runtime}")
 
-        # adapt non-static values
-        daemon_set_dict["metadata"]["name"] = daemon_set_name
-        daemon_set_dict["metadata"]["namespace"] = PROJECT_NAMESPACE
-
-        # CONTAINER_RUNTIME_NAME
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_images["runner"]
-        runtime_env = {"name": "CONTAINER_RUNTIME_NAME", "value": runtime}
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["env"].append(runtime_env)
-        daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
-
-        # Create Volumes for illuminatio
-        cm_volume = {"name": "cases-volume", "configMap": {"defaultMode": 420, "name": config_map_name}}
-        net_ns_volume = {"name": "cri-socket", "hostPath": {"path": cri_socket, "type": "Socket"}}
-        cri_socket_volume = {"name": "net-ns", "hostPath": {"path": netns_path, "type": "Directory"}}
-
-        # Create the VolumeMounts
-        cm_mount = {"mountPath": "/etc/config/", "name": "cases-volume"}
-        net_ns_mount = {"mountPath": cri_socket, "name": "cri-socket", "readOnly": True}
-        cri_socket_mount = {"mountPath": netns_path, "name": "net-ns", "readOnly": True}
-
-        # Add Volumes to spec
-        daemon_set_dict["spec"]["template"]["spec"]["volumes"] = [cm_volume, net_ns_volume, cri_socket_volume]
-
-        # Add VolumeMounts to spec
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"] = [cm_mount, net_ns_mount, cri_socket_mount]
-
-        daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = f"{PROJECT_PREFIX}-ds-runner"
-        self.logger.debug("daemonset_dict:\n%s", daemon_set_dict)
-
-
-        return daemon_set_dict
+        return self.template_manifest("runner-daemonset.yaml", cri_socket=cri_socket,
+                                      netns_path=netns_path,
+                                      runtime=runtime,
+                                      name=daemon_set_name,
+                                      namespace=PROJECT_NAMESPACE,
+                                      image=self.oci_images["runner"],
+                                      service_account_name=service_account_name,
+                                      config_map_name=config_map_name)
 
     def create_daemonset(self, daemon_manifest, api):
         """
@@ -506,7 +483,7 @@ class NetworkTestOrchestrator:
         rbac_api = k8s.client.RbacAuthorizationV1Api()
         # TODO we should read the role instead just trying to create it
         try:
-            cluster_role_dict = get_manifest("cluster-role.yaml")
+            cluster_role_dict = self.template_manifest("cluster-role.yaml")
             rbac_api.create_cluster_role(body=cluster_role_dict)
         except k8s.client.rest.ApiException as api_exception:
             json_body = json.loads(api_exception.body)

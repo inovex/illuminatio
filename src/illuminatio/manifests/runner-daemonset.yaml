@@ -5,15 +5,14 @@ metadata:
     app: illuminatio-runner
     illuminatio-cleanup: on-request
     illuminatio-role: ds_runner-set
-  name: illuminatio-runner
-  namespace: illuminatio
+  name: {name}
+  namespace: {namespace}
 spec:
   selector:
     matchLabels:
       illuminatio-role: ds_runner
   template:
     metadata:
-      generateName: illuminatio-ds-runner
       labels:
         illuminatio-cleanup: on-request
         illuminatio-role: ds_runner
@@ -37,7 +36,9 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: localhost:5000/illuminatio-runner:dev
+        - name: CONTAINER_RUNTIME_NAME
+          value: {runtime}
+        image: {image}
         imagePullPolicy: Always
         name: runner
         securityContext:
@@ -47,8 +48,30 @@ spec:
           capabilities:
             add:
               - SYS_ADMIN
+        volumeMounts:
+        - mountPath: /etc/config/
+          name: cases-volume
+        - mountPath: {cri_socket}
+          name: cri-socket
+          readOnly: true
+        - mountPath: {netns_path}
+          name: net-ns
+          readOnly: true
       dnsPolicy: ClusterFirst
       hostPID: true
-      serviceAccount: illuminatio-runner
+      serviceAccount: {service_account_name}
       terminationGracePeriodSeconds: 30
       # TODO can we add here liveness and readiness checks?
+      volumes:
+      - name: cases-volume
+        configMap:
+          defaultMode: 420
+          name: {config_map_name}
+      - name: cri-socket
+        hostPath:
+          path: {cri_socket}
+          type: Socket
+      - name: net-ns
+        hostPath:
+          path: {netns_path}
+          type: Directory

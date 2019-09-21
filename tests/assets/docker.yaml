@@ -13,7 +13,6 @@ spec:
       illuminatio-role: ds_runner
   template:
     metadata:
-      generateName: illuminatio-ds-runner
       labels:
         illuminatio-cleanup: on-request
         illuminatio-role: ds_runner
