@@ -360,30 +360,25 @@ class NetworkTestOrchestrator:
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
 
     # TODO add unit tests !!!
-    def create_daemonset_manifest(self, daemon_set_name, service_account_name, config_map_name):
+    def create_daemonset_manifest(self, daemon_set_name, service_account_name, config_map_name, container_runtime):
         """
         Creates a DaemonSet manifest on basis of the project's manifest files and the current
         container runtime
         """
-        # Todo should be templated !
-        container_runtime_version = get_container_runtime()
         daemon_set_dict = get_manifest("runner-daemonset.yaml")
         cri_socket = ""
         runtime = ""
         netns_path = "/var/run/netns"
 
-        if container_runtime_version.startswith("docker"):
+        if container_runtime.startswith("docker"):
             netns_path = "/var/run/docker/netns"
             cri_socket = "/var/run/docker.sock"
             runtime = "docker"
-        elif container_runtime_version.startswith("containerd"):
+        elif container_runtime.startswith("containerd"):
             cri_socket = "/run/containerd/containerd.sock"
             runtime = "containerd"
-        elif container_runtime_version.startswith("crio"):
-            cri_socket = "/var/run/crio/crio.sock"
-            runtime = "containerd"
         else:
-            raise NotImplementedError(f"Unsupported container runtime: {container_runtime_version}")
+            raise NotImplementedError(f"Unsupported container runtime: {container_runtime}")
 
         # adapt non-static values
         daemon_set_dict["metadata"]["name"] = daemon_set_name
@@ -391,41 +386,29 @@ class NetworkTestOrchestrator:
 
         # CONTAINER_RUNTIME_NAME
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_images["runner"]
-        runtime_env = k8s.client.V1EnvVar(name="CONTAINER_RUNTIME_NAME", value=runtime)
+        runtime_env = {"name": "CONTAINER_RUNTIME_NAME", "value": runtime}
         daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["env"].append(runtime_env)
         daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
 
         # Create Volumes for illuminatio
-        cm_volume = k8s.client.V1Volume(name="cases-volume",
-                                        config_map=k8s.client.V1ConfigMapVolumeSource(
-                                            default_mode=420,
-                                            name=config_map_name))
-        net_ns_volume = k8s.client.V1Volume(name="cri-socket",
-                                            host_path=k8s.client.V1HostPathVolumeSource(
-                                                path=cri_socket,
-                                                type="Socket"))
-        cri_socket_volume = k8s.client.V1Volume(name="net-ns",
-                                                host_path=k8s.client.V1HostPathVolumeSource(
-                                                    path=netns_path,
-                                                    type="Directory"))
+        cm_volume = {"name": "cases-volume", "configMap": {"defaultMode": 420, "name": config_map_name}}
+        net_ns_volume = {"name": "cri-socket", "hostPath": {"path": cri_socket, "type": "Socket"}}
+        cri_socket_volume = {"name": "net-ns", "hostPath": {"path": netns_path, "type": "Directory"}}
 
         # Create the VolumeMounts
-        cm_mount = k8s.client.V1VolumeMount(mount_path="/etc/config/", name="cases-volume")
-        net_ns_mount = k8s.client.V1VolumeMount(mount_path=cri_socket, name="cri-socket", read_only=True)
-        cri_socket_mount = k8s.client.V1VolumeMount(mount_path=netns_path, name="net-ns", read_only=True)
+        cm_mount = {"mountPath": "/etc/config/", "name": "cases-volume"}
+        net_ns_mount = {"mountPath": cri_socket, "name": "cri-socket", "readOnly": True}
+        cri_socket_mount = {"mountPath": netns_path, "name": "net-ns", "readOnly": True}
 
         # Add Volumes to spec
-        daemon_set_dict["spec"]["template"]["spec"]["volumes"].append(cm_volume)
-        daemon_set_dict["spec"]["template"]["spec"]["volumes"].append(net_ns_volume)
-        daemon_set_dict["spec"]["template"]["spec"]["volumes"].append(cri_socket_volume)
+        daemon_set_dict["spec"]["template"]["spec"]["volumes"] = [cm_volume, net_ns_volume, cri_socket_volume]
 
         # Add VolumeMounts to spec
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append(cm_mount)
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append(net_ns_mount)
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append(cri_socket_mount)
+        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["volumeMounts"] = [cm_mount, net_ns_mount, cri_socket_mount]
 
         daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = f"{PROJECT_PREFIX}-ds-runner"
         self.logger.debug("daemonset_dict:\n%s", daemon_set_dict)
+
 
         return daemon_set_dict
 
@@ -448,7 +431,11 @@ class NetworkTestOrchestrator:
             api.read_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, name=daemonset_name)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
-                daemonset_manifest = self.create_daemonset_manifest(daemonset_name, service_account_name, config_map_name)
+                daemonset_manifest = self.create_daemonset_manifest(
+                    daemonset_name,
+                    service_account_name,
+                    config_map_name,
+                    get_container_runtime())
                 self.create_daemonset(daemonset_manifest, api)
             else:
                 raise api_exception
