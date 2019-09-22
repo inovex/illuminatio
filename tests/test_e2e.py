@@ -1,37 +1,66 @@
-import subprocess
 import pytest
+import subprocess
+import tempfile
+import yaml
 from kubernetes import client, config, utils
 
+E2E_INPUT_MANIFEST = "e2e-manifests/{e2e_test_case}.yml"
+E2E_EXPECTED_YAML = "e2e-manifests/expected/{e2e_test_case}.yml"
+E2E_RUNNER_IMAGE = "localhost:5000/illuminatio-runner:dev"
 
-@pytest.mark.e2e
-def test_deny_all_traffic_to_an_application():
-    namespace = "01-deny-all"
+
+@pytest.fixture
+def kubernetes_utils():
     config.load_kube_config()
     k8s_client = client.ApiClient()
-    corev1 = client.CoreV1Api()
+    return k8s_client, client.CoreV1Api()
 
-    corev1.create_namespace(client.V1Namespace(
-        metadata=client.V1ObjectMeta(
-            name=namespace,
-            labels={"illuminatio-e2e": namespace})))
-    utils.create_from_yaml(k8s_client,
-                           "e2e-manifests/01-deny-all-traffic-to-an-application.yml",
-                           namespace=namespace)
 
-    # ToDo add sleep or wait until all resources are up otherwise we have a race condition
-    # ToDo handle execptions
-    res = subprocess.run(["illuminatio", "run", "--runner-image=localhost:5000/illuminatio-runner:dev"],
-                         capture_output=True,
-                         timeout=60)
-
-    assert res.returncode == 0
-    # ToDo evaluate result
-    print(res.stdout)
-
-    # Clean up
+@pytest.fixture(autouse=True)
+def clean_cluster(kubernetes_utils):
+    k8s_client, core_v1 = **kubernetes_utils
+    # delete e2e namespaces created in test setup
+    e2e_namespaces = core_v1.list_namespace(label_selector="illuminatio-e2e")
+    for namespace in e2e_namespaces.items:
+        core_v1.delete_namespace(name=namespace.name)
+    # delete illuminatio resources
     res = subprocess.run(["illuminatio", "clean"], capture_output=True)
     assert res.returncode == 0
-    print(res.stdout)
 
-    # Clean up
-    corev1.delete_namespace(name=namespace)
+
+@pytest.mark.parametrize(
+    "e2e_test_case",
+    [
+        "01-deny-all-traffic-to-an-application"
+    ],
+)
+@pytest.mark.e2e
+def test__e2e(e2e_test_case, kubernetes_utils):
+    # unpack kubernetes client
+    k8s_client, core_v1 = **kubernetes_utils
+    # get input and expected from test case name
+    input_manifest = E2E_INPUT_MANIFEST.format(e2e_test_case)
+    expected_yaml = E2E_EXPECTED_YAML.format(e2e_test_case)
+    # create resources to test with
+    core_v1.create_namespace(
+        client.V1Namespace(
+            metadata=client.V1ObjectMeta(
+            name=e2e_test_case,
+            labels={"illuminatio-e2e": e2e_test_case})))
+    utils.create_from_yaml(k8s_client,
+                           input_manifest,
+                           namespace=e2e_test_case)
+    # wait for test resources to be ready
+    # TODO
+    # run illuminatio, with yaml output for later comparison
+    result_file = tempfile.TemporaryFile(suffix=".yaml")
+    cmd = ["illuminatio", "run", f"--runner-image={E2E_RUNNER_IMAGE}", f"-o={result_file}"]
+    res = subprocess.run(cmd, capture_output=True, timeout=120)
+    # assert that command didn't fail
+    assert res.returncode == 0
+    # load contents of result and expected
+    result = yaml.safe_load(result_file)
+    expected = yaml.safe_load(expected_yaml)
+    # assert that the correct cases have been generated and results match
+    assert "cases" in result
+    assert expected == result["cases"]
