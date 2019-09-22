@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import yaml
 from kubernetes import client, config, utils
+from tests.utils import wait_for_deployments_ready
 
 E2E_INPUT_MANIFEST = "e2e-manifests/{e2e_test_case}.yml"
 E2E_EXPECTED_YAML = "e2e-manifests/expected/{e2e_test_case}.yml"
@@ -35,7 +36,7 @@ def clean_cluster(kubernetes_utils):
     ],
 )
 @pytest.mark.e2e
-def test__e2e(e2e_test_case, kubernetes_utils):
+def test__e2e__clean_setup__results_are_expected(e2e_test_case, kubernetes_utils):
     # unpack kubernetes client
     k8s_client, core_v1 = **kubernetes_utils
     # get input and expected from test case name
@@ -51,7 +52,7 @@ def test__e2e(e2e_test_case, kubernetes_utils):
                            input_manifest,
                            namespace=e2e_test_case)
     # wait for test resources to be ready
-    # TODO
+    wait_for_deployments_ready(namespace=e2e_test_case, api=k8s_client.AppsV1Api())
     # run illuminatio, with yaml output for later comparison
     result_file = tempfile.TemporaryFile(suffix=".yaml")
     cmd = ["illuminatio", "run", f"--runner-image={E2E_RUNNER_IMAGE}", f"-o={result_file}"]
