@@ -2,6 +2,7 @@ import pytest
 import time
 import kubernetes as k8s
 
+
 def wait_for_deployments_ready(namespace,
                                api: k8s.client.AppsV1Api,
                                max_tries=30,

@@ -19,7 +19,7 @@ def kubernetes_utils():
 
 @pytest.fixture(autouse=True)
 def clean_cluster(kubernetes_utils):
-    k8s_client, core_v1 = *kubernetes_utils
+    k8s_client, core_v1 = kubernetes_utils
     # delete e2e namespaces created in test setup
     e2e_namespaces = core_v1.list_namespace(label_selector="illuminatio-e2e")
     for namespace in e2e_namespaces.items:
@@ -33,12 +33,12 @@ def clean_cluster(kubernetes_utils):
     "e2e_test_case",
     [
         "01-deny-all-traffic-to-an-application"
-    ],
-)
+        ],
+    )
 @pytest.mark.e2e
 def test__e2e__clean_setup__results_are_expected(e2e_test_case, kubernetes_utils):
     # unpack kubernetes client
-    k8s_client, core_v1 = *kubernetes_utils
+    k8s_client, core_v1 = kubernetes_utils
     # get input and expected from test case name
     input_manifest = E2E_INPUT_MANIFEST.format(e2e_test_case)
     expected_yaml = E2E_EXPECTED_YAML.format(e2e_test_case)
