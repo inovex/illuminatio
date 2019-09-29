@@ -12,4 +12,11 @@ docker build -t "${ILLUMINATIO_IMAGE}" -f illuminatio-runner.dockerfile .
 
 docker push "${ILLUMINATIO_IMAGE}"
 
+if [[ -n "${CI:-}" ]];
+then
+  echo "Prepull: ${ILLUMINATIO_IMAGE} to ensure imag is available"
+  sudo crictl pull "${ILLUMINATIO_IMAGE}"
+  sudo docker pull "${ILLUMINATIO_IMAGE}"
+fi
+
 python setup.py test --addopts="-m e2e"
