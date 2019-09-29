@@ -15,8 +15,12 @@ docker push "${ILLUMINATIO_IMAGE}"
 if [[ -n "${CI:-}" ]];
 then
   echo "Prepull: ${ILLUMINATIO_IMAGE} to ensure imag is available"
-  sudo crictl pull "${ILLUMINATIO_IMAGE}"
+  # If crictl is not installed e.g. only Docker
+  sudo crictl pull "${ILLUMINATIO_IMAGE}" || true
   sudo docker pull "${ILLUMINATIO_IMAGE}"
 fi
 
-python setup.py test --addopts="-m e2e"
+if ! python setup.py test --addopts="-m e2e";
+then
+  kubctl -n illuminatio get po -o yaml
+fi
