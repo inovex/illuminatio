@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/inovex/illuminatio.svg?branch=master)](https://travis-ci.org/inovex/illuminatio)
 [![codecov](https://codecov.io/gh/inovex/illuminatio/branch/master/graph/badge.svg)](https://codecov.io/gh/inovex/illuminatio)
 
-![alt text](/logo/logo_small.png)
+![logo](/img/logo_small.png)
 
 Illuminatio is a tool for automatically testing kubernetes network policies.
 Simply execute `illuminatio clean run`
@@ -11,6 +11,8 @@ and Illuminatio will scan your kubernetes cluster for network policies, build te
 to determine if the policies are in effect.
 
 An overview of the concept is visualized in [the concept doc](docs/concept.md).
+
+![Demo with NetworkPolicy enabled](img/demo-netpol-enabled.gif)
 
 ## Getting started
 
