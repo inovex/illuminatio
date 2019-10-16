@@ -5,8 +5,8 @@ import yaml
 from kubernetes import client, config, utils
 from tests.utils import wait_for_deployments_ready
 
-E2E_INPUT_MANIFEST = "e2e-manifests/{e2e_test_case}.yml"
-E2E_EXPECTED_YAML = "e2e-manifests/expected/{e2e_test_case}.yml"
+E2E_INPUT_MANIFEST = "e2e-manifests/{}.yml"
+E2E_EXPECTED_YAML = "e2e-manifests/expected/{}.yml"
 E2E_RUNNER_IMAGE = "localhost:5000/illuminatio-runner:dev"
 
 
@@ -46,7 +46,9 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, kubernetes_utils
     utils.create_from_yaml(k8s_client,
                            input_manifest)
     # wait for test resources to be ready
-    wait_for_deployments_ready(namespace=e2e_test_case, api=k8s_client.AppsV1Api())
+    wait_for_deployments_ready(namespace=e2e_test_case,
+                               api=k8s_client.AppsV1Api(),
+                               core_api=core_v1)
     # run illuminatio, with yaml output for later comparison
     result_file = tempfile.TemporaryFile(suffix=".yaml")
     cmd = ["illuminatio", "run", f"--runner-image={E2E_RUNNER_IMAGE}", f"-o={result_file}"]
