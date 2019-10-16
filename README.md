@@ -12,7 +12,11 @@ to determine if the policies are in effect.
 
 An overview of the concept is visualized in [the concept doc](docs/concept.md).
 
+## Demo
+
 ![Demo with NetworkPolicy enabled](img/demo-netpol-enabled.gif)
+
+Watch it on asciinema with [NetworkPolicy enabled](https://asciinema.org/a/273548) or with [NetworkPolicy disabled](https://asciinema.org/a/273556).
 
 ## Getting started
 
