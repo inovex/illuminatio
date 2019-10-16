@@ -1,4 +1,4 @@
-# Developing Illuminatio
+# Developing illuminatio
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
-Now you can install the Illuminatio client:
+Now you can install the illuminatio client:
 
 ```bash
 python3 setup.py install
