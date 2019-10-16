@@ -10,6 +10,7 @@ kind: Deployment
 metadata:
   labels:
     app: web
+    illuminatio-e2e: 01-deny-all-traffic-to-an-application
   name: web
   namespace: 01-deny-all-traffic-to-an-application
 spec:
