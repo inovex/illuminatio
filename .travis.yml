@@ -100,7 +100,7 @@ jobs:
       env:
         - KUBECONFIG="$HOME/.kube/config"
         - KUBERNETES_VERSION=v1.15.3
-        - MINIKUBE_VERSION=v1.4.0
+        - MINIKUBE_VERSION=v1.3.1
         - CHANGE_MINIKUBE_NONE_USER=true
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
