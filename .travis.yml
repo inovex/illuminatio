@@ -151,6 +151,7 @@ jobs:
 
       before_install:
       # See: https://github.com/containerd/cri/blob/master/docs/installation.md
+      - sudo systemctl stop docker
       - sudo apt-get update && sudo apt-get install libseccomp2 -y
       - curl --fail -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
       - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
