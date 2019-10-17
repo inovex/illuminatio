@@ -60,7 +60,7 @@ class Cleaner:
         """
         Deletes all cluster role bindings matching the given cleanup policy
         """
-        self.logger.info("Deleting CRBs  with cleanup policy %s globally", cleanup_policy)
+        self.logger.debug("Deleting CRDs with cleanup policy %s globally", cleanup_policy)
         res = self.rbac_api.delete_collection_cluster_role_binding(
             label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy}))
         self.logger.debug(res)
@@ -89,13 +89,15 @@ class Cleaner:
         namespaces = self.core_api.list_namespace(
             label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy})).items
         namespace_names = [n.metadata.name for n in namespaces]
-        self.logger.info("Deleting namespaces %s with cleanup policy %s", namespace_names, cleanup_policy)
+        self.logger.debug("Deleting namespaces %s with cleanup policy %s", namespace_names, cleanup_policy)
         for namespace in namespaces:
             resp = self.core_api.delete_namespace(namespace.metadata.name, propagation_policy="Background")
             responses.append(resp)
         while self.core_api.list_namespace(label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy})).items:
             self.logger.debug("Waiting for namespaces %s to be deleted.", namespace_names)
-            time.sleep(2)
+
+        # TODO ugly hack to prevent race conditions when deleting namespaces
+        time.sleep(2)
         return responses
 
     def delete_resource_with_cleanup_policy(self, namespaces, cleanup_policy, method, resource_name):
@@ -104,8 +106,8 @@ class Cleaner:
         """
         responses = []
         for namespace in namespaces:
-            self.logger.info("Deleting %s in namespace %s with cleanup policy %s",
-                             resource_name, namespace, cleanup_policy)
+            self.logger.debug("Deleting %s in namespace %s with cleanup policy %s",
+                              resource_name, namespace, cleanup_policy)
             try:
                 resp = method(namespace, label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy}))
                 responses.append(resp)
