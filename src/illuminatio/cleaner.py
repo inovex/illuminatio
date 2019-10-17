@@ -95,7 +95,9 @@ class Cleaner:
             responses.append(resp)
         while self.core_api.list_namespace(label_selector=labels_to_string({CLEANUP_LABEL: cleanup_policy})).items:
             self.logger.debug("Waiting for namespaces %s to be deleted.", namespace_names)
-            time.sleep(2)
+
+        # TODO ugly hack to prevent race conditions when deleting namespaces
+        time.sleep(2)
         return responses
 
     def delete_resource_with_cleanup_policy(self, namespaces, cleanup_policy, method, resource_name):
