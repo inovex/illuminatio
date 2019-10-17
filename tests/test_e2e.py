@@ -19,7 +19,7 @@ def kubernetes_utils():
 
 @pytest.fixture(autouse=True)
 def clean_cluster(kubernetes_utils):
-    yield # below code is executed after test(s)
+    yield  # below code is executed after test(s)
     _, core_v1, _ = kubernetes_utils
     # delete e2e namespaces created in test setup
     e2e_namespaces = core_v1.list_namespace(label_selector="illuminatio-e2e")
@@ -53,7 +53,7 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, kubernetes_utils
     tmp_dir = tempfile.TemporaryDirectory()
     result_file = open(f"{tmp_dir.name}/result.yaml", "w")
     cmd = ["illuminatio", "run", "--runner-image", f"{E2E_RUNNER_IMAGE}", "-o", f"{result_file.name}"]
-    res = subprocess.check_output(cmd, timeout=120)
+    subprocess.check_output(cmd, timeout=120)
     # load contents of result and expected
     stream = open(f"{tmp_dir.name}/result.yaml", "r")
     result = yaml.safe_load(stream)
