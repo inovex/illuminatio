@@ -242,7 +242,7 @@ def clean(hard):
     apps_api = k8s.client.AppsV1Api()
     rbac_api = k8s.client.RbacAuthorizationV1Api()
     cleaner = Cleaner(core_api, apps_api, rbac_api, LOGGER)
-    # clean up project namespaces, as they cascasde resource deletion
+    # clean up project namespaces, as they cascade resource deletion
     for cleanup_val in clean_up_policies:
         cleaner.clean_up_namespaces_with_cleanup_policy(cleanup_val)
     # clean up resources in remaining ns
