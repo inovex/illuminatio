@@ -9,17 +9,21 @@ E2E_INPUT_MANIFEST = "e2e-manifests/{}.yml"
 E2E_EXPECTED_YAML = "e2e-manifests/expected/{}.yml"
 E2E_RUNNER_IMAGE = "localhost:5000/illuminatio-runner:dev"
 
+
 @pytest.fixture
 def load_kube_config():
     config.load_kube_config()
+
 
 @pytest.fixture
 def api_client(load_kube_config):
     return client.ApiClient()
 
+
 @pytest.fixture
 def core_v1(load_kube_config):
     return client.CoreV1Api()
+
 
 @pytest.fixture
 def apps_v1(load_kube_config):
@@ -70,7 +74,6 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps
     assert expected is not None,  f"Could not load expected from {expected_yaml}"
     # assert that the correct cases have been generated and results match
     assert "cases" in result
-    cases_dump = yaml.dump(result["cases"])
     try:
         assert expected == result["cases"]
     except AssertionError as e:
