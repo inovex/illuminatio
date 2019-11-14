@@ -203,7 +203,7 @@ def test_mergeInDict_twoCasesSameFromHostSameToHost_returnsDict():
 def test_toYaml_oneTestCase_returnsExpectedYaml():
     testHost = ClusterHost("namespc", {"label": "val"})
     case = NetworkTestCase(LocalHost(), testHost, 80, False)
-    expected = "localhost:\n  namespc:label=val: ['-80']\n"
+    expected = "localhost:\n  namespc:label=val:\n  - '-80'\n"
     assert to_yaml([case]) == expected
 
 
