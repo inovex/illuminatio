@@ -70,5 +70,12 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps
     assert expected is not None,  f"Could not load expected from {expected_yaml}"
     # assert that the correct cases have been generated and results match
     assert "cases" in result
-    print(yaml.dump(result["cases"]))
-    assert expected == result["cases"]
+    cases_dump = yaml.dump(result["cases"])
+    try:
+        assert expected == result["cases"]
+    except AssertionError as e:
+        print("Generated cases did not match expected. Generated:\n")
+        print(yaml.dump(result["cases"]))
+        print("Expected:\n")
+        print(yaml.dump(expected))
+        raise e
