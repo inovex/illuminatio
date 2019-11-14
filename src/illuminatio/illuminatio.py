@@ -84,6 +84,11 @@ def run(outfile, brief, dry, runner_image, target_image):
     if dry:
         LOGGER.info("Skipping test execution as --dry was set")
         return
+
+    if not cases:
+        LOGGER.info("Skipping resource creation since no test were generated")
+        return
+
     results, test_runtimes, additional_data, resource_creation_time, result_wait_time = execute_tests(cases, orch)
     runtimes["resource-creation"] = resource_creation_time - case_time
     runtimes["result-waiting"] = result_wait_time - resource_creation_time
