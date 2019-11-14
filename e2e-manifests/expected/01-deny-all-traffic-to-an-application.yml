@@ -1,0 +1,4 @@
+01-deny-all-traffic-to-an-application:app=web:
+  01-deny-all-traffic-to-an-application:app=web:
+    -*:
+      success: true

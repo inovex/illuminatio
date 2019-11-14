@@ -26,7 +26,6 @@ jobs:
        - "3.6"
       script:
       - pip3 freeze
-      - python setup.py test
       - make lint
 
     - stage: "Test"
@@ -37,7 +36,6 @@ jobs:
        - "3.7"
       script:
       - pip3 freeze
-      - python setup.py test
       - make lint
 
     - stage: "Test"
@@ -77,7 +75,7 @@ jobs:
       - "3.6"
       script:
       - pip3 freeze
-      - python setup.py test --addopts --runslow
+      - python setup.py test --addopts="-m 'not e2e' --runslow"
 
     - stage: "Test"
       name: "test:unittest:3.7"
@@ -88,7 +86,7 @@ jobs:
       - pip install codecov
       script:
       - pip3 freeze
-      - python setup.py test --addopts --runslow
+      - python setup.py test --addopts="-m 'not e2e' --runslow"
       after_script:
       - codecov
 

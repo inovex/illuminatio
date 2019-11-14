@@ -19,7 +19,6 @@ minikube start \
     --extra-config=controller-manager.cluster-cidr=192.168.0.0/16 \
     --bootstrapper=kubeadm \
     --host-only-cidr=172.17.17.1/24 \
-    --insecure-registry=localhost:5000 \
     --kubernetes-version="${KUBERNETES_VERSION}"
 
 # Setup the minikube docker registry and calico
