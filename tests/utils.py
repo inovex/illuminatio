@@ -5,7 +5,6 @@ import kubernetes as k8s
 
 def wait_for_deployments_ready(e2_test_case,
                                api: k8s.client.AppsV1Api,
-                               core_api: k8s.client.CoreV1Api,
                                max_tries=30,
                                sleep_time=5):
     """
