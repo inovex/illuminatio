@@ -51,7 +51,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/config/
           name: cases-volume
-        - mountPath: /run/containerd/containerd.sock
+        - mountPath: /var/run/dockershim.sock
           name: cri-socket
           readOnly: true
         - mountPath: /var/run/netns
