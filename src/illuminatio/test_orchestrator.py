@@ -374,7 +374,8 @@ class NetworkTestOrchestrator:
             cri_socket = "/var/run/docker.sock"
             runtime = "docker"
         elif container_runtime.startswith("containerd"):
-            cri_socket = "/run/containerd/containerd.sock"
+            # We use this old path "/run/containerd/containerd.sock"
+            cri_socket = "/var/run/dockershim.sock"
             runtime = "containerd"
         else:
             raise NotImplementedError(f"Unsupported container runtime: {container_runtime}")
