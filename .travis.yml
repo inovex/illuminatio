@@ -90,92 +90,20 @@ jobs:
       after_script:
       - codecov
 
-    - stage: e2e
-      name: "docker - calico e2e Tests"
-      sudo: required
-      language: python
-      python:
-        - "3.7"
-      # ToDo implement multiple python versions?
-      env:
-        - KUBECONFIG="$HOME/.kube/config"
-        - KUBERNETES_VERSION=v1.15.3
-        - MINIKUBE_VERSION=v1.3.1
-        - CHANGE_MINIKUBE_NONE_USER=true
-        - MINIKUBE_WANTUPDATENOTIFICATION=false
-        - MINIKUBE_WANTREPORTERRORPROMPT=false
-        - MINIKUBE_HOME=$HOME
-
-      before_script:
-      # install dependent binaries
-      - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
-      - mkdir -p $HOME/.kube $HOME/.minikube
-      - touch $KUBECONFIG
-      - minikube config set vm-driver none
-      - sudo -H -E ./local_dev/start_docker.sh
-      - pip install -r requirements.txt
-      - pip install codecov
-      - python setup.py install
-
-      script:
-      # run illuminatio e2e tests
-      - ./local_dev/run_e2e_tests.sh
-
-      after_script:
-      - codecov
-
-    - stage: e2e
-      name: "containerd - calico e2e Tests"
-      sudo: required
-      language: python
-      python:
-        - "3.7"
-      env:
-        - CONTAINERD_VERSION=1.2.6
-        - KUBECONFIG="$HOME/.kube/config"
-        - KUBERNETES_VERSION=v1.15.3
-        - MINIKUBE_VERSION=v1.3.1
-        - CHANGE_MINIKUBE_NONE_USER=true
-        - MINIKUBE_WANTUPDATENOTIFICATION=false
-        - MINIKUBE_WANTREPORTERRORPROMPT=false
-        - MINIKUBE_HOME=$HOME
-
-      before_install:
-      # See: https://github.com/containerd/cri/blob/master/docs/installation.md
-      - sudo apt-get update && sudo apt-get install libseccomp2 -y
-      - curl --fail -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
-      - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
-
-      before_script:
-      # install dependent binaries
-      - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
-      - mkdir -p $HOME/.kube $HOME/.minikube
-      - touch $KUBECONFIG
-      - minikube config set vm-driver none
-      - sudo -H -E ./local_dev/start_containerd.sh
-      - pip install -r requirements.txt
-      - pip install codecov
-      - python setup.py install
-
-      script:
-      # run illuminatio e2e tests
-      - ./local_dev/run_e2e_tests.sh
-
-      after_script:
-      - codecov
-
+    # TODO how to cleanup image later
     # merely build the image for untagged commits
     - stage: build
-      name: "build images"
-      if: (tag IS blank)
+      name: "build images and push"
+      if: (branch != master)
       sudo: required
       services:
         - docker
       script:
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
-      - docker build -t "${TRAVIS_REPO_SLUG}":latest .
+      - docker build -t "${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}" -f illuminatio-runner.dockerfile .
+      - docker build -t "${TRAVIS_REPO_SLUG}":${TRAVIS_BRANCH} .
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      - docker push "${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}"
+      - docker push "${TRAVIS_REPO_SLUG}":${TRAVIS_BRANCH}
 
     # build and push the latest images for master commits
     - stage: build
@@ -185,10 +113,10 @@ jobs:
       services:
         - docker
       script:
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
+      - docker build -t "${TRAVIS_REPO_SLUG}-runner:latest" -f illuminatio-runner.dockerfile .
       - docker build -t "${TRAVIS_REPO_SLUG}":latest .
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-      - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
+      - docker push "${TRAVIS_REPO_SLUG}-runner:latest"
       - docker push "${TRAVIS_REPO_SLUG}":latest
 
     # build and push the tagged image for tagged commits
@@ -226,3 +154,66 @@ jobs:
       - python setup.py bdist_wheel
       - pip install twine
       - twine upload -u "${PYPI_USERNAME}" -p "${PYPI_PASSWORD}" --repository-url https://upload.pypi.org/legacy/ dist/*
+
+    - stage: e2e
+      name: "docker - calico e2e Tests"
+      sudo: required
+      language: python
+      python:
+        - "3.7"
+      # ToDo implement multiple python versions?
+      env:
+        - KUBECONFIG="$HOME/.kube/config"
+        - KUBERNETES_VERSION=v1.15.3
+        - MINIKUBE_VERSION=v1.3.1
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+
+      before_script:
+      # install dependent binaries
+      - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
+      - mkdir -p $HOME/.kube $HOME/.minikube
+      - touch $KUBECONFIG
+      - minikube config set vm-driver none
+      - sudo -H -E ./local_dev/start_docker.sh
+      - pip install -r requirements.txt
+      - pip install codecov
+      - python setup.py install
+
+      script:
+      # run illuminatio e2e tests
+      - export E2E_RUNNER_IMAGE="${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}"
+      - ./local_dev/run_e2e_tests.sh
+
+
+      after_script:
+      - codecov
+
+    - stage: e2e
+      name: "containerd - calico e2e Tests"
+      sudo: required
+      language: python
+      python:
+        - "3.7"
+      env:
+        - KUBERNETES_VERSION=v1.17.2
+        - CALICO_VERSION=3.8
+
+      before_script:
+      # install dependent binaries
+      - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - sudo -H -E ./local_dev/start_containerd.sh
+      - pip install -r requirements.txt
+      - pip install codecov
+      - python setup.py install
+
+      script:
+      # run illuminatio e2e tests
+      - export E2E_RUNNER_IMAGE="${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}"
+      - ./local_dev/run_e2e_tests.sh
+
+      after_script:
+      - codecov
