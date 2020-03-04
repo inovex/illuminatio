@@ -68,7 +68,7 @@ spec:
           name: illuminatio-cases-cfgmap
       - name: cri-socket
         hostPath:
-          path: /run/containerd/containerd.sock
+          path: /var/run/dockershim.sock
           type: Socket
       - name: net-ns
         hostPath:
