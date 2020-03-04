@@ -94,44 +94,17 @@ jobs:
     # merely build the image for untagged commits
     - stage: build
       name: "build images and push"
-      if: (branch != master)
       sudo: required
+      env:
+        - IMAGE_REPO=inovex
       services:
         - docker
       script:
-      - docker build -t "${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}" -f illuminatio-runner.dockerfile .
-      - docker build -t "${TRAVIS_REPO_SLUG}":${TRAVIS_BRANCH} .
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-      - docker push "${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}"
-      - docker push "${TRAVIS_REPO_SLUG}":${TRAVIS_BRANCH}
-
-    # build and push the latest images for master commits
-    - stage: build
-      name: "push latest images"
-      if: (branch = master AND NOT type = pull_request)
-      sudo: required
-      services:
-        - docker
-      script:
-      - docker build -t "${TRAVIS_REPO_SLUG}-runner:latest" -f illuminatio-runner.dockerfile .
-      - docker build -t "${TRAVIS_REPO_SLUG}":latest .
-      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-      - docker push "${TRAVIS_REPO_SLUG}-runner:latest"
-      - docker push "${TRAVIS_REPO_SLUG}":latest
-
-    # build and push the tagged image for tagged commits
-    - stage: build
-      name: "push tagged images"
-      if: (tag IS present)
-      sudo: required
-      services:
-        - docker
-      script:
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
-      - docker build -t "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}" .
-      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-      - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
-      - docker push "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}"
+      - export IMAGE_TAG=${TRAVIS_BRANCH}
+      - if [[ "${IMAGE_TAG}" == "master" ]]; then export IMAGE_TAG=latest; fi
+      - make image-build
+      - make iamge-push
 
     # merely build the python package for untagged commits
     - stage: build
@@ -185,9 +158,7 @@ jobs:
 
       script:
       # run illuminatio e2e tests
-      - export E2E_RUNNER_IMAGE="${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}"
-      - ./local_dev/run_e2e_tests.sh
-
+      - export E2E_RUNNER_IMAGE="${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}" python setup.py test --addopts="-m e2e"
 
       after_script:
       - codecov
@@ -212,8 +183,7 @@ jobs:
 
       script:
       # run illuminatio e2e tests
-      - export E2E_RUNNER_IMAGE="${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}"
-      - ./local_dev/run_e2e_tests.sh
+      - export E2E_RUNNER_IMAGE="${TRAVIS_REPO_SLUG}-runner:${TRAVIS_BRANCH}" python setup.py test --addopts="-m e2e"
 
       after_script:
       - codecov
