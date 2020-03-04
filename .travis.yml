@@ -100,12 +100,12 @@ jobs:
       services:
         - docker
       script:
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - export IMAGE_TAG=${TRAVIS_BRANCH}
-      - echo $TRAVIS_BRANCH
+      # We could also use a different registry
       - if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then export IMAGE_TAG=${TRAVIS_PULL_REQUEST_BRANCH}; fi
       - if [[ "${IMAGE_TAG}" == "master" ]]; then export IMAGE_TAG=latest; fi
       - make image-build
+      - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - make image-push
 
     # merely build the python package for untagged commits
