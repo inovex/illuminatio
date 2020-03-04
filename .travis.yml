@@ -100,9 +100,10 @@ jobs:
       services:
         - docker
       script:
-      - docker login --username="${DOCKER_USERNAME}" --password="${DOCKER_PASSWORD}"
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - export IMAGE_TAG=${TRAVIS_BRANCH}
       - echo $TRAVIS_BRANCH
+      - if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then export IMAGE_TAG=${TRAVIS_PULL_REQUEST_BRANCH}; fi
       - if [[ "${IMAGE_TAG}" == "master" ]]; then export IMAGE_TAG=latest; fi
       - make image-build
       - make image-push
