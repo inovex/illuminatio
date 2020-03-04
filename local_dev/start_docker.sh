@@ -21,13 +21,9 @@ minikube start \
     --host-only-cidr=172.17.17.1/24 \
     --kubernetes-version="${KUBERNETES_VERSION}"
 
-# Setup the minikube docker registry and calico
-minikube addons enable registry
-
 if [[ -n "${CI:-}" ]];
 then
     sudo chown -R travis: /home/travis/.minikube/
 fi
 
 kubectl apply -f "https://docs.projectcalico.org/${CALICO_VERSION}/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"
-kubectl apply -f local_dev/docker-registry.yml
