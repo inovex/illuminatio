@@ -104,7 +104,7 @@ jobs:
       - export IMAGE_TAG=${TRAVIS_BRANCH}
       - if [[ "${IMAGE_TAG}" == "master" ]]; then export IMAGE_TAG=latest; fi
       - make image-build
-      - make iamge-push
+      - make image-push
 
     # merely build the python package for untagged commits
     - stage: build
@@ -176,6 +176,9 @@ jobs:
       before_script:
       # install dependent binaries
       - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-$(uname)-amd64
+      - chmod +x ./kind
+      - sudo mv ./kind /usr/local/bin/kind
       - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
       - pip install codecov
