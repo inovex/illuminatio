@@ -42,26 +42,29 @@ def clean_cluster(core_v1):
 
 
 @pytest.mark.parametrize(
-    "e2e_test_case",
-    [
-        "01-deny-all-traffic-to-an-application"
-        ],
-    )
+    "e2e_test_case", ["01-deny-all-traffic-to-an-application"],
+)
 @pytest.mark.e2e
 def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps_v1):
     # get input and expected from test case name
     input_manifest = E2E_INPUT_MANIFEST.format(e2e_test_case)
     expected_yaml = E2E_EXPECTED_YAML.format(e2e_test_case)
     # create resources to test with
-    utils.create_from_yaml(api_client,
-                           input_manifest)
+    utils.create_from_yaml(api_client, input_manifest)
     # wait for test resources to be ready
     wait_for_deployments_ready(e2e_test_case, api=apps_v1)
     # run illuminatio, with yaml output for later comparison
     tmp_dir = tempfile.TemporaryDirectory()
     result_file_name = f"{tmp_dir.name}/result.yaml"
     with open(result_file_name, "w") as result_file:
-        cmd = ["illuminatio", "run", "--runner-image", f"{E2E_RUNNER_IMAGE}", "-o", f"{result_file.name}"]
+        cmd = [
+            "illuminatio",
+            "run",
+            "--runner-image",
+            f"{E2E_RUNNER_IMAGE}",
+            "-o",
+            f"{result_file.name}",
+        ]
         subprocess.check_output(cmd, timeout=120)
     # load contents of result and expected
     result = None
@@ -71,7 +74,7 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps
     expected = None
     with open(expected_yaml, "r") as stream:
         expected = yaml.safe_load(stream)
-    assert expected is not None,  f"Could not load expected from {expected_yaml}"
+    assert expected is not None, f"Could not load expected from {expected_yaml}"
     # assert that the correct cases have been generated and results match
     assert "cases" in result
     try:
