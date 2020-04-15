@@ -13,7 +13,6 @@ spec:
       illuminatio-role: ds_runner
   template:
     metadata:
-      generateName: illuminatio-ds-runner
       labels:
         illuminatio-cleanup: on-request
         illuminatio-role: ds_runner
@@ -39,7 +38,7 @@ spec:
               fieldPath: metadata.namespace
         - name: CONTAINER_RUNTIME_NAME
           value: containerd
-        image: localhost:5000/illuminatio-runner:dev
+        image: inovex/illuminatio-runner:dev
         imagePullPolicy: Always
         name: runner
         securityContext:
@@ -62,17 +61,16 @@ spec:
       hostPID: true
       serviceAccount: illuminatio-runner
       terminationGracePeriodSeconds: 30
-      # TODO can we add here liveness and readiness checks?
       volumes:
-      - configMap:
+      - name: cases-volume
+        configMap:
           defaultMode: 420
           name: illuminatio-cases-cfgmap
-        name: cases-volume
-      - hostPath:
-          path: /run/containerd/containerd.sock
+      - name: cri-socket
+        hostPath:
+          path: /var/run/dockershim.sock
           type: Socket
-        name: cri-socket
-      - hostPath:
+      - name: net-ns
+        hostPath:
           path: /var/run/netns
           type: Directory
-        name: net-ns

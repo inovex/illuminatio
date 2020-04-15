@@ -32,20 +32,6 @@ def get_container_runtime():
     raise ValueError("Node not found")
 
 
-def get_manifest(yaml_filename):
-    """
-    Reads a manifest from the illuminatio installation directory into a dictionary
-    """
-    manifests_path = 'manifests/'
-    data = get_data('illuminatio', "%s%s" % (manifests_path, yaml_filename))
-    daemonset_manifest = None
-    try:
-        daemonset_manifest = yaml.safe_load(data)
-    except yaml.YAMLError as exc:
-        print(exc)
-    return daemonset_manifest
-
-
 def _hosts_are_in_cluster(case):
     return all([isinstance(host, (ClusterHost, GenericClusterHost))
                 for host in [case.from_host, case.to_host]])
@@ -75,6 +61,21 @@ class NetworkTestOrchestrator:
         Updates the target docker image
         """
         self.oci_images["target"] = target_image
+
+    def template_manifest(self, manifest_file, **kwargs):
+        """
+        Reads an YAML manifest and convert it to a string
+        templates all variables passed and returns a dict
+        """
+        self.logger.debug(kwargs)
+        data = get_data("illuminatio", f"manifests/{manifest_file}")
+        data_str = str(data, 'utf-8')
+
+        try:
+            return yaml.safe_load(data_str.format(**kwargs))
+        except yaml.YAMLError as exc:
+            self.logger.error(exc)
+            exit(1)
 
     def refresh_cluster_resources(self, api: k8s.client.CoreV1Api):
         """
@@ -359,37 +360,43 @@ class NetworkTestOrchestrator:
                  for c in result_config_maps if "runtimes" in c.data}
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
 
-    def create_daemonset(self, daemon_set_name, service_account_name, config_map_name, api):
+    def create_daemonset_manifest(self, daemon_set_name, service_account_name, config_map_name, container_runtime):
         """
-        Creates a DaemonSet on basis of the project's manifest files
+        Creates a DaemonSet manifest on basis of the project's manifest files and the current
+        container runtime
         """
-        # Todo should be templated !
-        container_runtime_version = get_container_runtime()
-        if container_runtime_version.startswith("docker"):
-            daemon_set_dict = get_manifest("docker-daemonset.yaml")
-        elif container_runtime_version.startswith("containerd"):
-            daemon_set_dict = get_manifest("containerd-daemonset.yaml")
-        else:
-            raise NotImplementedError(f"Unsupported container runtime: {container_runtime_version}")
+        cri_socket = ""
+        runtime = ""
+        netns_path = "/var/run/netns"
 
-        # adapt non-static values
-        daemon_set_dict["metadata"]["name"] = daemon_set_name
-        daemon_set_dict["metadata"]["namespace"] = PROJECT_NAMESPACE
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["image"] = self.oci_images["runner"]
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["imagePullPolicy"] = "Always"
-        daemon_set_dict["spec"]["template"]["spec"]["containers"][0]["name"] = "runner"
-        daemon_set_dict["spec"]["template"]["spec"]["serviceAccount"] = service_account_name
-        daemon_set_dict["spec"]["template"]["spec"]["volumes"][0]["configMap"]["name"] = config_map_name
-        daemon_set_dict["spec"]["template"]["spec"]["dnsPolicy"] = "ClusterFirst"
-        daemon_set_dict["spec"]["template"]["metadata"]["generateName"] = "%s-ds-runner" % PROJECT_PREFIX
-        self.logger.debug("daemonset_dict:\n%s", daemon_set_dict)
-        # create daemon set
-        daemonset = api.create_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, body=daemon_set_dict)
-        if isinstance(daemonset, k8s.client.V1DaemonSet):
-            self.logger.debug("Succesfully created test runner DaemonSet %s", daemonset.metadata.name)
-            self.runner_daemon_set = daemonset
+        if container_runtime.startswith("docker"):
+            netns_path = "/var/run/docker/netns"
+            cri_socket = "/var/run/docker.sock"
+            runtime = "docker"
+        elif container_runtime.startswith("containerd"):
+            # this should be actually the default -> "/run/containerd/containerd.sock"
+            cri_socket = "/var/run/dockershim.sock"
+            runtime = "containerd"
         else:
-            self.logger.error("Failed to create test runner DaemonSet: %s", daemonset)
+            raise NotImplementedError(f"Unsupported container runtime: {container_runtime}")
+
+        return self.template_manifest("runner-daemonset.yaml", cri_socket=cri_socket,
+                                      netns_path=netns_path,
+                                      runtime=runtime,
+                                      name=daemon_set_name,
+                                      namespace=PROJECT_NAMESPACE,
+                                      image=self.oci_images["runner"],
+                                      service_account_name=service_account_name,
+                                      config_map_name=config_map_name)
+
+    def create_daemonset(self, daemon_manifest, api):
+        """
+        Creates a DaemonSet on basis of the DaemonSet manifest
+        """
+        try:
+            api.create_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, body=daemon_manifest)
+        except k8s.client.rest.ApiException as api_exception:
+            self.logger.error(api_exception)
 
     def _ensure_daemonset_exists(self,
                                  daemonset_name,
@@ -401,7 +408,12 @@ class NetworkTestOrchestrator:
             api.read_namespaced_daemon_set(namespace=PROJECT_NAMESPACE, name=daemonset_name)
         except k8s.client.rest.ApiException as api_exception:
             if api_exception.reason == "Not Found":
-                self.create_daemonset(daemonset_name, service_account_name, config_map_name, api)
+                daemonset_manifest = self.create_daemonset_manifest(
+                    daemonset_name,
+                    service_account_name,
+                    config_map_name,
+                    get_container_runtime())
+                self.create_daemonset(daemonset_manifest, api)
             else:
                 raise api_exception
 
@@ -472,7 +484,7 @@ class NetworkTestOrchestrator:
         rbac_api = k8s.client.RbacAuthorizationV1Api()
         # TODO we should read the role instead just trying to create it
         try:
-            cluster_role_dict = get_manifest("cluster-role.yaml")
+            cluster_role_dict = self.template_manifest("cluster-role.yaml")
             rbac_api.create_cluster_role(body=cluster_role_dict)
         except k8s.client.rest.ApiException as api_exception:
             json_body = json.loads(api_exception.body)

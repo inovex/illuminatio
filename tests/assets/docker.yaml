@@ -13,7 +13,6 @@ spec:
       illuminatio-role: ds_runner
   template:
     metadata:
-      generateName: illuminatio-ds-runner
       labels:
         illuminatio-cleanup: on-request
         illuminatio-role: ds_runner
@@ -39,7 +38,7 @@ spec:
               fieldPath: metadata.namespace
         - name: CONTAINER_RUNTIME_NAME
           value: docker
-        image: localhost:5000/illuminatio-runner:dev
+        image: inovex/illuminatio-runner:dev
         imagePullPolicy: Always
         name: runner
         securityContext:
@@ -63,15 +62,15 @@ spec:
       serviceAccount: illuminatio-runner
       terminationGracePeriodSeconds: 30
       volumes:
-      - configMap:
+      - name: cases-volume
+        configMap:
           defaultMode: 420
           name: illuminatio-cases-cfgmap
-        name: cases-volume
-      - hostPath:
+      - name: cri-socket
+        hostPath:
           path: /var/run/docker.sock
           type: Socket
-        name: cri-socket
-      - hostPath:
+      - name: net-ns
+        hostPath:
           path: /var/run/docker/netns
           type: Directory
-        name: net-ns

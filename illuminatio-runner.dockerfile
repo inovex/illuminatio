@@ -18,7 +18,7 @@ RUN apk add --no-cache nmap git && \
     mkdir -p /src/app && \
     adduser -S -D -H runner
 
-ENV CRICTL_VERSION="v1.13.0"
+ENV CRICTL_VERSION="v1.15.0"
 RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz && \
     tar zxvf crictl-${CRICTL_VERSION}-linux-amd64.tar.gz -C /usr/local/bin && \
     rm -f crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
