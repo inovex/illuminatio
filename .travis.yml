@@ -26,7 +26,6 @@ jobs:
       python:
        - "3.6"
       script:
-      - pip3 freeze
       - make lint
 
     - stage: "Test"
@@ -37,7 +36,6 @@ jobs:
       python:
        - "3.7"
       script:
-      - pip3 freeze
       - make lint
 
     - stage: "Test"
@@ -48,7 +46,6 @@ jobs:
        - "3.6"
       script:
       - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
-      - pip3 freeze
       - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt
       - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
       - echo "Pylint score was $score"
@@ -64,7 +61,6 @@ jobs:
        - "3.7"
       script:
       - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
-      - pip3 freeze
       - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt
       - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
       - echo "Pylint score was $score"
@@ -79,7 +75,6 @@ jobs:
       python:
       - "3.6"
       script:
-      - pip3 freeze
       - python setup.py test --addopts="-m 'not e2e' --runslow"
 
     - stage: "Test"
@@ -91,7 +86,6 @@ jobs:
       before_script:
       - pip install codecov
       script:
-      - pip3 freeze
       - python setup.py test --addopts="-m 'not e2e' --runslow"
       after_script:
       - codecov
