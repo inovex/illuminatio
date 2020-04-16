@@ -24,18 +24,26 @@ class NetworkTestCase:
         self.to_host = to_host
         self._on_port = on_port
         self._should_connect = should_connect
-        self.port_string = "%s%s" % (("" if self._should_connect else "-"), str(self._on_port))
+        self.port_string = "%s%s" % (
+            ("" if self._should_connect else "-"),
+            str(self._on_port),
+        )
 
     def __eq__(self, other):
         if isinstance(other, NetworkTestCase):
-            return (self.from_host == other.from_host
-                    and self.to_host == other.to_host
-                    and self.port_string == other.port_string)
+            return (
+                self.from_host == other.from_host
+                and self.to_host == other.to_host
+                and self.port_string == other.port_string
+            )
         return False
 
     def __str__(self):
         return "NetworkTestCase(from=%s, to=%s, port=%s)" % (
-            str(self.from_host), str(self.to_host), self.port_string)
+            str(self.from_host),
+            str(self.to_host),
+            self.port_string,
+        )
 
     def __repr__(self):
         return self.__str__()
@@ -62,15 +70,24 @@ class NetworkTestCase:
         """
         Returns the stringified components of a NetworkTestCase
         """
-        return self.from_host.to_identifier(), self.to_host.to_identifier(), self.port_string
+        return (
+            self.from_host.to_identifier(),
+            self.to_host.to_identifier(),
+            self.port_string,
+        )
 
     def __lt__(self, other):
         if isinstance(other, NetworkTestCase):
             return str(self) < str(other)
-        raise TypeError("'<' not supported between instances of 'NetworkTestCase' and %s" % type(other))
+        raise TypeError(
+            "'<' not supported between instances of 'NetworkTestCase' and %s"
+            % type(other)
+        )
 
     @classmethod
-    def from_stringified_members(cls, sender_pod_string, target_pod_string, port_string):
+    def from_stringified_members(
+        cls, sender_pod_string, target_pod_string, port_string
+    ):
         """
         Creates a NetworkTestCase affecting the connectability from one pod to another on a specific port
         """
@@ -120,5 +137,7 @@ def from_yaml(yaml_string) -> List[NetworkTestCase]:
     """
     Converts a yaml string into a list of NetworkTestCases
     """
-    return [NetworkTestCase.from_stringified_members(f, t, p)
-            for f, t, p in triples_from_dict(yaml.safe_load(yaml_string))]
+    return [
+        NetworkTestCase.from_stringified_members(f, t, p)
+        for f, t, p in triples_from_dict(yaml.safe_load(yaml_string))
+    ]

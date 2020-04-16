@@ -31,8 +31,12 @@ def test_refreshClusterResourcess_emptyListApiObjectsReturned_extractsEmptyList(
     api_mock = k8s.client.CoreV1Api()
     empty_pod_list = k8s.client.V1PodList(items=[])
     api_mock.list_pod_for_all_namespaces = MagicMock(return_value=empty_pod_list)
-    api_mock.list_service_for_all_namespaces = MagicMock(return_value=k8s.client.V1ServiceList(items=[]))
-    api_mock.list_namespace = MagicMock(return_value=k8s.client.V1NamespaceList(items=[]))
+    api_mock.list_service_for_all_namespaces = MagicMock(
+        return_value=k8s.client.V1ServiceList(items=[])
+    )
+    api_mock.list_namespace = MagicMock(
+        return_value=k8s.client.V1NamespaceList(items=[])
+    )
     # test that this results in an empty list
     orch = createOrchestrator([])
     orch.refresh_cluster_resources(api_mock)
@@ -46,9 +50,15 @@ def test_ensure_project_namespace_exists_in_cache():
     api_mock = k8s.client.CoreV1Api()
     empty_pod_list = k8s.client.V1PodList(items=[])
     api_mock.list_pod_for_all_namespaces = MagicMock(return_value=empty_pod_list)
-    api_mock.list_service_for_all_namespaces = MagicMock(return_value=k8s.client.V1ServiceList(items=[]))
-    illuminatio_ns = k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="illuminatio"))
-    api_mock.list_namespace = MagicMock(return_value=k8s.client.V1NamespaceList(items=[illuminatio_ns]))
+    api_mock.list_service_for_all_namespaces = MagicMock(
+        return_value=k8s.client.V1ServiceList(items=[])
+    )
+    illuminatio_ns = k8s.client.V1Namespace(
+        metadata=k8s.client.V1ObjectMeta(name="illuminatio")
+    )
+    api_mock.list_namespace = MagicMock(
+        return_value=k8s.client.V1NamespaceList(items=[illuminatio_ns])
+    )
 
     orch.refresh_cluster_resources(api_mock)
     assert orch.namespace_exists("illuminatio", None)
@@ -59,8 +69,12 @@ def test_ensure_project_namespace_exists_not_in_cache():
     api_mock = k8s.client.CoreV1Api()
     empty_pod_list = k8s.client.V1PodList(items=[])
     api_mock.list_pod_for_all_namespaces = MagicMock(return_value=empty_pod_list)
-    api_mock.list_service_for_all_namespaces = MagicMock(return_value=k8s.client.V1ServiceList(items=[]))
-    api_mock.list_namespace = MagicMock(return_value=k8s.client.V1NamespaceList(items=[]))
+    api_mock.list_service_for_all_namespaces = MagicMock(
+        return_value=k8s.client.V1ServiceList(items=[])
+    )
+    api_mock.list_namespace = MagicMock(
+        return_value=k8s.client.V1NamespaceList(items=[])
+    )
 
     orch.refresh_cluster_resources(api_mock)
 
@@ -82,10 +96,9 @@ def test_create_daemonset_manifest_docker():
     container_runtime = "docker://18.9.3"
 
     expected = get_manifest("docker.yaml")
-    result = orch.create_daemonset_manifest(daemon_set_name,
-                                            service_account_name,
-                                            config_map_name,
-                                            container_runtime)
+    result = orch.create_daemonset_manifest(
+        daemon_set_name, service_account_name, config_map_name, container_runtime
+    )
     assert result == expected
 
 
@@ -98,10 +111,9 @@ def test_create_daemonset_manifest_containerd():
     container_runtime = "containerd://1.2.6"
 
     expected = get_manifest("containerd.yaml")
-    result = orch.create_daemonset_manifest(daemon_set_name,
-                                            service_account_name,
-                                            config_map_name,
-                                            container_runtime)
+    result = orch.create_daemonset_manifest(
+        daemon_set_name, service_account_name, config_map_name, container_runtime
+    )
     assert result == expected
 
 
@@ -114,7 +126,6 @@ def test_create_daemonset_manifest_unsupported():
     container_runtime = "banana://1337"
 
     with pytest.raises(NotImplementedError):
-        orch.create_daemonset_manifest(daemon_set_name,
-                                       service_account_name,
-                                       config_map_name,
-                                       container_runtime)
+        orch.create_daemonset_manifest(
+            daemon_set_name, service_account_name, config_map_name, container_runtime
+        )

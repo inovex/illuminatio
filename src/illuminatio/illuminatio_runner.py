@@ -31,10 +31,18 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
     Builds and returns a test result string
     """
     was_successful = should_be_blocked == was_blocked
-    title = "Test %s:%s%s%s" % (target, ("-" if should_be_blocked else ""),
-                                port, (" succeeded" if was_successful else " failed"))
+    title = "Test %s:%s%s%s" % (
+        target,
+        ("-" if should_be_blocked else ""),
+        port,
+        (" succeeded" if was_successful else " failed"),
+    )
     details = ("Could%s reach %s on port %s. Expected target to %sbe reachable") % (
-        ("n't" if was_blocked else ""), target, port, ("not " if should_be_blocked else ""))
+        ("n't" if was_blocked else ""),
+        target,
+        port,
+        ("not " if should_be_blocked else ""),
+    )
     return "%s\n%s" % (title, details)
 
 
@@ -57,8 +65,12 @@ def cli():
         LOGGER.error("Could not store output to ConfigMap, as env vars are not set")
     LOGGER.debug("Output EnvVars: RUNNER_NAMESPACE=%s, RUNNER_NAME=%s", namespace, name)
     if namespace is not None and name is not None:
-        store_results_to_cfg_map(results, namespace, "%s-results" % name,
-                                 {"overall": run_times["overall"], "tests": test_run_times})
+        store_results_to_cfg_map(
+            results,
+            namespace,
+            "%s-results" % name,
+            {"overall": run_times["overall"], "tests": test_run_times},
+        )
     LOGGER.info("Finished running tests. Results:")
     LOGGER.info(results)
     # Sleep some time until container is killed. TODO: continuous mode ???
@@ -71,18 +83,28 @@ def run_all_tests():
     Runs all tests,
     returns the results and measured execution times
     """
-    pods_on_node = [ConcreteClusterHost(p.metadata.namespace, p.metadata.name) for p in get_pods_on_node().items]
+    pods_on_node = [
+        ConcreteClusterHost(p.metadata.namespace, p.metadata.name)
+        for p in get_pods_on_node().items
+    ]
     results = {}
     with open(CASE_FILE_PATH, "r") as yaml_file:
         cases = yaml.safe_load(yaml_file)
         LOGGER.debug("Cases: %s", cases)
         test_runtimes = {}
-        all_sender_pods = [Host.from_identifier(from_host_string) for from_host_string in cases]
-        sender_pods_on_node = get_pods_contained_in_both_lists(all_sender_pods, pods_on_node)
+        all_sender_pods = [
+            Host.from_identifier(from_host_string) for from_host_string in cases
+        ]
+        sender_pods_on_node = get_pods_contained_in_both_lists(
+            all_sender_pods, pods_on_node
+        )
         # execute tests for each sender pod
         for sender_pod in sender_pods_on_node:
             pod_identifier = sender_pod.to_identifier()
-            results[pod_identifier], test_runtimes[pod_identifier] = run_tests_for_sender_pod(sender_pod, cases)
+            (
+                results[pod_identifier],
+                test_runtimes[pod_identifier],
+            ) = run_tests_for_sender_pod(sender_pod, cases)
     return results, test_runtimes
 
 
@@ -91,7 +113,9 @@ def get_pods_contained_in_both_lists(sender_pods, pods_on_node):
     Returns a list with pods contained in both given lists
     """
     # TODO: do this is a more performant way, e.g. convert one list into a dict
-    sender_pods_on_node = [pod for pod in sender_pods if pod_list_contains_pod(pod, pods_on_node)]
+    sender_pods_on_node = [
+        pod for pod in sender_pods if pod_list_contains_pod(pod, pods_on_node)
+    ]
     return sender_pods_on_node
 
 
@@ -138,14 +162,21 @@ def run_tests_for_target(network_ns, ports, target):
         nmap_cmd = ["nmap", "-oX", result_file.name, "-Pn", "-p", port_string, svc_ip]
         LOGGER.info("running nmap with cmd %s", nmap_cmd)
         prc = None
-        with Namespace(network_ns, 'net'):
-            prc = subprocess.run(nmap_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with Namespace(network_ns, "net"):
+            prc = subprocess.run(
+                nmap_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
         if prc is None or prc.returncode:
             LOGGER.error("Executing nmap in foreign net ns failed! output:")
             LOGGER.error(prc.stderr)
             LOGGER.debug(prc)
-            return {port_string: {"success": False,
-                                  "error": "Couldn't nmap host %s with hostname %s" % (target, svc_dns_entry)}}
+            return {
+                port_string: {
+                    "success": False,
+                    "error": "Couldn't nmap host %s with hostname %s"
+                    % (target, svc_dns_entry),
+                }
+            }
 
         LOGGER.info("finished running nmap")
         LOGGER.debug("Error log: %s", prc.stderr)
@@ -164,7 +195,9 @@ def pod_list_contains_pod(pod, pod_list):
         if is_on_node:
             LOGGER.debug("Pod %s in namespace %s was found", pod.name, pod.namespace)
         else:
-            LOGGER.debug("Pod %s in namespace %s isn't on this node", pod.name, pod.namespace)
+            LOGGER.debug(
+                "Pod %s in namespace %s isn't on this node", pod.name, pod.namespace
+            )
         return is_on_node
 
     LOGGER.error("Found non-ConcreteClusterHost host in cases: %s", pod)
@@ -179,11 +212,17 @@ def extract_results_from_nmap_xml_file(result_file, port_on_nums, target):
     hosts = [h for h in xml.getroot().iter("host")]
     if len(hosts) != 1:
         LOGGER.error(
-            "Fund %s a single host in nmap results but expected only one target to be probed", len(hosts))
+            "Fund %s a single host in nmap results but expected only one target to be probed",
+            len(hosts),
+        )
         port_string = ",".join(port_on_nums.keys())
         return {
-            port_string: {"success": False,
-                          "error": "Found %s hosts in nmap results, expected 1." % str(len(hosts))}}
+            port_string: {
+                "success": False,
+                "error": "Found %s hosts in nmap results, expected 1."
+                % str(len(hosts)),
+            }
+        }
     host_element = hosts[0]
     host_names = [hn.get("name") for hn in host_element.iter("hostname")]
     LOGGER.debug("Found names %s for target %s", host_names, target)
@@ -196,7 +235,9 @@ def extract_results_from_nmap_xml_file(result_file, port_on_nums, target):
         was_blocked = state == "filtered"
         results[port_with_expectation] = {}
         results[port_with_expectation]["success"] = should_be_blocked == was_blocked
-        results[port_with_expectation]["string"] = build_result_string(port, target, should_be_blocked, was_blocked)
+        results[port_with_expectation]["string"] = build_result_string(
+            port, target, should_be_blocked, was_blocked
+        )
         results[port_with_expectation]["nmap-state"] = state
     return results
 
@@ -206,7 +247,13 @@ def get_domain_name_for(host_string):
     Replaces namespace:serviceName syntax with serviceName.namespace one,
     appending default as namespace if None exists
     """
-    return ".".join(reversed(("%s%s" % (("" if ":" in host_string else "default:"), host_string)).split(":")))
+    return ".".join(
+        reversed(
+            ("%s%s" % (("" if ":" in host_string else "default:"), host_string)).split(
+                ":"
+            )
+        )
+    )
 
 
 def get_docker_network_namespace(pod_namespace, pod_name):
@@ -218,10 +265,12 @@ def get_docker_network_namespace(pod_namespace, pod_name):
     k8s.config.load_incluster_config()
     configuration = k8s.client.Configuration()
     api_instance = k8s.client.CoreV1Api(k8s.client.ApiClient(configuration))
-    pretty = 'true'
+    pretty = "true"
     exact = False  # also retrieve the namespace
     export = False  # also retrieve unspecifiable fields (pod uid)
-    pod = api_instance.read_namespaced_pod(pod_name, pod_namespace, pretty=pretty, exact=exact, export=export)
+    pod = api_instance.read_namespaced_pod(
+        pod_name, pod_namespace, pretty=pretty, exact=exact, export=export
+    )
     pod_uid = pod.metadata.uid
     LOGGER.info("pod_uid: %s", pod_uid)
     if pod_uid is None:
@@ -230,9 +279,18 @@ def get_docker_network_namespace(pod_namespace, pod_name):
     client = docker.from_env()
     LOGGER.info("fetching pause containers")
     pause_containers = client.containers.list(
-        filters={"label": ["io.kubernetes.docker.type=podsandbox", "io.kubernetes.pod.uid=%s" % pod_uid]})
+        filters={
+            "label": [
+                "io.kubernetes.docker.type=podsandbox",
+                "io.kubernetes.pod.uid=%s" % pod_uid,
+            ]
+        }
+    )
     if len(pause_containers) != 1:
-        raise ValueError("There should be only one pause container, found %d of them." % len(pause_containers))
+        raise ValueError(
+            "There should be only one pause container, found %d of them."
+            % len(pause_containers)
+        )
     container = pause_containers[0]
     LOGGER.info("inspecting pause container")
     inspect = client.api.inspect_container(container.id)
@@ -262,17 +320,30 @@ def get_cri_network_namespace(host_namespace, host_name):
     Fetches and returns the path of the network namespace
     This function only works for runtimes that are CRI compliant e.g. containerd
     """
-    cmd1 = ["crictl", "pods", "--name=%s" % str(host_name), "--namespace=%s" % str(host_namespace), "-q", "--no-trunc"]
+    cmd1 = [
+        "crictl",
+        "pods",
+        "--name=%s" % str(host_name),
+        "--namespace=%s" % str(host_namespace),
+        "-q",
+        "--no-trunc",
+    ]
     prc1 = subprocess.run(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc1.returncode:
-        LOGGER.error("Getting pods for name %s in namespace %s failed! output:", host_name, host_namespace)
+        LOGGER.error(
+            "Getting pods for name %s in namespace %s failed! output:",
+            host_name,
+            host_namespace,
+        )
         LOGGER.error(prc1.stderr)
     pod_id = prc1.stdout.strip()
     # ToDo error handling
     cmd2 = ["crictl", "inspectp", pod_id]
     prc2 = subprocess.run(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc2.returncode:
-        LOGGER.error("Getting pods network namespace for pod %s failed! output:", pod_id)
+        LOGGER.error(
+            "Getting pods network namespace for pod %s failed! output:", pod_id
+        )
         LOGGER.error(prc2.stderr)
 
     return extract_cri_network_namespace(prc2.stdout)
@@ -289,7 +360,9 @@ def get_network_ns_of_pod(pod_namespace, pod_name):
         net_ns = get_docker_network_namespace(pod_namespace, pod_name)
     else:
         # TODO add more runtimes to support
-        raise ValueError("the container runtime '%s' is not supported" % container_runtime_name)
+        raise ValueError(
+            "the container runtime '%s' is not supported" % container_runtime_name
+        )
 
     return net_ns
 
@@ -303,7 +376,9 @@ def get_pods_on_node():
     k8s.config.load_incluster_config()
     api = k8s.client.CoreV1Api()
     # ToDo error handling!
-    return api.list_pod_for_all_namespaces(field_selector="spec.nodeName==%s" % hostname)
+    return api.list_pod_for_all_namespaces(
+        field_selector="spec.nodeName==%s" % hostname
+    )
 
 
 def store_results_to_cfg_map(results, namespace, name, runtimes=None):
@@ -314,7 +389,9 @@ def store_results_to_cfg_map(results, namespace, name, runtimes=None):
     api = k8s.client.CoreV1Api()
 
     LOGGER.info("Storing output to ConfigMap")
-    cfg_map = create_test_output_config_map_manifest(namespace, name, data=yaml.dump(results))
+    cfg_map = create_test_output_config_map_manifest(
+        namespace, name, data=yaml.dump(results)
+    )
     if runtimes:
         cfg_map.data["runtimes"] = yaml.dump(runtimes)
     try:

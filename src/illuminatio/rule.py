@@ -31,12 +31,17 @@ class Connection(Conn):
     """
     Class for interaction with Connection tuples
     """
+
     def to_dict(self) -> dict:
         """
         converts a Connection tuple into a dictionary
         """
-        return {self.direction: {"hosts": dict_mapper(self.targets),
-                                 "ports": list(map(dict_mapper, self.ports))}}
+        return {
+            self.direction: {
+                "hosts": dict_mapper(self.targets),
+                "ports": list(map(dict_mapper, self.ports)),
+            }
+        }
 
 
 # main class
@@ -53,8 +58,16 @@ class Rule:
 
     def __str__(self):
 
-        return ("".join(["Rule( ", AFFECTED_POD_IDENTIFIER,
-                         "= ", str(self.concerns), ", allowed= ", str(self.allowed)]))
+        return "".join(
+            [
+                "Rule( ",
+                AFFECTED_POD_IDENTIFIER,
+                "= ",
+                str(self.concerns),
+                ", allowed= ",
+                str(self.allowed),
+            ]
+        )
 
     def __repr__(self):
         return self.__str__()
@@ -63,7 +76,10 @@ class Rule:
         """
         Converts a rule into a dictionary
         """
-        return {AFFECTED_POD_IDENTIFIER: self.concerns, "allowed": list(map(dict_mapper, self.allowed))}
+        return {
+            AFFECTED_POD_IDENTIFIER: self.concerns,
+            "allowed": list(map(dict_mapper, self.allowed)),
+        }
 
     @classmethod
     def from_network_policy(cls, net_pol: k8s.client.V1NetworkPolicy):
@@ -79,7 +95,9 @@ class Rule:
         allowed = []
         if net_pol.spec.ingress is not None:
             for ing in net_pol.spec.ingress:
-                allowed.extend(build_connections(DIRECTION_INCOMING, ing._from, ing.ports))
+                allowed.extend(
+                    build_connections(DIRECTION_INCOMING, ing._from, ing.ports)
+                )
         if net_pol.spec.egress is not None:
             for egr in net_pol.spec.egress:
                 allowed.extend(build_connections(DIRECTION_OUTGOING, egr.to, egr.ports))
@@ -111,25 +129,43 @@ def build_connections(verb, target, ports):
                     selector_dict[key] = value
                 out.append(Connection(verb, selector_dict, port_list))
             elif item.namespace_selector is not None:
-                out.append(Connection(verb, _extract_name_space_selector_from(item), port_list))
+                out.append(
+                    Connection(verb, _extract_name_space_selector_from(item), port_list)
+                )
             elif item.pod_selector is not None:
-                out.append(Connection(verb, _extract_pod_selector_from(item), port_list))
+                out.append(
+                    Connection(verb, _extract_pod_selector_from(item), port_list)
+                )
     else:
         out.append(Connection(verb, {}, port_list))
     return out
 
 
 def _extract_name_space_selector_from(item):
-    if item.namespace_selector.match_labels is not None and item.namespace_selector.match_expressions is None:
+    if (
+        item.namespace_selector.match_labels is not None
+        and item.namespace_selector.match_expressions is None
+    ):
         return {NAMESPACE_SELECTOR_LABELS: item.namespace_selector.match_labels}
-    if item.namespace_selector.match_labels is None and item.namespace_selector.match_expressions is not None:
-        raise ValueError("match_expressions in namespace_selector currently unsupported")
+    if (
+        item.namespace_selector.match_labels is None
+        and item.namespace_selector.match_expressions is not None
+    ):
+        raise ValueError(
+            "match_expressions in namespace_selector currently unsupported"
+        )
     return {NAMESPACE_SELECTOR_LABELS: {}}
 
 
 def _extract_pod_selector_from(item):
-    if item.pod_selector.match_labels is not None and item.pod_selector.match_expressions is None:
+    if (
+        item.pod_selector.match_labels is not None
+        and item.pod_selector.match_expressions is None
+    ):
         return {POD_SELECTOR_LABELS: item.pod_selector.match_labels}
-    if item.pod_selector.match_labels is None and item.pod_selector.match_expressions is not None:
+    if (
+        item.pod_selector.match_labels is None
+        and item.pod_selector.match_expressions is not None
+    ):
         raise ValueError("match_expressions in pod_selector currently unsupported")
     return {POD_SELECTOR_LABELS: {}}
