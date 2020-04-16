@@ -224,6 +224,8 @@ jobs:
         - "3.7"
       script:
       - python3 setup.py bdist_wheel
+      - pip install -e .
+      - illuminatio --help
 
     # build and upload the tagged python package for tagged commits
     - stage: build

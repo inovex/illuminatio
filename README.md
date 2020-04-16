@@ -38,9 +38,7 @@ pip3 install illuminatio
 or directly from the repository:
 
 ```bash
-git clone https://github.com/inovex/illuminatio
-cd illuminatio
-python3 setup.py install
+pip install git+https://github.com/inovex/illuminatio
 ```
 
 ### Kubectl plugin
