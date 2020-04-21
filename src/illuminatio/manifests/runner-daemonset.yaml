@@ -38,6 +38,8 @@ spec:
               fieldPath: metadata.namespace
         - name: CONTAINER_RUNTIME_NAME
           value: {runtime}
+        - name: CONTAINER_RUNTIME_ENDPOINT
+          value: {cri_socket}
         image: {image}
         imagePullPolicy: Always
         name: runner

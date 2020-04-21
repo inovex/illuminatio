@@ -87,7 +87,20 @@ def cli(incluster, kubeconfig):
     default="nginx:stable",
     help="Target image that is used to generate pods (should have a webserver inside listening on port 80)",
 )
-def run(outfile, brief, dry, runner_image, target_image):
+@click.option(
+    "-c",
+    "--cri-socket",
+    default=None,
+    help="CRI socket used for the interaction with the container runtime",
+)
+def run(
+    outfile: str,
+    brief: bool,
+    dry: bool,
+    runner_image: str,
+    target_image: str,
+    cri_socket: str,
+):
     """
     Create and execute test cases for NetworkPolicies currently in cluster.
     """
@@ -128,7 +141,7 @@ def run(outfile, brief, dry, runner_image, target_image):
         additional_data,
         resource_creation_time,
         result_wait_time,
-    ) = execute_tests(cases, orch)
+    ) = execute_tests(cases, orch, cri_socket)
     runtimes["resource-creation"] = resource_creation_time - case_time
     runtimes["result-waiting"] = result_wait_time - resource_creation_time
     result_time = time.time()
@@ -165,7 +178,7 @@ def run(outfile, brief, dry, runner_image, target_image):
     # clean(True)
 
 
-def execute_tests(cases, orch):
+def execute_tests(cases, orch, cri_socket):
     """
     Executes all tests with given test cases
     """
@@ -185,7 +198,7 @@ def execute_tests(cases, orch):
         cfgmap,
     ) = orch.ensure_cases_are_generated(core_api)
     pod_selector = orch.ensure_daemonset_is_ready(
-        cfgmap, k8s.client.AppsV1Api(), core_api
+        cfgmap, k8s.client.AppsV1Api(), core_api, cri_socket
     )
     resource_creation_time = time.time()
     raw_results, runtimes = orch.collect_results(pod_selector, core_api)
