@@ -39,7 +39,7 @@ spec:
         - name: CONTAINER_RUNTIME_NAME
           value: containerd
         - name: CONTAINER_RUNTIME_ENDPOINT
-          value: /var/run/dockershim.sock
+          value: /var/run/containerd/containerd.sock
         image: inovex/illuminatio-runner:dev
         imagePullPolicy: Always
         name: runner
@@ -53,7 +53,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/config/
           name: cases-volume
-        - mountPath: /var/run/dockershim.sock
+        - mountPath: /var/run/containerd/containerd.sock
           name: cri-socket
           readOnly: true
         - mountPath: /var/run/netns
@@ -70,7 +70,7 @@ spec:
           name: illuminatio-cases-cfgmap
       - name: cri-socket
         hostPath:
-          path: /var/run/dockershim.sock
+          path: /var/run/containerd/containerd.sock
           type: Socket
       - name: net-ns
         hostPath:

@@ -97,7 +97,7 @@ def test_create_daemonset_manifest_docker():
 
     expected = get_manifest("docker.yaml")
     result = orch.create_daemonset_manifest(
-        daemon_set_name, service_account_name, config_map_name, container_runtime
+        daemon_set_name, service_account_name, config_map_name, container_runtime, None
     )
     assert result == expected
 
@@ -112,7 +112,27 @@ def test_create_daemonset_manifest_containerd():
 
     expected = get_manifest("containerd.yaml")
     result = orch.create_daemonset_manifest(
-        daemon_set_name, service_account_name, config_map_name, container_runtime
+        daemon_set_name, service_account_name, config_map_name, container_runtime, None
+    )
+    assert result == expected
+
+
+def test_create_daemonset_manifest_containerd_custom_socket():
+    orch = createOrchestrator([])
+    orch.set_runner_image("inovex/illuminatio-runner:dev")
+    daemon_set_name = "illuminatio-runner"
+    service_account_name = "illuminatio-runner"
+    config_map_name = "illuminatio-cases-cfgmap"
+    container_runtime = "containerd://1.2.6"
+    cri_socket = "/var/run/containerd/containerd.sock"
+
+    expected = get_manifest("containerd_custom_socket.yaml")
+    result = orch.create_daemonset_manifest(
+        daemon_set_name,
+        service_account_name,
+        config_map_name,
+        container_runtime,
+        cri_socket,
     )
     assert result == expected
 
@@ -127,5 +147,9 @@ def test_create_daemonset_manifest_unsupported():
 
     with pytest.raises(NotImplementedError):
         orch.create_daemonset_manifest(
-            daemon_set_name, service_account_name, config_map_name, container_runtime
+            daemon_set_name,
+            service_account_name,
+            config_map_name,
+            container_runtime,
+            None,
         )

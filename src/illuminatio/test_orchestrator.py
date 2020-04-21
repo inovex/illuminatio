@@ -440,9 +440,10 @@ class NetworkTestOrchestrator:
 
     def ensure_daemonset_is_ready(
         self,
-        config_map_name,
+        config_map_name: str,
         apps_api: k8s.client.AppsV1Api,
         core_api: k8s.client.CoreV1Api,
+        cri_socket: str,
     ):
         """
         Ensures that all required resources for illuminatio are created
@@ -460,7 +461,7 @@ class NetworkTestOrchestrator:
         # Ensure that our DaemonSet and the Pods are running/ready
         daemonset_name = f"{PROJECT_PREFIX}-runner"
         self._ensure_daemonset_exists(
-            daemonset_name, service_account_name, config_map_name, apps_api
+            daemonset_name, service_account_name, config_map_name, apps_api, cri_socket
         )
         pod_selector = self._ensure_daemonset_ready(daemonset_name, apps_api)
 
@@ -519,23 +520,28 @@ class NetworkTestOrchestrator:
         return {k: v for yam in [y.items() for y in yamls] for k, v in yam}, times
 
     def create_daemonset_manifest(
-        self, daemon_set_name, service_account_name, config_map_name, container_runtime
+        self,
+        daemon_set_name: str,
+        service_account_name: str,
+        config_map_name: str,
+        container_runtime: str,
+        cri_socket: str,
     ):
         """
         Creates a DaemonSet manifest on basis of the project's manifest files and the current
         container runtime
         """
-        cri_socket = ""
         runtime = ""
         netns_path = "/var/run/netns"
 
         if container_runtime.startswith("docker"):
             netns_path = "/var/run/docker/netns"
-            cri_socket = "/var/run/docker.sock"
+            if cri_socket is None:
+                cri_socket = "/var/run/docker.sock"
             runtime = "docker"
         elif container_runtime.startswith("containerd"):
-            # this should be actually the default -> "/run/containerd/containerd.sock"
-            cri_socket = "/var/run/dockershim.sock"
+            if cri_socket is None:
+                cri_socket = "/var/run/dockershim.sock"
             runtime = "containerd"
         else:
             raise NotImplementedError(
@@ -567,10 +573,11 @@ class NetworkTestOrchestrator:
 
     def _ensure_daemonset_exists(
         self,
-        daemonset_name,
-        service_account_name,
-        config_map_name,
+        daemonset_name: str,
+        service_account_name: str,
+        config_map_name: str,
         api: k8s.client.AppsV1Api,
+        cri_socket: str,
     ):
         # Use a Kubernetes Manifest as template and replace required parts
         try:
@@ -584,6 +591,7 @@ class NetworkTestOrchestrator:
                     service_account_name,
                     config_map_name,
                     get_container_runtime(),
+                    cri_socket,
                 )
                 self.create_daemonset(daemonset_manifest, api)
             else:
