@@ -38,6 +38,8 @@ spec:
               fieldPath: metadata.namespace
         - name: CONTAINER_RUNTIME_NAME
           value: docker
+        - name: CONTAINER_RUNTIME_ENDPOINT
+          value: /var/run/docker.sock
         image: inovex/illuminatio-runner:dev
         imagePullPolicy: Always
         name: runner
