@@ -215,6 +215,8 @@ Example Network Policies are inspired by
 
 Presentation from [ContainerDays 2019](https://www.youtube.com/watch?v=eEkTvAez8HA&list=PLHhKcdBlprMdg-fwPD1b3IjBRR_Ga09H0&index=36), [slides](https://www.inovex.de/de/content-pool/vortraege/network-policies)
 
+There is also a blog post about the background of illuminatio: [illuminatio-kubernetes-network-policy-validator](https://www.inovex.de/blog/illuminatio-kubernetes-network-policy-validator/)
+
 ## Contributing
 
 We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
