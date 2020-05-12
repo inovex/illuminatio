@@ -24,9 +24,8 @@ from illuminatio.util import (
     CLEANUP_LABEL,
     ROLE_LABEL,
     CLEANUP_ALWAYS,
-    CLEANUP_ON_REQUEST,
 )
-from illuminatio.util import rand_port
+from illuminatio.util import rand_port, add_illuminatio_labels
 
 
 def get_container_runtime():
@@ -155,12 +154,10 @@ class NetworkTestOrchestrator:
         """
         Creates a namespace with the according labels
         """
-        # Should we also ensure that the namespace has these labels?
-        if labels:
-            labels = {CLEANUP_LABEL: CLEANUP_ON_REQUEST}
-
         namespace = k8s.client.V1Namespace(
-            metadata=k8s.client.V1ObjectMeta(name=name, labels=labels)
+            metadata=k8s.client.V1ObjectMeta(
+                name=name, labels=add_illuminatio_labels(labels)
+            )
         )
 
         try:

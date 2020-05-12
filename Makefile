@@ -3,3 +3,6 @@ lint:
 	flake8 --max-line-length 120 src tests
 	pycodestyle --max-line-length=120 --exclude=conf.py ./**/*.py
 	black --check --diff ./src ./tests
+
+fmt:
+	black --diff ./src ./tests

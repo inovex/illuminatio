@@ -250,7 +250,8 @@ def transform_results(
                 LOGGER.debug("receiver_pod: %s", receiver_pod)
                 LOGGER.debug("mapped_sender_pod: %s", mapped_sender_pod)
                 LOGGER.debug("mapped_receiver_pod: %s", mapped_receiver_pod)
-                LOGGER.debug("raw_results: %s", raw_results)
+                LOGGER.debug("raw_results: %s", json.dumps(raw_results))
+                # FIXME: https://github.com/inovex/illuminatio/issues/98
                 if mapped_port in raw_results[mapped_sender_pod][mapped_receiver_pod]:
                     # fetch all requests from desired ports
                     transformed[sender_pod][receiver_pod][port] = raw_results[
