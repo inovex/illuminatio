@@ -40,6 +40,8 @@ spec:
           value: {runtime}
         - name: CONTAINER_RUNTIME_ENDPOINT
           value: {cri_socket}
+        args:
+        - --verbosity={log_level}
         image: {image}
         imagePullPolicy: Always
         name: runner

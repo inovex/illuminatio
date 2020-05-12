@@ -6,6 +6,7 @@ import time
 import json
 from pkgutil import get_data
 import yaml
+import logging
 
 import kubernetes as k8s
 from illuminatio.host import ClusterHost, GenericClusterHost, Host
@@ -558,6 +559,7 @@ class NetworkTestOrchestrator:
             image=self.oci_images["runner"],
             service_account_name=service_account_name,
             config_map_name=config_map_name,
+            log_level=logging.getLevelName(self.logger.level),
         )
 
     def create_daemonset(self, daemon_manifest, api):
