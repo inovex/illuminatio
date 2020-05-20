@@ -43,3 +43,12 @@ def rand_port(except_ports=None):
     return choice(
         [port for port in range(max_port_int + 1) if port not in except_ports]
     )
+
+
+def add_illuminatio_labels(labels: dict) -> dict:
+    if labels is None or len(labels) == 0:
+        labels = {}
+
+    labels[CLEANUP_LABEL] = CLEANUP_ON_REQUEST
+
+    return labels
