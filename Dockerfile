@@ -24,7 +24,7 @@ FROM python:3.8-slim-buster
 # Install illuminatio from builder
 COPY --from=builder /src/app/src /src/app/src
 COPY --from=builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
-COPY --from=builder /usr/local/bin/illuminatio_runner /usr/local/bin/illuminatio_runner
+COPY --from=builder /usr/local/bin/illuminatio-runner /usr/local/bin/illuminatio-runner
 COPY --from=builder /usr/local/bin/illuminatio /usr/local/bin/illuminatio
 COPY --from=builder /usr/local/bin/crictl /usr/local/bin/crictl
 
@@ -35,4 +35,4 @@ RUN apt-get update && \
     apt-get install -y nmap && \
     rm -rf /var/lib/apt/lists/*
 
-CMD [ "/usr/local/bin/illuminatio_runner" ]
+CMD [ "/usr/local/bin/illuminatio-runner" ]
