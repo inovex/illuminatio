@@ -1,11 +1,12 @@
-dist: xenial
+dist: bionic
+os: linux
+language: python
 
 jobs:
   include:
     - stage: "Check"
       name: "Validate"
-      sudo: required
-      language: bash
+      language: shell
       before_install:
       - sudo apt-get update
       - sudo apt-get install shellcheck -y
@@ -19,93 +20,40 @@ jobs:
       script: mdl -r "~MD013" .
 
     - stage: "Test"
-      name: "test:pycodestyle:3.6"
-      sudo: required
+      name: "test:lint"
       language: python
       cache: pip
-      python:
-       - "3.6"
+      python: "3.8"
       script:
       - make lint
 
     - stage: "Test"
-      name: "test:pycodestyle:3.7"
-      sudo: required
+      name: "test:unittest"
       language: python
       cache: pip
-      python:
-       - "3.7"
-      script:
-      - make lint
-
-    - stage: "Test"
-      name: "test:pylint:3.6"
-      language: python
-      cache: pip
-      python:
-       - "3.6"
-      script:
-      - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
-      - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt
-      - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
-      - echo "Pylint score was $score"
-      - mkdir -p public
-      - mv pylint.txt public/pylint.txt
-      - anybadge --value=$score --file=public/pylint.svg pylint
-
-    - stage: "Test"
-      name: "test:pylint:3.7"
-      language: python
-      cache: pip
-      python:
-       - "3.7"
-      script:
-      - pip3 install anybadge==1.1.1 pylint==2.3.0 pylint-exit==1.0.0
-      - pylint --rcfile=.pylintrc --output-format=text src | tee pylint.txt
-      - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
-      - echo "Pylint score was $score"
-      - mkdir -p public
-      - mv pylint.txt public/pylint.txt
-      - anybadge --value=$score --file=public/pylint.svg pylint
-
-    - stage: "Test"
-      name: "test:unittest:3.6"
-      language: python
-      cache: pip
-      python:
-      - "3.6"
-      script:
-      - python setup.py test --addopts="-m 'not e2e' --runslow"
-
-    - stage: "Test"
-      name: "test:unittest:3.7"
-      language: python
-      cache: pip
-      python:
-      - "3.7"
+      python: "3.8"
+      # TODO check if we need this
       before_script:
-      - pip install codecov
+        - pip install codecov
       script:
       - python setup.py test --addopts="-m 'not e2e' --runslow"
-      after_script:
-      - codecov
 
     - stage: e2e
       name: "docker - calico e2e Tests"
-      sudo: required
       language: python
       cache: pip
-      python:
-        - "3.7"
-      # ToDo implement multiple python versions?
+      python: "3.8"
       env:
         - KUBECONFIG="$HOME/.kube/config"
-        - KUBERNETES_VERSION=v1.15.3
-        - MINIKUBE_VERSION=v1.3.1
+        - KUBERNETES_VERSION=v1.18.6
+        - MINIKUBE_VERSION=v1.12.1
         - CHANGE_MINIKUBE_NONE_USER=true
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
         - MINIKUBE_HOME=$HOME
+
+      before_install:
+        - sudo apt-get update && sudo apt-get install -y  conntrack
 
       before_script:
       # install dependent binaries
@@ -128,26 +76,24 @@ jobs:
 
     - stage: e2e
       name: "containerd - calico e2e Tests"
-      sudo: required
       language: python
       cache: pip
-      python:
-        - "3.7"
+      python: "3.8"
       env:
-        - CONTAINERD_VERSION=1.2.6
         - KUBECONFIG="$HOME/.kube/config"
-        - KUBERNETES_VERSION=v1.15.3
-        - MINIKUBE_VERSION=v1.3.1
+        - CONTAINERD_VERSION=1.3.4
+        - KUBERNETES_VERSION=v1.18.6
+        - MINIKUBE_VERSION=v1.12.1
         - CHANGE_MINIKUBE_NONE_USER=true
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
         - MINIKUBE_HOME=$HOME
 
       before_install:
-      # See: https://github.com/containerd/cri/blob/master/docs/installation.md
-      - sudo apt-get update && sudo apt-get install libseccomp2 -y
-      - curl --fail -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
-      - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+        # See: https://github.com/containerd/cri/blob/master/docs/installation.md
+        - sudo apt-get update && sudo apt-get install -y libseccomp2 conntrack
+        - curl --fail -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
+        - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
 
       before_script:
       # install dependent binaries
@@ -173,7 +119,6 @@ jobs:
     - stage: build
       name: "build images"
       if: (tag IS blank)
-      sudo: required
       services:
         - docker
       script:
@@ -184,7 +129,6 @@ jobs:
     - stage: build
       name: "push latest images"
       if: (branch = master AND NOT type = pull_request)
-      sudo: required
       services:
         - docker
       script:
@@ -198,7 +142,6 @@ jobs:
     - stage: build
       name: "push tagged images"
       if: (tag IS present)
-      sudo: required
       services:
         - docker
       script:
@@ -214,8 +157,7 @@ jobs:
       if: (tag IS blank)
       language: python
       cache: pip
-      python:
-        - "3.7"
+      python: "3.8"
       script:
       - python3 setup.py bdist_wheel
       - pip install -e .
@@ -227,8 +169,7 @@ jobs:
       if: (tag IS present)
       language: python
       cache: pip
-      python:
-        - "3.7"
+      python: "3.8"
       script:
       - python setup.py bdist_wheel
       - pip install twine
