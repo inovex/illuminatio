@@ -127,8 +127,8 @@ jobs:
       services:
         - docker
       script:
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
       - docker build -t "${TRAVIS_REPO_SLUG}":latest .
+      - docker tag "${TRAVIS_REPO_SLUG}":latest "${TRAVIS_REPO_SLUG}"-runner:latest
 
     # build and push the latest images for master commits
     - stage: build
@@ -137,8 +137,8 @@ jobs:
       services:
         - docker
       script:
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:latest -f illuminatio-runner.dockerfile .
       - docker build -t "${TRAVIS_REPO_SLUG}":latest .
+      - docker tag "${TRAVIS_REPO_SLUG}":latest "${TRAVIS_REPO_SLUG}"-runner:latest
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:latest
       - docker push "${TRAVIS_REPO_SLUG}":latest
@@ -150,8 +150,8 @@ jobs:
       services:
         - docker
       script:
-      - docker build -t "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}" -f illuminatio-runner.dockerfile .
       - docker build -t "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}" .
+      - docker tag "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}" "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
       - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
       - docker push "${TRAVIS_REPO_SLUG}"-runner:"${TRAVIS_TAG}"
       - docker push "${TRAVIS_REPO_SLUG}":"${TRAVIS_TAG}"
