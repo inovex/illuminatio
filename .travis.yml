@@ -32,11 +32,12 @@ jobs:
       language: python
       cache: pip
       python: "3.8"
-      # TODO check if we need this
       before_script:
       - pip install codecov
       script:
-      - python setup.py test --addopts="-m 'not e2e' --runslow"
+      - coverage run setup.py test --addopts="-m 'not e2e' --runslow"
+      after_success:
+      - codecov
 
     - stage: e2e
       name: "docker - calico e2e Tests"
@@ -72,7 +73,7 @@ jobs:
       # run illuminatio e2e tests
       - ./local_dev/run_e2e_tests.sh
 
-      after_script:
+      after_success:
       - codecov
 
     - stage: e2e
@@ -114,7 +115,7 @@ jobs:
       # run illuminatio e2e tests
       - ./local_dev/run_e2e_tests.sh
 
-      after_script:
+      after_success:
       - codecov
 
     # merely build the image for untagged commits
