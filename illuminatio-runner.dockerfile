@@ -1,43 +1,38 @@
-FROM python:3.7.4-alpine3.10 AS builder
+FROM python:3.8-slim-buster AS builder
 
-RUN apk add --no-cache git alpine-sdk libffi-dev openssl-dev python3-dev && \
-    mkdir -p /wheels
+RUN mkdir -p /src/app && \
+    apt-get update && \
+    apt-get install -y git wget
 
-WORKDIR /wheels
-COPY ./requirements.txt /wheels/requirements.txt
-RUN pip3 wheel -r ./requirements.txt
-
-# Actual Runner image
-FROM python:3.7.4-alpine3.10
-
-COPY --from=builder /wheels /wheels
-
-# ToDo remove the need for nmap
-# Currently git is req. for local pip
-RUN apk add --no-cache nmap git && \
-    mkdir -p /src/app && \
-    adduser -S -D -H runner
-
-ENV CRICTL_VERSION="v1.15.0"
+ENV CRICTL_VERSION="v1.18.0"
 RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz && \
     tar zxvf crictl-${CRICTL_VERSION}-linux-amd64.tar.gz -C /usr/local/bin && \
     rm -f crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
 
-COPY Makefile /src/app/.
-COPY requirements.txt /src/app/.
-COPY setup.cfg /src/app/.
-COPY setup.py /src/app/.
+COPY setup.cfg /src/app
+COPY setup.py /src/app
 COPY .git /src/app/.git
-COPY src/illuminatio/__init__.py /src/app/src/illuminatio/__init__.py
-WORKDIR /src/app
-
-RUN pip3 --no-cache-dir install -e . -r requirements.txt -f /wheels && \
-    rm -rf /wheels && \
-    rm -rf .git && \
-    apk del --purge --no-cache git
-
+# TODO add dockerginore -> ignore test files and __pycache etc.
 COPY src /src/app/src
+COPY ./requirements.txt /src/app/requirements.txt
 
-USER runner
+WORKDIR /src/app
+RUN pip3 --no-cache-dir install . -r ./requirements.txt
 
-ENTRYPOINT [ "illuminatio_runner" ]
+# Actual Runner image
+FROM python:3.8-slim-buster
+
+# Install illuminatio from builder
+COPY --from=builder /src/app/src /src/app/src
+COPY --from=builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=builder /usr/local/bin/illuminatio_runner /usr/local/bin/illuminatio_runner
+COPY --from=builder /usr/local/bin/crictl /usr/local/bin/crictl
+
+ENV PYTHONPATH=/usr/local/lib/python3.8/site-packages
+
+# Currently nmap is required for running the scans
+RUN apt-get update && \
+    apt-get install -y nmap && \
+    rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT [ "/usr/local/bin/illuminatio_runner" ]
