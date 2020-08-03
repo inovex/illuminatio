@@ -19,8 +19,8 @@ jobs:
       - gem install mdl
       script: mdl -r "~MD013" .
 
-    - stage: "Test"
-      name: "test:lint"
+    - stage: "Check"
+      name: "Lint python files"
       language: python
       cache: pip
       python: "3.8"
@@ -39,7 +39,7 @@ jobs:
       after_success:
       - codecov
 
-    - stage: e2e
+    - stage: "Test"
       name: "docker - calico e2e Tests"
       language: python
       cache: pip
@@ -77,7 +77,7 @@ jobs:
       after_success:
       - codecov
 
-    - stage: e2e
+    - stage: "Test"
       name: "containerd - calico e2e Tests"
       language: python
       cache: pip
