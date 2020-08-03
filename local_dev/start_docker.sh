@@ -3,9 +3,8 @@
 set -eu
 
 KUBERNETES_VERSION="${KUBERNETES_VERSION:-stable}"
-CALICO_VERSION="${CALICO_VERSION:-v3.8}"
 
-# Setup minikube
+# Setup minikube, requires minikube >= 1.12.1
 minikube delete
 minikube config set embed-certs true
 minikube start \
