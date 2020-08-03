@@ -50,3 +50,4 @@ docs/_build/*
 cover/*
 MANIFEST
 kubeconfig
+public
