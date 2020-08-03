@@ -539,7 +539,7 @@ class NetworkTestOrchestrator:
             runtime = "docker"
         elif container_runtime.startswith("containerd"):
             if cri_socket is None:
-                cri_socket = "/var/run/dockershim.sock"
+                cri_socket = "/run/containerd/containerd.sock"
             runtime = "containerd"
         else:
             raise NotImplementedError(
