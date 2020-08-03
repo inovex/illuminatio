@@ -46,17 +46,17 @@ jobs:
       python: "3.8"
       env:
       - KUBECONFIG="$HOME/.kube/config"
-      # TODO upgrade to v1.18.6 or newer
-      - KUBERNETES_VERSION=v1.15.3
-      # TODO update to v1.12.1 or newer
-      - MINIKUBE_VERSION=v1.3.1
+      # stable version in minikube v1.12.1
+      - KUBERNETES_VERSION=v1.18.3
+      - MINIKUBE_VERSION=v1.12.1
+      - DOCKER_REGISTRY=localhost:5000
       - CHANGE_MINIKUBE_NONE_USER=true
       - MINIKUBE_WANTUPDATENOTIFICATION=false
       - MINIKUBE_WANTREPORTERRORPROMPT=false
       - MINIKUBE_HOME=$HOME
 
       before_install:
-      - sudo apt-get update && sudo apt-get install -y  conntrack
+      - sudo apt-get update && sudo apt-get install -y conntrack
 
       before_script:
       # install dependent binaries
@@ -64,7 +64,7 @@ jobs:
       - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
       - mkdir -p $HOME/.kube $HOME/.minikube
       - touch $KUBECONFIG
-      - minikube config set vm-driver none
+      - minikube config set driver none
       - sudo -H -E ./local_dev/start_docker.sh
       - pip install -r requirements.txt
       - pip install codecov
@@ -85,10 +85,10 @@ jobs:
       env:
       - KUBECONFIG="$HOME/.kube/config"
       - CONTAINERD_VERSION=1.3.4
-      # TODO upgrade to v1.18.6 or newer
-      - KUBERNETES_VERSION=v1.15.3
-      # TODO update to v1.12.1 or newer
-      - MINIKUBE_VERSION=v1.3.1
+      # stable version in minikube v1.12.1
+      - KUBERNETES_VERSION=v1.18.3
+      - MINIKUBE_VERSION=v1.12.1
+      - DOCKER_REGISTRY=localhost:5000
       - CHANGE_MINIKUBE_NONE_USER=true
       - MINIKUBE_WANTUPDATENOTIFICATION=false
       - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -106,8 +106,7 @@ jobs:
       - curl --fail -Lo minikube "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" && chmod +x minikube && sudo mv minikube /usr/local/bin/
       - mkdir -p $HOME/.kube $HOME/.minikube
       - touch $KUBECONFIG
-      # todo switch to kind !
-      - minikube config set vm-driver none
+      - minikube config set driver none
       - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
       - pip install codecov
