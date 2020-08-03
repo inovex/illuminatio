@@ -3,8 +3,8 @@
 # Abort if any of the following commands fails or variables are undefined
 set -eu
 
-DOCKER_REGISTRY=${DOCKER_REGISTRY:-"localhost"}
-ILLUMINATIO_IMAGE="${DOCKER_REGISTRY}:5000/illuminatio-runner:dev"
+DOCKER_REGISTRY=${DOCKER_REGISTRY:-"$(minikube ip):5000"}
+ILLUMINATIO_IMAGE="${DOCKER_REGISTRY}/illuminatio-runner:dev"
 
 docker build -t "${ILLUMINATIO_IMAGE}" .
 
