@@ -107,6 +107,7 @@ jobs:
       - mkdir -p $HOME/.kube $HOME/.minikube
       - touch $KUBECONFIG
       - minikube config set driver none
+      - which crictl
       - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
       - pip install codecov
