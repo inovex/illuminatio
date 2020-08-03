@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: labels-with-all-legal-characters
+  labels:
+    illuminatio-e2e: labels-with-all-legal-characters
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+  namespace: labels-with-all-legal-characters
+spec:
+  selector:
+    matchLabels:
+      test.io/test-123_XYZ: test_456-123.ABC
+  template:
+    metadata:
+      labels:
+        test.io/test-123_XYZ: test_456-123.ABC
+    spec:
+      containers:
+      - image: nginx
+        name: test
+        ports:
+        - containerPort: 80
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+  namespace: labels-with-all-legal-characters
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+     test.io/test-123_XYZ: test_456-123.ABC
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: api-allow
+  namespace: labels-with-all-legal-characters
+spec:
+  podSelector:
+    matchLabels:
+      test.io/test-123_XYZ: test_456-123.ABC
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          test.io/test-123_XYZ: test_456-123.ABC
