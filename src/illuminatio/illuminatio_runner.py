@@ -2,24 +2,28 @@
 This file contains the implementation of the illuminatio runner which
 actively executes network policy tests inside the kubernetes cluster itself
 """
+import ipaddress
 import json
 import logging
 import os
 import socket
 import subprocess
-import tempfile
 import time
-from xml.etree import ElementTree
+import platform
 import yaml
+import nmap
 
 import click
 import click_log
 import docker
 import kubernetes as k8s
-from nsenter import Namespace
 
 from illuminatio.host import Host, ConcreteClusterHost
 from illuminatio.k8s_util import create_test_output_config_map_manifest
+
+# Otherwise we get an error on Mac
+if platform.system() == "Linux":
+    from nsenter import Namespace
 
 LOGGER = logging.getLogger(__name__)
 click_log.basic_config(LOGGER)
@@ -43,7 +47,7 @@ def build_result_string(port, target, should_be_blocked, was_blocked):
         port,
         ("not " if should_be_blocked else ""),
     )
-    return "%s\n%s" % (title, details)
+    return f"{title}\n{details}"
 
 
 @click.command()
@@ -119,6 +123,25 @@ def get_pods_contained_in_both_lists(sender_pods, pods_on_node):
     return sender_pods_on_node
 
 
+def pod_list_contains_pod(pod, pod_list):
+    """
+    Checks whether a list of pods contains a given pod
+    """
+    LOGGER.debug("Searching for pod %s", pod)
+    if isinstance(pod, ConcreteClusterHost):
+        is_on_node = any([pod == pod_on_node for pod_on_node in pod_list])
+        if is_on_node:
+            LOGGER.debug("Pod %s in namespace %s was found", pod.name, pod.namespace)
+        else:
+            LOGGER.debug(
+                "Pod %s in namespace %s isn't on this node", pod.name, pod.namespace
+            )
+        return is_on_node
+
+    LOGGER.error("Found non-ConcreteClusterHost host in cases: %s", pod)
+    return False
+
+
 def run_tests_for_sender_pod(sender_pod, cases):
     """
     Runs test cases from the network namespace of a given pod.
@@ -153,92 +176,59 @@ def run_tests_for_target(network_ns, ports, target):
     LOGGER.info(svc_dns_entry)
     svc_ip = socket.gethostbyname(svc_dns_entry)
     LOGGER.info("Service IP: %s for Service: %s", svc_ip, target)
-    with tempfile.NamedTemporaryFile() as result_file:
-        LOGGER.debug("Results will be stored to %s", result_file)
-        # remove the need for nmap!
-        # e.g. https://gist.github.com/betrcode/0248f0fda894013382d7
-        # nmap that target TODO: handle None ip
-        # Replace bare nmap call with a better integrated solution like: https://pypi.org/project/python-nmap/ ?
-        nmap_cmd = ["nmap", "-oX", result_file.name, "-Pn", "-p", port_string, svc_ip]
-        LOGGER.info("running nmap with cmd %s", nmap_cmd)
-        prc = None
-        with Namespace(network_ns, "net"):
-            prc = subprocess.run(
-                nmap_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-        if prc is None or prc.returncode:
-            LOGGER.error("Executing nmap in foreign net ns failed! output:")
-            LOGGER.error(prc.stderr)
-            LOGGER.debug(prc)
-            return {
-                port_string: {
-                    "success": False,
-                    "error": "Couldn't nmap host %s with hostname %s"
-                    % (target, svc_dns_entry),
-                }
-            }
 
-        LOGGER.info("finished running nmap")
-        LOGGER.debug("Error log: %s", prc.stderr)
-        # when not using shell the output from nmap contains \\n instead of newline characters
-        LOGGER.info("Stdout: %s", str(prc.stdout).split("\\n"))
-        return extract_results_from_nmap_xml_file(result_file, port_on_nums, target)
+    ipv6_arg = ""
+    if ipaddress.ip_address(svc_ip).version == 6:
+        ipv6_arg = "-6"
+
+    # nmap that target TODO: handle None ip
+    nm_scanner = nmap.PortScanner()
+    with Namespace(network_ns, "net"):
+        nm_scanner.scan(svc_ip, arguments=f"-n -Pn -p {port_string} {ipv6_arg}")
+    LOGGER.info("Ran nmap with cmd %s", nm_scanner.command_line())
+
+    return extract_results_from_nmap(nm_scanner, port_on_nums, target)
 
 
-def pod_list_contains_pod(pod, pod_list):
+def extract_results_from_nmap(nmap_res, port_on_nums, target):
     """
-    Checks whether a list of pods contains a given pod
+    Extracts the results of an nmap scan into a dictionary
     """
-    LOGGER.debug("Searching for pod %s", pod)
-    if isinstance(pod, ConcreteClusterHost):
-        is_on_node = any([pod == pod_on_node for pod_on_node in pod_list])
-        if is_on_node:
-            LOGGER.debug("Pod %s in namespace %s was found", pod.name, pod.namespace)
-        else:
-            LOGGER.debug(
-                "Pod %s in namespace %s isn't on this node", pod.name, pod.namespace
-            )
-        return is_on_node
-
-    LOGGER.error("Found non-ConcreteClusterHost host in cases: %s", pod)
-    return False
-
-
-def extract_results_from_nmap_xml_file(result_file, port_on_nums, target):
-    """
-    Extracts the results of an nmap scan from an xml result file into a dictionary
-    """
-    xml = ElementTree.parse(result_file.name)
-    hosts = [h for h in xml.getroot().iter("host")]
+    hosts = nmap_res.all_hosts()
     if len(hosts) != 1:
         LOGGER.error(
-            "Fund %s a single host in nmap results but expected only one target to be probed",
+            "Found %s a single host in nmap results but expected only one target to be probed",
             len(hosts),
         )
         port_string = ",".join(port_on_nums.keys())
         return {
             port_string: {
                 "success": False,
-                "error": "Found %s hosts in nmap results, expected 1."
-                % str(len(hosts)),
+                "error": f"Found {len(hosts)} hosts in nmap results, expected 1.",
             }
         }
-    host_element = hosts[0]
-    host_names = [hn.get("name") for hn in host_element.iter("hostname")]
-    LOGGER.debug("Found names %s for target %s", host_names, target)
+
     results = {}
-    for port_element in host_element.iter("port"):
-        port = port_element.get("portid")
-        state = port_element.find("state").get("state")
-        port_with_expectation = port_on_nums[port]
-        should_be_blocked = "-" in port_with_expectation
-        was_blocked = state == "filtered"
-        results[port_with_expectation] = {}
-        results[port_with_expectation]["success"] = should_be_blocked == was_blocked
-        results[port_with_expectation]["string"] = build_result_string(
-            port, target, should_be_blocked, was_blocked
-        )
-        results[port_with_expectation]["nmap-state"] = state
+
+    host = hosts[0]
+    for proto in nmap_res[host].all_protocols():
+        # get all scanned ports for all protocols
+        for port in nmap_res[host][proto].keys():
+            if proto == "tcp":
+                state = nmap_res[host].tcp(port)["state"]
+            else:
+                state = nmap_res[host][proto][port]["state"]
+            port_with_expectation = port_on_nums[str(port)]
+            should_be_blocked = "-" in port_with_expectation
+            was_blocked = state == "filtered"
+            results[port_with_expectation] = {
+                "success": should_be_blocked == was_blocked,
+                "string": build_result_string(
+                    port, target, should_be_blocked, was_blocked
+                ),
+                "nmap-state": state,
+            }
+
     return results
 
 
