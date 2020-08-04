@@ -168,7 +168,7 @@ Instead of installing the `illumnatio` cli on your machine you can also use our 
 You will need to provide the `kubeconfig` to the container and probably some certificates:
 
 ```bash
-docker run -ti -v ~/.kube:/home/illuminatio/.kube:ro inovex/illuminatio clean run
+docker run -ti -v ~/.kube:/home/illuminatio/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
 ### Minikube
@@ -176,7 +176,7 @@ docker run -ti -v ~/.kube:/home/illuminatio/.kube:ro inovex/illuminatio clean ru
 Minikube will store the certificates in the users home so we need to pass these to the container:
 
 ```bash
-docker run -ti -v "${HOME}/.minikube":"${HOME}/.minikube" -v "${HOME}/.kube:"/home/illuminatio/.kube:ro inovex/illuminatio clean run
+docker run -ti -v "${HOME}/.minikube":"${HOME}/.minikube" -v "${HOME}/.kube:"/home/illuminatio/.kube:ro inovex/illuminatio illuminatio clean run
 ```
 
 If the minikube VM is not reachable from your container try to pass the `--net=host` flag to the docker run command.
