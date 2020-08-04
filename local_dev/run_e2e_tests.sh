@@ -6,7 +6,7 @@ set -eu
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-"localhost"}
 ILLUMINATIO_IMAGE="${DOCKER_REGISTRY}:5000/illuminatio-runner:dev"
 
-docker build -t "${ILLUMINATIO_IMAGE}" -f illuminatio-runner.dockerfile .
+docker build -t "${ILLUMINATIO_IMAGE}" .
 
 # Use minikube docker daemon to push to the insecure registry
 

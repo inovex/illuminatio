@@ -1,24 +1,38 @@
-FROM python:3.7.4-alpine3.10 AS builder
+FROM python:3.8-slim-buster AS builder
 
-COPY . /illuminatio
-COPY .git /illuminatio/.git
+RUN mkdir -p /src/app && \
+    apt-get update && \
+    apt-get install -y git wget
 
-WORKDIR /illuminatio
+ENV CRICTL_VERSION="v1.18.0"
+RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz && \
+    tar zxvf crictl-${CRICTL_VERSION}-linux-amd64.tar.gz -C /usr/local/bin && \
+    rm -f crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
 
-RUN apk add --no-cache git && \
-    adduser -S illuminatio  -s /bin/nologin -u 1000 && \
-    chmod 1777 /tmp
+COPY setup.cfg /src/app
+COPY setup.py /src/app
+COPY .git /src/app/.git
+COPY src /src/app/src
+COPY ./requirements.txt /src/app/requirements.txt
 
-RUN pip install --no-warn-script-location --user . && \
-    chown -R illuminatio /root/.local
+WORKDIR /src/app
+RUN pip3 --no-cache-dir install . -r ./requirements.txt
 
-# Final image
-FROM python:3.7.4-alpine3.10
+# Actual Runner image
+FROM python:3.8-slim-buster
 
-RUN adduser -S illuminatio -H -s /bin/nologin -u 1000
-USER 1000
+# Install illuminatio from builder
+COPY --from=builder /src/app/src /src/app/src
+COPY --from=builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=builder /usr/local/bin/illuminatio-runner /usr/local/bin/illuminatio-runner
+COPY --from=builder /usr/local/bin/illuminatio /usr/local/bin/illuminatio
+COPY --from=builder /usr/local/bin/crictl /usr/local/bin/crictl
 
-COPY --from=builder /root/.local /home/illuminatio/.local
-ENV PATH=/home/illuminatio/.local/bin:$PATH
+ENV PYTHONPATH=/usr/local/lib/python3.8/site-packages
 
-ENTRYPOINT [ "illuminatio" ]
+# Currently nmap is required for running the scans
+RUN apt-get update && \
+    apt-get install -y nmap && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD [ "/usr/local/bin/illuminatio-runner" ]
