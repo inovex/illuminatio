@@ -12,6 +12,7 @@ minikube start \
     --cpus 2 \
     --cni=calico \
     --container-runtime=containerd \
+    --cri-socket='unix:///run/containerd/containerd.sock' \
     --bootstrapper=kubeadm \
     --host-only-cidr=172.17.17.1/24 \
     --insecure-registry=localhost:5000 \
