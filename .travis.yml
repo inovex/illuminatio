@@ -93,6 +93,8 @@ jobs:
       - MINIKUBE_WANTUPDATENOTIFICATION=false
       - MINIKUBE_WANTREPORTERRORPROMPT=false
       - MINIKUBE_HOME=$HOME
+      - CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
+      - IMAGE_SERVICE_ENDPOINT=unix:///run/containerd/containerd.sock
 
       before_install:
       # See: https://github.com/containerd/cri/blob/master/docs/installation.md
@@ -107,7 +109,6 @@ jobs:
       - mkdir -p $HOME/.kube $HOME/.minikube
       - touch $KUBECONFIG
       - minikube config set driver none
-      - 'echo "runtime-endpoint: unix:///run/containerd/containerd.sock\nimage-endpoint: unix:///run/containerd/containerd.sock" | sudo tee /etc/crictl.yaml'
       - sudo -H -E ./local_dev/start_containerd.sh
       - pip install -r requirements.txt
       - pip install codecov
