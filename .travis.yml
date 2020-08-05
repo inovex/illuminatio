@@ -95,12 +95,14 @@ jobs:
       - MINIKUBE_HOME=$HOME
       - CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
       - IMAGE_SERVICE_ENDPOINT=unix:///run/containerd/containerd.sock
+      - CRICTL_VERSION="v1.17.0"
 
       before_install:
       # See: https://github.com/containerd/cri/blob/master/docs/installation.md
-      - sudo apt-get update && sudo apt-get install -y libseccomp2 conntrack
-      - curl --fail -sLO "https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz"
-      - sudo tar --no-overwrite-dir -C / -xzf cri-containerd-${CONTAINERD_VERSION}.linux-amd64.tar.gz
+      - sudo apt-get update && sudo apt-get install -y libseccomp2 conntrack containerd
+      - wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz &&
+        sudo tar zxvf crictl-${CRICTL_VERSION}-linux-amd64.tar.gz -C /usr/local/bin &&
+        rm -f crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
 
       before_script:
       # install dependent binaries
