@@ -114,6 +114,16 @@ def merge_in_dict(cases: List[NetworkTestCase]):
     return out
 
 
+def from_merged_dict(dictionary: dict) -> List[NetworkTestCase]:
+    """
+    Converts a dictionary into a list of NetworkTestCases
+    """
+    return [
+        NetworkTestCase.from_stringified_members(f, t, p)
+        for f, t, p in triples_from_dict(dictionary)
+    ]
+
+
 def to_yaml(cases: List[NetworkTestCase]):
     """
     Converts a list of NetworkTestCases into a yaml string
@@ -137,7 +147,4 @@ def from_yaml(yaml_string) -> List[NetworkTestCase]:
     """
     Converts a yaml string into a list of NetworkTestCases
     """
-    return [
-        NetworkTestCase.from_stringified_members(f, t, p)
-        for f, t, p in triples_from_dict(yaml.safe_load(yaml_string))
-    ]
+    return from_merged_dict(yaml.safe_load(yaml_string))
