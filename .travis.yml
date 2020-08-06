@@ -34,6 +34,7 @@ jobs:
       python: "3.8"
       before_script:
       - pip install codecov
+      - export PATH="${PATH}:$(pwd)"
       script:
       - coverage run --source=./src/illuminatio/ setup.py test --addopts="-m 'not e2e' --runslow"
       after_success:

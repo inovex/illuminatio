@@ -52,12 +52,8 @@ def test_build_result_string(test_input, expected):
     assert build_result_string(**test_input) == expected
 
 
-def nmap_mock(hosts: list()):
-    try:
-        nmap_mock = nmap.PortScanner()
-    except nmap.PortScannerError:
-        # We ignore this error during the test
-        pass
+def create_nmap_mock(hosts: list()):
+    nmap_mock = nmap.PortScanner()
     nmap_mock.all_hosts = MagicMock(return_value=hosts)
     nmap_mock._scan_result = MagicMock(return_value={"scan"})
     if len(hosts) > 0:
@@ -74,7 +70,7 @@ def nmap_mock(hosts: list()):
     "test_input,expected",
     [
         (
-            {"nmap_res": nmap_mock([]), "port_on_nums": {}, "target": "test"},
+            {"nmap_res": create_nmap_mock([]), "port_on_nums": {}, "target": "test"},
             {
                 "": {
                     "error": "Found 0 hosts in nmap results, expected 1.",
@@ -84,7 +80,7 @@ def nmap_mock(hosts: list()):
         ),
         (
             {
-                "nmap_res": nmap_mock(["123.321.123.321"]),
+                "nmap_res": create_nmap_mock(["123.321.123.321"]),
                 "port_on_nums": {"80": "80"},
                 "target": "test",
             },
@@ -100,7 +96,23 @@ def nmap_mock(hosts: list()):
         ),
         (
             {
-                "nmap_res": nmap_mock(["123.321.123.321"]),
+                "nmap_res": create_nmap_mock(["123.321.123.321"]),
+                "port_on_nums": {"80": "-80"},
+                "target": "test",
+            },
+            {
+                "-80": {
+                    "nmap-state": "open",
+                    "string": "Test test:-80 failed\n"
+                    "Could reach test on port 80. Expected target to not be "
+                    "reachable",
+                    "success": False,
+                }
+            },
+        ),
+        (
+            {
+                "nmap_res": create_nmap_mock(["::1"]),
                 "port_on_nums": {"80": "-80"},
                 "target": "test",
             },
