@@ -40,6 +40,8 @@ spec:
           value: docker
         - name: CONTAINER_RUNTIME_ENDPOINT
           value: /var/run/docker.sock
+        command:
+          - illuminatio-runner
         args:
           - --verbosity=NOTSET
         image: inovex/illuminatio-runner:dev

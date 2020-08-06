@@ -40,6 +40,8 @@ spec:
           value: containerd
         - name: CONTAINER_RUNTIME_ENDPOINT
           value: /var/run/dockershim.sock
+        command:
+          - illuminatio-runner
         args:
           - --verbosity=NOTSET
         image: inovex/illuminatio-runner:dev
