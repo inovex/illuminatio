@@ -4,17 +4,22 @@ This file contains the illuminatio CLI
 
 import logging
 import time
-from os import path
 import json
 
 import click
 import click_log
 import kubernetes as k8s
-import yaml
 from illuminatio.cleaner import Cleaner
+from illuminatio.test_case import merge_in_dict, from_merged_dict
 from illuminatio.test_generator import NetworkTestCaseGenerator
 from illuminatio.test_orchestrator import NetworkTestOrchestrator
-from illuminatio.util import CLEANUP_ALWAYS, CLEANUP_ON_REQUEST
+from illuminatio.util import (
+    CLEANUP_ALWAYS,
+    CLEANUP_ON_REQUEST,
+    STD_IDENTIFIER,
+    write_formatted,
+    read_formatted,
+)
 from termcolor import colored
 
 
@@ -55,7 +60,27 @@ def cli(incluster, kubeconfig):
             exit(1)
 
 
+@cli.command(short_help="generate test cases")
+@click.option(
+    "-o",
+    "--outfile",
+    default=STD_IDENTIFIER,
+    help="Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON",
+)
+def generate(outfile: str):
+    """
+    "Generate and output test cases.
+    """
+    generator = NetworkTestCaseGenerator(LOGGER)
+    v1net = k8s.client.NetworkingV1Api()
+    orch = NetworkTestOrchestrator([], LOGGER)
+    net_pols = v1net.list_network_policy_for_all_namespaces()
+    cases, _ = generator.generate_test_cases(net_pols.items, orch.current_namespaces)
+    write_formatted(merge_in_dict(cases), outfile)
+
+
 @cli.command(short_help="create and run test cases")
+@click.option("-t", "--test-cases", default=None, help="Test cases file.")
 @click.option(
     "-o",
     "--outfile",
@@ -68,12 +93,6 @@ def cli(incluster, kubeconfig):
     "brief",
     default=True,
     help="Output file wordiness, wordy includes string representation of results",
-)
-@click.option(
-    "--dry",
-    default=False,
-    is_flag=True,
-    help="Dry run only generates test cases without executing them.",
 )
 @click.option(
     "-r",
@@ -94,9 +113,9 @@ def cli(incluster, kubeconfig):
     help="CRI socket used for the interaction with the container runtime",
 )
 def run(
+    test_cases: str,
     outfile: str,
     brief: bool,
-    dry: bool,
     runner_image: str,
     target_image: str,
     cri_socket: str,
@@ -119,17 +138,18 @@ def run(
     runtimes["resource-pull"] = time.time() - start_time
 
     # Generate Test cases
-    generator = NetworkTestCaseGenerator(LOGGER)
-    cases, gen_run_times = generator.generate_test_cases(
-        net_pols.items, orch.current_namespaces
-    )
+    if test_cases:
+        cases = from_merged_dict(read_formatted(test_cases))
+        gen_run_times = 0
+    else:
+        generator = NetworkTestCaseGenerator(LOGGER)
+        cases, gen_run_times = generator.generate_test_cases(
+            net_pols.items, orch.current_namespaces
+        )
     LOGGER.debug("Got cases: %s", cases)
     case_time = time.time()
     runtimes["generate"] = case_time - start_time
     render_cases(cases, case_time - start_time)
-    if dry:
-        LOGGER.info("Skipping test execution as --dry was set")
-        return
 
     if not cases:
         LOGGER.info("Skipping resource creation since no test were generated")
@@ -154,7 +174,6 @@ def run(
     if outfile:
         # write output
         LOGGER.info("Writing results to file %s", outfile)
-        _, extension = path.splitext(outfile)
         file_contents = {
             "cases": results,
             "runtimes": runtimes,
@@ -162,16 +181,10 @@ def run(
         }
         file_contents["runtimes"]["runners"] = test_runtimes
         file_contents["runtimes"]["generator"] = gen_run_times
-        if extension in [".yaml", ".yml"]:
-            with open(outfile, "w") as out:
-                yaml.dump(file_contents, out, default_flow_style=False)
-        elif extension == ".json":
-            with open(outfile, "w") as out:
-                json.dump(file_contents, out)
-        else:
-            logging.error(
-                "Output format %s not supported! Aborting write to file.", extension
-            )
+        try:
+            write_formatted(file_contents, outfile)
+        except ValueError as err:
+            logging.error("Error writing output file: %s", err)
     # echo results, whether they have been saved or not
     result_duration = result_time - case_time
     render_results(results, result_duration)
