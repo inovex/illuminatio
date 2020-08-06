@@ -167,21 +167,22 @@ def run_tests_for_target(network_ns, ports, target):
     LOGGER.info("Target: %s", target)
     port_on_nums = {port.replace("-", ""): port for port in ports}
     port_string = ",".join(port_on_nums.keys())
-    # ToDo do we really need this -> we know the service already
+    # ToDo do we really need this -> we know the service already and could use the cluster IP
     # DNS could be blocked
-    # resolve target ip
-    # Only IPv4 currently
-    # ToDo try catch -- > socket.gaierror: [Errno -2] Name or service not known
+    # Only IPv4 currently -> https://docs.python.org/3/library/socket.html#socket.getaddrinfo
     svc_dns_entry = get_domain_name_for(target)
     LOGGER.info(svc_dns_entry)
-    svc_ip = socket.gethostbyname(svc_dns_entry)
+    try:
+        svc_ip = socket.gethostbyname(svc_dns_entry)
+    except (socket.gaierror, socket.herror) as error:
+        return {port_string: {"success": False, "error": error}}
+
     LOGGER.info("Service IP: %s for Service: %s", svc_ip, target)
 
     ipv6_arg = ""
     if ipaddress.ip_address(svc_ip).version == 6:
         ipv6_arg = "-6"
 
-    # nmap that target TODO: handle None ip
     nm_scanner = nmap.PortScanner()
     with Namespace(network_ns, "net"):
         nm_scanner.scan(svc_ip, arguments=f"-n -Pn -p {port_string} {ipv6_arg}")
@@ -215,6 +216,7 @@ def extract_results_from_nmap(nmap_res, port_on_nums, target):
         # get all scanned ports for all protocols
         for port in nmap_res[host][proto].keys():
             if proto == "tcp":
+                # We use the direct tcp method here for better mocking
                 state = nmap_res[host].tcp(port)["state"]
             else:
                 state = nmap_res[host][proto][port]["state"]
