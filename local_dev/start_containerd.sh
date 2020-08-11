@@ -14,7 +14,6 @@ minikube start \
     --container-runtime=containerd \
     --bootstrapper=kubeadm \
     --host-only-cidr=172.17.17.1/24 \
-    --insecure-registry=localhost:5000 \
     --kubernetes-version="${KUBERNETES_VERSION}"
 
 minikube addons enable registry
@@ -25,23 +24,12 @@ then
 fi
 
 # Configure containerd to use the local registry
-if [[ -n "${CI:-}" ]];
-then
-    sudo mkdir -p /etc/containerd
-    sudo tee /etc/containerd/config.toml <<EOF
-[plugins.cri.registry.mirrors]
-  [plugins.cri.registry.mirrors."localhost"]
-    endpoint = ["http://localhost:5000"]
-EOF
-
-else
-    minikube ssh <<EOF
+minikube ssh <<EOF
 # the following commands are executed inside the minikube vm
 # Add the following lines -> see https://github.com/kubernetes/minikube/issues/3444
-sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml
-sudo sed -i '56i\        [plugins.cri.registry.mirrors."localhost"]' /etc/containerd/config.toml
+sudo sed -i '56i\          endpoint = ["http://127.0.0.1:5000"]' /etc/containerd/config.toml
+sudo sed -i '56i\        [plugins.cri.registry.mirrors."localhost:5000"]' /etc/containerd/config.toml
 # Finally restart the containerd service
 sudo systemctl restart containerd
 exit
 EOF
-fi

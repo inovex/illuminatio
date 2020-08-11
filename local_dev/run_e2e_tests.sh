@@ -5,10 +5,10 @@ set -eu
 
 # Default DOCKER_REGISTRY to the docker bind port if using docker driver
 if [ "$(minikube config get driver)" = "docker" ]; then
-  : ${DOCKER_REGISTRY:=$(docker port minikube 5000)}
+  DOCKER_REGISTRY="${DOCKER_REGISTRY:-$(docker port minikube 5000)}"
 else
 # otherwise default it to port 5000 ouf the minikube IP
-  : ${DOCKER_REGISTRY:="$(minikube ip):5000"}
+  DOCKER_REGISTRY="${DOCKER_REGISTRY:-"$(minikube ip):5000"}"
 fi
 
 ILLUMINATIO_IMAGE="${DOCKER_REGISTRY}/illuminatio-runner:dev"
