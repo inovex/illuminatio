@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-        
+# This script is used to trick travis (actually the python-nmap lib)
+# to think that nmap is istalled (which is a requirement).
+
 echo 'Nmap version 7.80 ( https://nmap.org  )
 Platform: x86_64-apple-darwin19.5.0
 Compiled with: nmap-liblua-5.3.5 openssl-1.1.1g nmap-libssh2-1.8.2 libz-1.2.11 nmap-libpcre-7.6 libpcap-1.9.1 nmap-libdnet-1.12 ipv6
