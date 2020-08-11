@@ -65,6 +65,8 @@ jobs:
       - touch $KUBECONFIG
       - minikube config set driver docker
       - ./local_dev/start_docker.sh
+      - kubectl get po -A
+      - sudo docker ps
       - pip install -r requirements.txt
       - pip install codecov
       - python setup.py install
@@ -99,6 +101,8 @@ jobs:
       - touch $KUBECONFIG
       - minikube config set driver docker
       - ./local_dev/start_containerd.sh
+      - kubectl get po -A
+      - sudo docker ps
       - pip install -r requirements.txt
       - pip install codecov
       - python setup.py install
