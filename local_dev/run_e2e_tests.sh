@@ -17,7 +17,7 @@ docker build -t "${ILLUMINATIO_IMAGE}" .
 
 # Use minikube docker daemon to push to the insecure registry
 
-docker push "${ILLUMINATIO_IMAGE}"
+docker -l debug push "${ILLUMINATIO_IMAGE}"
 
 if [[ -n "${CI:-}" ]];
 then
