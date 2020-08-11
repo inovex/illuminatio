@@ -22,8 +22,6 @@ docker push "${ILLUMINATIO_IMAGE}"
 if [[ -n "${CI:-}" ]];
 then
   echo "Prepull: ${ILLUMINATIO_IMAGE} to ensure image is available"
-  # If crictl is not installed e.g. only Docker
-  sudo crictl pull "${ILLUMINATIO_IMAGE}" || true
   sudo docker pull "${ILLUMINATIO_IMAGE}"
 fi
 
