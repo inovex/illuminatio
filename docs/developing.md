@@ -78,8 +78,7 @@ There is also a simple bash script that makes it easier to setup the development
 Installing Calico (or other [CNI network plugins](https://kubernetes.io/docs/concepts/cluster-administration/networking/#how-to-implement-the-kubernetes-networking-model)) for example:
 
 ```bash
-# actually we don't need the rbac rules since minikube has rbac deactivated per default
-kubectl apply -f https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 ```
 
 ## Use the local Docker daemon
@@ -121,7 +120,7 @@ sudo systemctl status containerd
 Now we can build locally the new runner image:
 
 ```bash
-docker build -t "$(minikube ip):5000/illuminatio-runner:dev" -f illuminatio-runner.dockerfile .
+docker build -t "$(minikube ip):5000/illuminatio-runner:dev" .
 ```
 
 And if you run the following command you should see the new image `docker images`.
