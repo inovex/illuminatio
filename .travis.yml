@@ -46,9 +46,9 @@ jobs:
       python: "3.8"
       env:
       - KUBECONFIG="$HOME/.kube/config"
-      # stable version in minikube v1.12.1
+      # stable version in minikube v1.12.2
       - KUBERNETES_VERSION=v1.18.3
-      - MINIKUBE_VERSION=v1.12.1
+      - MINIKUBE_VERSION=v1.12.2
       - CHANGE_MINIKUBE_NONE_USER=true
       - MINIKUBE_WANTUPDATENOTIFICATION=false
       - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -83,9 +83,9 @@ jobs:
       python: "3.8"
       env:
       - KUBECONFIG="$HOME/.kube/config"
-      # stable version in minikube v1.12.1
+      # stable version in minikube v1.12.2
       - KUBERNETES_VERSION=v1.18.3
-      - MINIKUBE_VERSION=v1.12.1
+      - MINIKUBE_VERSION=v1.12.2
       - CHANGE_MINIKUBE_NONE_USER=true
       - MINIKUBE_WANTUPDATENOTIFICATION=false
       - MINIKUBE_WANTREPORTERRORPROMPT=false
