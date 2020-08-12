@@ -24,7 +24,7 @@ fi
 minikube ssh <<EOF
 # the following commands are executed inside the minikube vm
 # Add the following lines -> see https://github.com/kubernetes/minikube/issues/3444
-sudo sed -i '56i\          endpoint = ["http://127.0.0.1:5000"]' /etc/containerd/config.toml
+sudo sed -i '56i\          endpoint = ["http://localhost:5000"]' /etc/containerd/config.toml
 sudo sed -i '56i\        [plugins.cri.registry.mirrors."localhost:5000"]' /etc/containerd/config.toml
 # Finally restart the containerd service
 sudo systemctl restart containerd
