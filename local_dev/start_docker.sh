@@ -13,7 +13,7 @@ minikube start \
     --host-only-cidr=172.17.17.1/24 \
     --kubernetes-version="${KUBERNETES_VERSION}"
 
-# Setup the minikube docker registry and calico
+# Setup the minikube docker registry
 minikube addons enable registry
 
 if [[ -n "${CI:-}" ]];
