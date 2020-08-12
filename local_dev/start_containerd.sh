@@ -8,11 +8,8 @@ KUBERNETES_VERSION="${KUBERNETES_VERSION:-stable}"
 minikube delete
 minikube config set embed-certs true
 minikube start \
-    --memory 4096 \
-    --cpus 2 \
     --cni=calico \
     --container-runtime=containerd \
-    --bootstrapper=kubeadm \
     --host-only-cidr=172.17.17.1/24 \
     --kubernetes-version="${KUBERNETES_VERSION}"
 
