@@ -7,7 +7,7 @@ set -eu
 if [ "$(minikube config get driver)" = "docker" ]; then
   DOCKER_REGISTRY="${DOCKER_REGISTRY:-$(docker port minikube 5000)}"
 else
-# otherwise default to the minikube IP and port 5000
+  # otherwise default to the minikube IP and port 5000
   DOCKER_REGISTRY="${DOCKER_REGISTRY:-"$(minikube ip):5000"}"
 fi
 
