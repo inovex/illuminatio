@@ -54,9 +54,6 @@ jobs:
       - MINIKUBE_WANTREPORTERRORPROMPT=false
       - MINIKUBE_HOME=$HOME
 
-      before_install:
-      - sudo apt-get update && sudo apt-get install -y conntrack
-
       before_script:
       # install dependent binaries
       - curl --fail -Lo kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl" && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
