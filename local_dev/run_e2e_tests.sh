@@ -3,11 +3,11 @@
 # Abort if any of the following commands fails or variables are undefined
 set -eu
 
-# Default DOCKER_REGISTRY to the docker bind port if using docker driver
+# default DOCKER_REGISTRY to the docker bind address and port if using docker driver
 if [ "$(minikube config get driver)" = "docker" ]; then
   DOCKER_REGISTRY="${DOCKER_REGISTRY:-$(docker port minikube 5000)}"
 else
-# otherwise default it to port 5000 ouf the minikube IP
+# otherwise default to the minikube IP and port 5000
   DOCKER_REGISTRY="${DOCKER_REGISTRY:-"$(minikube ip):5000"}"
 fi
 
