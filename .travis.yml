@@ -66,6 +66,7 @@ jobs:
       - pip install -r requirements.txt
       - pip install codecov
       - python setup.py install
+      - sudo cp ${TRAVIS_BUILD_DIR}/nmap /usr/local/nmap
 
       script:
       # run illuminatio e2e tests
@@ -100,6 +101,7 @@ jobs:
       - pip install -r requirements.txt
       - pip install codecov
       - python setup.py install
+      - sudo cp ${TRAVIS_BUILD_DIR}/nmap /usr/local/nmap
 
       script:
       # run illuminatio e2e tests
