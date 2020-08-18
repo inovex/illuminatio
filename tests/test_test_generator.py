@@ -32,7 +32,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     GenericClusterHost({}, {}), ClusterHost("default", {}), "*", True
                 )
             ],
-            id="Allow All",
+            id="Allow all traffic in namespace",
         ),
         pytest.param(
             [k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="default"))],
@@ -52,7 +52,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     ClusterHost("default", {}), ClusterHost("default", {}), "*", False
                 )
             ],
-            id="Deny All",
+            id="Deny all traffic in namespace",
         ),
         pytest.param(
             [k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="default"))],
@@ -122,7 +122,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     False,
                 ),
             ],
-            id="Allow labelled pods to namespace",
+            id="Allow labelled Pods to communicate with all Pods in the same Namespace",
         ),
         pytest.param(
             [k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="default"))],
@@ -149,7 +149,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     True,
                 )
             ],
-            id="Allow all pods to labelled pods in namespace",
+            id="Allow all Pods to communicate to labelled Pods in the same Namespace",
         ),
         pytest.param(
             [k8s.client.V1Namespace(metadata=k8s.client.V1ObjectMeta(name="default"))],
@@ -229,7 +229,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     False,
                 ),
             ],
-            id="Allow labelled pods to same-labelled pods",
+            id="Allow labelled Pods to communicate to Pods with the same labels in the same Namespace",
         ),
     ],
 )
