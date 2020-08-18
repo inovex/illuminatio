@@ -16,8 +16,16 @@ ILLUMINATIO_IMAGE="${DOCKER_REGISTRY}/illuminatio-runner:dev"
 docker build -t "${ILLUMINATIO_IMAGE}" .
 
 # Use minikube docker daemon to push to the insecure registry
-
-docker push "${ILLUMINATIO_IMAGE}"
+counter=0
+while ! docker push "${ILLUMINATIO_IMAGE}" &> /dev/null; do
+  if [[ "$counter" -gt 25 ]]; then
+       echo "Error: could not push image \'${ILLUMINATIO_IMAGE}\" to registry"
+       exit 1
+  fi
+  echo "Wait for docker regsitry to become ready"
+  counter=$((counter+1))
+  sleep 5
+done
 
 if [[ -n "${CI:-}" ]];
 then
