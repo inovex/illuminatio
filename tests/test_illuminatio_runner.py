@@ -70,7 +70,7 @@ def create_nmap_mock(hosts: list()):
     "test_input,expected",
     [
         (
-            {"nmap_res": create_nmap_mock([]), "port_on_nums": {}, "target": "test"},
+            {"hosts": [], "port_on_nums": {}, "target": "test"},
             {
                 "": {
                     "error": "Found 0 hosts in nmap results, expected 1.",
@@ -80,7 +80,7 @@ def create_nmap_mock(hosts: list()):
         ),
         (
             {
-                "nmap_res": create_nmap_mock(["123.321.123.321"]),
+                "hosts": ["123.321.123.321"],
                 "port_on_nums": {"80": "80"},
                 "target": "test",
             },
@@ -96,7 +96,7 @@ def create_nmap_mock(hosts: list()):
         ),
         (
             {
-                "nmap_res": create_nmap_mock(["123.321.123.321"]),
+                "hosts": ["123.321.123.321"],
                 "port_on_nums": {"80": "-80"},
                 "target": "test",
             },
@@ -111,11 +111,7 @@ def create_nmap_mock(hosts: list()):
             },
         ),
         (
-            {
-                "nmap_res": create_nmap_mock(["::1"]),
-                "port_on_nums": {"80": "-80"},
-                "target": "test",
-            },
+            {"hosts": ["::1"], "port_on_nums": {"80": "-80"}, "target": "test"},
             {
                 "-80": {
                     "nmap-state": "open",
@@ -129,4 +125,6 @@ def create_nmap_mock(hosts: list()):
     ],
 )
 def test_extract_results_from_nmap(test_input, expected):
+    test_input["nmap_res"] = create_nmap_mock(test_input["hosts"])
+    test_input.pop("hosts", None)
     assert extract_results_from_nmap(**test_input) == expected

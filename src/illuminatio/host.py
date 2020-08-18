@@ -3,6 +3,8 @@ File for all kinds of hosts on which network tests can be performed
 """
 from abc import ABC
 
+import ipaddress
+
 import kubernetes as k8s
 
 
@@ -32,8 +34,12 @@ class Host(ABC):
         """
         if identifier == LocalHost().to_identifier():
             return LocalHost()
-        if "." in identifier:
+        try:
+            ipaddress.ip_address(identifier)
             return ExternalHost(identifier)
+        except ValueError:
+            if ":" not in identifier:
+                raise ValueError(f"identifier {identifier} is not a valid Host")
         split_namespace = identifier.split(":")
         pod_label_string = (
             split_namespace[1] if len(split_namespace) > 1 else split_namespace[0]
