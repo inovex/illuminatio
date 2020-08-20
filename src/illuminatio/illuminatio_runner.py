@@ -6,7 +6,6 @@ import ipaddress
 import json
 import logging
 import os
-import socket
 import subprocess
 import time
 import platform
@@ -167,25 +166,14 @@ def run_tests_for_target(network_ns, ports, target):
     LOGGER.info("Target: %s", target)
     port_on_nums = {port.replace("-", ""): port for port in ports}
     port_string = ",".join(port_on_nums.keys())
-    # ToDo do we really need this -> we know the service already and could use the cluster IP
-    # DNS could be blocked
-    # Only IPv4 currently -> https://docs.python.org/3/library/socket.html#socket.getaddrinfo
-    svc_dns_entry = get_domain_name_for(target)
-    LOGGER.info(svc_dns_entry)
-    try:
-        svc_ip = socket.gethostbyname(svc_dns_entry)
-    except (socket.gaierror, socket.herror) as error:
-        return {port_string: {"success": False, "error": error}}
-
-    LOGGER.info("Service IP: %s for Service: %s", svc_ip, target)
 
     ipv6_arg = ""
-    if ipaddress.ip_address(svc_ip).version == 6:
+    if ipaddress.ip_address(target).version == 6:
         ipv6_arg = "-6"
 
     nm_scanner = nmap.PortScanner()
     with Namespace(network_ns, "net"):
-        nm_scanner.scan(svc_ip, arguments=f"-n -Pn -p {port_string} {ipv6_arg}")
+        nm_scanner.scan(target, arguments=f"-n -Pn -p {port_string} {ipv6_arg}")
     LOGGER.info("Ran nmap with cmd %s", nm_scanner.command_line())
 
     return extract_results_from_nmap(nm_scanner, port_on_nums, target)
