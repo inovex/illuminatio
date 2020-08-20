@@ -33,7 +33,4 @@ then
   sudo docker pull "${ILLUMINATIO_IMAGE}"
 fi
 
-if ! coverage run setup.py test --addopts="-m e2e";
-then
-  kubectl -n illuminatio get po -o yaml
-fi
+coverage run setup.py test --addopts="-m e2e"
