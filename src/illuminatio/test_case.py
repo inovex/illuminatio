@@ -16,13 +16,12 @@ class NetworkTestCase:
             raise ValueError("fromHost may not be None")
         if to_host is None:
             raise ValueError("toHost may not be None")
-        if on_port is None:
-            raise ValueError("onPort may not be None")
         if should_connect is None:
             raise ValueError("shouldConnect may not be None")
         self.from_host = from_host
         self.to_host = to_host
-        self._on_port = on_port
+        # on_port can be None, which matches all ports
+        self._on_port = on_port if on_port else "*"
         self._should_connect = should_connect
         self.port_string = "%s%s" % (
             ("" if self._should_connect else "-"),
