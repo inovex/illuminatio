@@ -75,12 +75,19 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps
             print(cpe)
     # load contents of result and expected
     result = None
-    with open(result_file_name, "r") as stream:
-        result = yaml.safe_load(stream)
+    try:
+        with open(result_file_name, "r") as stream:
+            result = yaml.safe_load(stream)
+    except OSError:
+        pass
     assert result is not None, f"Could not load result from {result_file_name}"
     expected = None
-    with open(expected_yaml, "r") as stream:
-        expected = yaml.safe_load(stream)
+
+    try:
+        with open(expected_yaml, "r") as stream:
+            expected = yaml.safe_load(stream)
+    except OSError:
+        pass
     assert expected is not None, f"Could not load expected from {expected_yaml}"
     # assert that the correct cases have been generated and results match
     assert "cases" in result
