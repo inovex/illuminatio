@@ -1,4 +1,16 @@
-01-deny-all-traffic-to-an-application:app=web:
-  01-deny-all-traffic-to-an-application:app=web:
+illuminatio-inverted-labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
+  labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
     -*:
+      success: true
+labels-with-all-legal-characters:illuminatio-inverted-test.io/test-123_XYZ=test_456-123.ABC:
+  labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
+    -*:
+      success: true
+illuminatio-inverted-labels-with-all-legal-characters:illuminatio-inverted-test.io/test-123_XYZ=test_456-123.ABC:
+  labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
+    -*:
+      success: true
+labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
+  labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
+    "*":
       success: true
