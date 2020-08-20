@@ -289,7 +289,9 @@ class NetworkTestOrchestrator:
                 else:
                     self.logger.error("Failed to create target svc! Resp: %s", resp)
             else:
-                service_names_per_host[host_string] = services_for_host[0].spec.cluster_ip
+                service_names_per_host[host_string] = services_for_host[
+                    0
+                ].spec.cluster_ip
         return service_names_per_host, port_dict_per_host
 
     def _find_or_create_cluster_resources_for_cases(
