@@ -110,7 +110,7 @@ jobs:
       after_success:
       - codecov
 
-      - stage: "Test"
+    - stage: "Test"
       name: "docker - calico e2e Tests (py3.7)"
       language: python
       cache: pip
