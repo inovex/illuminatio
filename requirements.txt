@@ -7,7 +7,8 @@ kubernetes==10.0.1
 click==6.7
 click_log==0.3.2
 docker==3.7.0
-nsenter==0.2
+# Use current master to prevent pathlib error
+git+https://github.com/zalando/python-nsenter.git@b7fd78fef24c456d88130c75fe734417728e97e8
 attrs==19.1.0
 pluggy==0.11.0
 pytest==4.5.0
