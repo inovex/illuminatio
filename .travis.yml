@@ -66,7 +66,6 @@ jobs:
       - pip install -r requirements.txt
       - pip install codecov
       - python setup.py install
-      - ls -lah ${TRAVIS_BUILD_DIR}/nmap
       - sudo cp ${TRAVIS_BUILD_DIR}/nmap /usr/local/bin/nmap
 
       script:
@@ -137,7 +136,6 @@ jobs:
       - pip install -r requirements.txt
       - pip install codecov
       - python setup.py install
-      - ls -lah ${TRAVIS_BUILD_DIR}/nmap
       - sudo cp ${TRAVIS_BUILD_DIR}/nmap /usr/local/bin/nmap
 
       script:
