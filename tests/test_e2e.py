@@ -38,7 +38,10 @@ def clean_cluster(core_v1):
     for namespace in e2e_namespaces.items:
         core_v1.delete_namespace(name=namespace.metadata.name)
     # delete illuminatio resources
-    subprocess.check_output(["illuminatio", "clean"])
+    try:
+        print(subprocess.check_output(["illuminatio", "clean"]))
+    except subprocess.CalledProcessError as cpe:
+        print(cpe)
 
 
 @pytest.mark.parametrize(
@@ -66,7 +69,10 @@ def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps
             "-o",
             f"{result_file.name}",
         ]
-        subprocess.check_output(cmd, timeout=120)
+        try:
+            print(subprocess.check_output(cmd, timeout=120))
+        except subprocess.CalledProcessError as cpe:
+            print(cpe)
     # load contents of result and expected
     result = None
     with open(result_file_name, "r") as stream:
