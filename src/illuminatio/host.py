@@ -186,12 +186,13 @@ class GenericClusterHost(Host):
         self.pod_labels = pod_labels
 
     def __eq__(self, other):
-        if isinstance(other, GenericClusterHost):
-            return (
-                self.namespace_labels == other.namespace_labels
-                and self.pod_labels == other.pod_labels
-            )
-        return False
+        if not isinstance(other, GenericClusterHost):
+            return False
+
+        return (
+            self.namespace_labels == other.namespace_labels
+            and self.pod_labels == other.pod_labels
+        )
 
     def __hash__(self):
         return hash(str(self))

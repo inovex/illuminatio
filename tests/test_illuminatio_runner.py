@@ -12,39 +12,39 @@ from illuminatio.illuminatio_runner import (
     [
         (
             {
-                "port": "80",
+                "port": "TCP/80",
                 "target": "test",
                 "should_be_blocked": False,
                 "was_blocked": False,
             },
-            "Test test:80 succeeded\nCould reach test on port 80. Expected target to be reachable",
+            "Test test:TCP/80 succeeded\nCould reach test on port TCP/80. Expected target to be reachable",
         ),
         (
             {
-                "port": "80",
+                "port": "TCP/80",
                 "target": "test",
                 "should_be_blocked": False,
                 "was_blocked": True,
             },
-            "Test test:80 failed\nCouldn't reach test on port 80. Expected target to be reachable",
+            "Test test:TCP/80 failed\nCouldn't reach test on port TCP/80. Expected target to be reachable",
         ),
         (
             {
-                "port": "80",
+                "port": "TCP/80",
                 "target": "test",
                 "should_be_blocked": True,
                 "was_blocked": False,
             },
-            "Test test:-80 failed\nCould reach test on port 80. Expected target to not be reachable",
+            "Test test:-TCP/80 failed\nCould reach test on port TCP/80. Expected target to not be reachable",
         ),
         (
             {
-                "port": "80",
+                "port": "TCP/80",
                 "target": "test",
                 "should_be_blocked": True,
                 "was_blocked": True,
             },
-            "Test test:-80 succeeded\nCouldn't reach test on port 80. Expected target to not be reachable",
+            "Test test:-TCP/80 succeeded\nCouldn't reach test on port TCP/80. Expected target to not be reachable",
         ),
     ],
 )
@@ -81,14 +81,14 @@ def create_nmap_mock(hosts: list()):
         (
             {
                 "hosts": ["123.321.123.321"],
-                "port_on_nums": {"80": "80"},
+                "port_on_nums": {"TCP/80": "TCP/80"},
                 "target": "test",
             },
             {
-                "80": {
+                "TCP/80": {
                     "nmap-state": "open",
-                    "string": "Test test:80 succeeded\n"
-                    "Could reach test on port 80. Expected target to be "
+                    "string": "Test test:TCP/80 succeeded\n"
+                    "Could reach test on port TCP/80. Expected target to be "
                     "reachable",
                     "success": True,
                 }
@@ -97,26 +97,26 @@ def create_nmap_mock(hosts: list()):
         (
             {
                 "hosts": ["123.321.123.321"],
-                "port_on_nums": {"80": "-80"},
+                "port_on_nums": {"TCP/80": "-TCP/80"},
                 "target": "test",
             },
             {
-                "-80": {
+                "-TCP/80": {
                     "nmap-state": "open",
-                    "string": "Test test:-80 failed\n"
-                    "Could reach test on port 80. Expected target to not be "
+                    "string": "Test test:-TCP/80 failed\n"
+                    "Could reach test on port TCP/80. Expected target to not be "
                     "reachable",
                     "success": False,
                 }
             },
         ),
         (
-            {"hosts": ["::1"], "port_on_nums": {"80": "-80"}, "target": "test"},
+            {"hosts": ["::1"], "port_on_nums": {"TCP/80": "-TCP/80"}, "target": "test"},
             {
-                "-80": {
+                "-TCP/80": {
                     "nmap-state": "open",
-                    "string": "Test test:-80 failed\n"
-                    "Could reach test on port 80. Expected target to not be "
+                    "string": "Test test:-TCP/80 failed\n"
+                    "Could reach test on port TCP/80. Expected target to not be "
                     "reachable",
                     "success": False,
                 }

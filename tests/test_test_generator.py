@@ -29,7 +29,10 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
             ],
             [
                 NetworkTestCase(
-                    GenericClusterHost({}, {}), ClusterHost("default", {}), "*", True
+                    GenericClusterHost({}, {}), ClusterHost("default", {}), "TCP/*", True
+                ),
+                NetworkTestCase(
+                    GenericClusterHost({}, {}), ClusterHost("default", {}), "UDP/*", True
                 )
             ],
             id="Allow all traffic in namespace",
@@ -49,7 +52,10 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
             ],
             [
                 NetworkTestCase(
-                    ClusterHost("default", {}), ClusterHost("default", {}), "*", False
+                    ClusterHost("default", {}), ClusterHost("default", {}), "TCP/*", False
+                ),
+                NetworkTestCase(
+                    ClusterHost("default", {}), ClusterHost("default", {}), "UDP/*", False
                 )
             ],
             id="Deny all traffic in namespace",
@@ -85,7 +91,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"}
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     True,
                 ),
                 NetworkTestCase(
@@ -97,7 +103,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         },
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
                 NetworkTestCase(
@@ -106,7 +112,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         {"test.io/test-123_XYZ": "test_456-123.ABC"},
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
                 NetworkTestCase(
@@ -118,7 +124,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         },
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
             ],
@@ -145,9 +151,9 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     ClusterHost(
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"},
                     ),
-                    "*",
+                    "TCP/*",
                     True,
-                )
+                ),
             ],
             id="Allow all Pods to communicate to labelled Pods in the same Namespace",
         ),
@@ -186,7 +192,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     ClusterHost(
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"}
                     ),
-                    "*",
+                    "TCP/*",
                     True,
                 ),
                 NetworkTestCase(
@@ -200,7 +206,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     ClusterHost(
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"}
                     ),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
                 NetworkTestCase(
@@ -211,7 +217,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     ClusterHost(
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"}
                     ),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
                 NetworkTestCase(
@@ -225,7 +231,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                     ClusterHost(
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"}
                     ),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
             ],
@@ -267,7 +273,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         "default", {"test.io/test-123_XYZ": "test_456-123.ABC"}
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     True,
                 ),
                 NetworkTestCase(
@@ -279,7 +285,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         },
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
                 NetworkTestCase(
@@ -288,7 +294,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         {"test.io/test-123_XYZ": "test_456-123.ABC"},
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
                 NetworkTestCase(
@@ -300,7 +306,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
                         },
                     ),
                     ClusterHost("default", {}),
-                    "*",
+                    "TCP/*",
                     False,
                 ),
             ],
@@ -308,6 +314,7 @@ gen = NetworkTestCaseGenerator(logging.getLogger("test_test_generator"))
         ),
     ],
 )
-def test__generate_test_cases(namespaces, networkpolicies, expected_testcases):
+# TODO add test case for UDP !
+def test_generate_test_cases(namespaces, networkpolicies, expected_testcases):
     cases, _ = gen.generate_test_cases(networkpolicies, namespaces)
     assert sorted(cases) == sorted(expected_testcases)

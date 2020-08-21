@@ -238,7 +238,7 @@ def extract_results_from_nmap(nmap_res, port_on_nums, target):
             results[port_with_expectation] = {
                 "success": should_be_blocked == was_blocked,
                 "string": build_result_string(
-                    port, target, should_be_blocked, was_blocked
+                    f"{proto.upper()}/{port}", target, should_be_blocked, was_blocked
                 ),
                 "nmap-state": state,
             }

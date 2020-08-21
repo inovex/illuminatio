@@ -89,7 +89,7 @@ def create_pod_manifest(host: Host, additional_labels, generate_name, container)
 
 
 def create_service_manifest(
-    host: Host, additional_selector_labels, svc_labels, port_nums
+    host: Host, additional_selector_labels, svc_labels, target_ports
 ):
     """
     Creates and returns a service manifest with given parameters
@@ -104,11 +104,14 @@ def create_service_manifest(
         svc.spec.selector[key] = value
     svc.metadata.labels = svc_labels
     validate_cleanup_in(svc.metadata.labels)
-    # TODO: support for other protocols missing, target port might not work like that for multiple ports
-    ports = [
-        k8s.client.V1ServicePort(protocol="TCP", port=portNum, target_port=80)
-        for portNum in port_nums
-    ]
+    ports = []
+    for target_port in target_ports:
+        protocol, port = target_port.split("/")
+        # Replace '/' with '-' to be DNS-1123 conformant
+        # and convert to lower case
+        name = target_port.replace("/", "-").lower()
+        ports.append(k8s.client.V1ServicePort(name=name, protocol=protocol, port=int(port), target_port=80))
+
     svc.spec.ports = ports
     return svc
 

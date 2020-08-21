@@ -174,13 +174,24 @@ class NetworkTestOrchestrator:
 
     def _rewrite_ports_for_host(self, port_list, services_for_host):
         self.logger.debug("Rewriting portList %s", port_list)
+
         if not services_for_host:
             # assign random port, a service with matching port will be created
-            # TODO add support for UDP for generated ports
-            return {
-                p: "%s%s" % (("-" if "-" in p else ""), str(rand_port()))
-                for p in port_list
-            }
+            # TODO move to extra method
+            random_ports = dict()
+
+            for p in port_list:
+                prefix = ""
+                if p.startswith("-"):
+                    prefix = "-"
+
+                protocol = 'TCP'
+                if "UDP" in p:
+                    protocol = 'UDP'
+
+                random_ports[p] = f"{prefix}{protocol}/{rand_port()}"
+
+            return random_ports
 
         rewritten_ports = {}
         wild_card_ports = {p for p in port_list if "*" in p}
@@ -252,8 +263,8 @@ class NetworkTestOrchestrator:
                 target_container = k8s.client.V1Container(
                     image=self.oci_images["target"],
                     name="runner",
-                    command=["nc"],
-                    args=["-l", "0.0.0.0", "80"],
+                    command=["sh"],
+                    args=["-c", "nc -l -k -v 0.0.0.0 80 & nc -l -k -v -u 0.0.0.0 80"],
                 )
                 pod_labels_tuple = (ROLE_LABEL, "test_target_pod")
                 target_pod = create_pod_manifest(
@@ -266,7 +277,7 @@ class NetworkTestOrchestrator:
                     container=target_container,
                 )
                 target_ports = [
-                    int(port.replace("-", ""))
+                    port.replace("-", "")
                     for port in port_dict_per_host[host_string].values()
                 ]
                 svc = create_service_manifest(
@@ -275,6 +286,8 @@ class NetworkTestOrchestrator:
                     {ROLE_LABEL: "test_target_svc", CLEANUP_LABEL: CLEANUP_ALWAYS},
                     target_ports,
                 )
+                self.logger.error("create_service_manifest")
+                self.logger.error(svc)
                 target_pod_namespace = host.namespace
                 resp = api.create_namespaced_pod(
                     namespace=target_pod_namespace, body=target_pod
@@ -334,12 +347,11 @@ class NetworkTestOrchestrator:
                     CLEANUP_LABEL: CLEANUP_ALWAYS,
                 }
 
-                # TODO listen on both TCP and UDP?
                 container = k8s.client.V1Container(
                     image=self.oci_images["target"],
-                    name="dummy",
-                    command=["nc"],
-                    args=["-l", "-k", "-v", "0.0.0.0", "80"],
+                    name="runner",
+                    command=["sh"],
+                    args=["-c", "nc -l -k -v 0.0.0.0 80 & nc -l -k -v -u 0.0.0.0 80"],
                 )
                 dummy = create_pod_manifest(
                     from_host, additional_labels, f"{PROJECT_PREFIX}-dummy-", container

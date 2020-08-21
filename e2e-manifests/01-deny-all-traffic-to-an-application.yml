@@ -24,7 +24,7 @@ spec:
         app: web
     spec:
       containers:
-      - image: nginx
+      - image: busybox
         name: web
         ports:
         - containerPort: 80

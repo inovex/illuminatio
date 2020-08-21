@@ -23,11 +23,15 @@ class NetworkTestCase:
         # on_port can be None, which matches all ports on the default protocol
         self._on_port = on_port if on_port else "TCP/*"
         self._should_connect = should_connect
-        self.port_string = "%s%s" % (
-            ("" if self._should_connect else "-"),
-            str(self._on_port),
-        )
+        prefix = ""
+        if not self._should_connect:
+            prefix = "-"
+        self.port_string = f"{prefix}{self._on_port}"
 
+# TODO adjust compare?
+#  At index 0 diff:
+#  NetworkTestCase(from=GenericClusterHost(namespaceLabels={}, podLabels={}), to=ClusterHost(namespace=default, podLabels={}), port=-31203) !=
+#  NetworkTestCase(from=GenericClusterHost(namespaceLabels={}, podLabels={}), to=ClusterHost(namespace=default, podLabels={}), port=TCP/*)
     def __eq__(self, other):
         if isinstance(other, NetworkTestCase):
             return (

@@ -147,7 +147,7 @@ DOCKER_REGISTRY=$(minikube ip) ./local_dev/run_e2e_tests.sh
 In order to run the unit tests:
 
 ```bash
-python setup.py test --addopts="-m 'not e2e' --runslow"
+coverage run setup.py test --addopts="-m 'not e2e' --runslow"
 ```
 
 ## Cleanup

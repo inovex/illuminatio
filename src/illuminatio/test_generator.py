@@ -84,7 +84,7 @@ class NetworkTestCaseGenerator:
             )
             if rule_host not in isolated_hosts:
                 isolated_hosts.append(rule_host)
-            if rule.allowed:  # means it is NOT default deny rule
+            if rule.allowed: # means it is NOT default deny rule
                 for connection in rule.allowed:
                     for port in connection.ports:
                         on_port = port
@@ -115,7 +115,6 @@ class NetworkTestCaseGenerator:
 
     # TODO: implement it also for outgoing test cases
     # TODO: divide this into submethods
-    # TODO: add support for UDP/TCP change
     def generate_negative_cases_for_incoming_cases(
         self, isolated_hosts, incoming_test_cases, other_hosts, namespaces
     ):
@@ -175,7 +174,7 @@ class NetworkTestCaseGenerator:
                 match_all_host = GenericClusterHost({}, {})
                 if match_all_host in allowed_hosts:
                     # All hosts are allowed to reach (on some ports or all) => results from ALLOW all
-                    if "*" in ports_per_host[match_all_host]:
+                    if 'TCP/*' in ports_per_host[match_all_host] or 'UDP/*' in ports_per_host[match_all_host]:
                         self.logger.info(
                             "Not generating negative tests for host %s"
                             "as all connections to it are allowed",
@@ -194,6 +193,7 @@ class NetworkTestCaseGenerator:
                         time.time() - reaching_host_find_time
                     )
                 else:
+                    self.logger.error("not match_all_host")
                     inverted_hosts = set(
                         [
                             h
@@ -247,12 +247,14 @@ class NetworkTestCaseGenerator:
                                 )
                             )
                         else:
-                            cases.append(NetworkTestCase(target, host, "*", False))
+                            cases.append(NetworkTestCase(target, host, "TCP/*", False))
+                            cases.append(NetworkTestCase(target, host, "UDP/*", False))
                     runtimes[host_string]["casesGen"] = time.time() - overlap_calc_time
             else:
                 # No hosts are allowed to reach host -> it should be totally isolated
                 # => results from default deny policy
-                cases.append(NetworkTestCase(host, host, "*", False))
+                cases.append(NetworkTestCase(host, host, "TCP/*", False))
+                cases.append(NetworkTestCase(host, host, "UDP/*", False))
             runtimes["all"] = time.time() - start_time
 
         return cases, runtimes

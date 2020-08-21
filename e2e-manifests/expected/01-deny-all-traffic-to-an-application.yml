@@ -2,3 +2,5 @@
   01-deny-all-traffic-to-an-application:app=web:
     -TCP/*:
       success: true
+    -UDP/*:
+      success: true

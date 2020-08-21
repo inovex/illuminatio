@@ -86,6 +86,8 @@ class Rule:
         """
         Returns a class containing the concerns and rules of a given NetworkPolicy
         """
+
+        #TODO must be fixed here
         concerns = {NAMESPACE: net_pol.metadata.namespace}
         if net_pol.spec.pod_selector.match_labels is not None:
             concerns[POD_SELECTOR_LABELS] = net_pol.spec.pod_selector.match_labels
@@ -105,7 +107,6 @@ class Rule:
         return cls(concerns, allowed)
 
 
-# TODO add test cases !
 def _generate_port_list(ports: list()) -> list():
     if ports is not None:
         port_list = list()
@@ -120,7 +121,7 @@ def _generate_port_list(ports: list()) -> list():
 
             port_list.append(f"{protocol}/{target_port}")
     else:
-        port_list = [f"TCP/{MATCH_ALL_WILDCARD}"]
+        port_list = [f"TCP/{MATCH_ALL_WILDCARD}", f"UDP/{MATCH_ALL_WILDCARD}"]
 
     return port_list
 
@@ -132,6 +133,7 @@ def build_connections(verb, target, ports):
     """
     out = []
 
+    # TODO fix here
     port_list = _generate_port_list(ports)
     if target is not None:
         for item in target:
