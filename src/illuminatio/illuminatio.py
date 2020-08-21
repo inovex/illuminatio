@@ -103,8 +103,8 @@ def generate(outfile: str):
 @click.option(
     "-t",
     "--target-image",
-    default="nginx:stable",
-    help="Target image that is used to generate pods (should have a webserver inside listening on port 80)",
+    default="busybox",
+    help="Target image that is used to generate pods (should be a busybox or something with nc)",
 )
 @click.option(
     "-c",
@@ -197,8 +197,7 @@ def execute_tests(cases, orch, cri_socket):
     """
     orch.test_cases = cases
     core_api = k8s.client.CoreV1Api()
-    # namespace should be an argument !
-    # -> illuminatio
+    # TODO: namespace should be an argument !
     namespace_name = "illuminatio"
 
     if not orch.namespace_exists(namespace_name, core_api):

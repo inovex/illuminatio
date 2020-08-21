@@ -165,7 +165,22 @@ def run_tests_for_target(network_ns, ports, target):
     # https://stackoverflow.com/questions/2805231/how-can-i-do-dns-lookups-in-python-including-referring-to-etc-hosts
     LOGGER.info("Target: %s", target)
     port_on_nums = {port.replace("-", ""): port for port in ports}
-    port_string = ",".join(port_on_nums.keys())
+    # TODO extra method + tests
+    tcp_ports = list()
+    udp_ports = list()
+
+    for port in port_on_nums.keys():
+        port_num = port.split("/")[1]
+        # starts_with !
+        if port.startswith("UDP"):
+            udp_ports.append(port_num)
+        elif port.startswith("TCP"):
+            tcp_ports.append(port_num)
+        else:
+            LOGGER.error(f"Unsupported protocol: {port}")
+
+    tcp_port_string = ",".join(tcp_ports)
+    udp_port_string = ",".join(udp_ports)
 
     ipv6_arg = ""
     if ipaddress.ip_address(target).version == 6:
@@ -173,7 +188,12 @@ def run_tests_for_target(network_ns, ports, target):
 
     nm_scanner = nmap.PortScanner()
     with Namespace(network_ns, "net"):
-        nm_scanner.scan(target, arguments=f"-n -Pn -p {port_string} {ipv6_arg}")
+        if len(tcp_port_string) > 0:
+            nm_scanner.scan(target, arguments=f"-n -Pn -p {tcp_port_string} {ipv6_arg}")
+        if len(udp_port_string) > 0:
+            nm_scanner.scan(
+                target, arguments=f"-n -Pn -sU -p {udp_port_string} {ipv6_arg}"
+            )
     LOGGER.info("Ran nmap with cmd %s", nm_scanner.command_line())
 
     return extract_results_from_nmap(nm_scanner, port_on_nums, target)
@@ -183,6 +203,7 @@ def extract_results_from_nmap(nmap_res, port_on_nums, target):
     """
     Extracts the results of an nmap scan into a dictionary
     """
+
     hosts = nmap_res.all_hosts()
     if len(hosts) != 1:
         port_string = ",".join(port_on_nums.keys())
@@ -204,9 +225,16 @@ def extract_results_from_nmap(nmap_res, port_on_nums, target):
                 state = nmap_res[host].tcp(port)["state"]
             else:
                 state = nmap_res[host][proto][port]["state"]
-            port_with_expectation = port_on_nums[str(port)]
-            should_be_blocked = "-" in port_with_expectation
-            was_blocked = state == "filtered"
+
+            port_with_expectation = port_on_nums[f"{proto.upper()}/{port}"]
+            should_be_blocked = port_with_expectation.startswith("-")
+            was_blocked = False
+            if "filtered" in state:
+                # For UDP we can not say if the port is really blocked
+                # or the packet never arrvied so we get
+                # 'nmap-state': 'open|filtered'
+                was_blocked = True
+
             results[port_with_expectation] = {
                 "success": should_be_blocked == was_blocked,
                 "string": build_result_string(
@@ -216,20 +244,6 @@ def extract_results_from_nmap(nmap_res, port_on_nums, target):
             }
 
     return results
-
-
-def get_domain_name_for(host_string):
-    """
-    Replaces namespace:serviceName syntax with serviceName.namespace one,
-    appending default as namespace if None exists
-    """
-    return ".".join(
-        reversed(
-            ("%s%s" % (("" if ":" in host_string else "default:"), host_string)).split(
-                ":"
-            )
-        )
-    )
 
 
 def get_docker_network_namespace(pod_namespace, pod_name):
@@ -313,7 +327,7 @@ def get_cri_network_namespace(host_namespace, host_name):
         )
         LOGGER.error(prc1.stderr)
     pod_id = prc1.stdout.strip()
-    # ToDo error handling
+    # TODO: error handling
     cmd2 = ["crictl", "inspectp", pod_id]
     prc2 = subprocess.run(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if prc2.returncode:

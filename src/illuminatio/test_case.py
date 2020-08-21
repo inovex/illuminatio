@@ -20,8 +20,8 @@ class NetworkTestCase:
             raise ValueError("shouldConnect may not be None")
         self.from_host = from_host
         self.to_host = to_host
-        # on_port can be None, which matches all ports
-        self._on_port = on_port if on_port else "*"
+        # on_port can be None, which matches all ports on the default protocol
+        self._on_port = on_port if on_port else "TCP/*"
         self._should_connect = should_connect
         self.port_string = "%s%s" % (
             ("" if self._should_connect else "-"),

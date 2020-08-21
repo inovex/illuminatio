@@ -1,0 +1,16 @@
+illuminatio-inverted-udp-support:app=bookstore:
+  udp-support:app=bookstore,role=api:
+    -UDP/*:
+      success: true
+illuminatio-inverted-udp-support:illuminatio-inverted-app=bookstore:
+  udp-support:app=bookstore,role=api:
+    -UDP/*:
+      success: true
+udp-support:app=bookstore:
+  udp-support:app=bookstore,role=api:
+    UDP/*:
+      success: true
+udp-support:illuminatio-inverted-app=bookstore:
+  udp-support:app=bookstore,role=api:
+    -UDP/*:
+      success: true

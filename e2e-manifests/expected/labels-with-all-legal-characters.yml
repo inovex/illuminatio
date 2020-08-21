@@ -1,16 +1,16 @@
 illuminatio-inverted-labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
   labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
-    -*:
+    -TCP/*:
       success: true
 labels-with-all-legal-characters:illuminatio-inverted-test.io/test-123_XYZ=test_456-123.ABC:
   labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
-    -*:
+    -TCP/*:
       success: true
 illuminatio-inverted-labels-with-all-legal-characters:illuminatio-inverted-test.io/test-123_XYZ=test_456-123.ABC:
   labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
-    -*:
+    -TCP/*:
       success: true
 labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
   labels-with-all-legal-characters:test.io/test-123_XYZ=test_456-123.ABC:
-    "*":
+    "TCP/*":
       success: true

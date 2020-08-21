@@ -50,6 +50,7 @@ def clean_cluster(core_v1):
         "01-deny-all-traffic-to-an-application",
         "labels-with-all-legal-characters",
         "max-length-labels",
+        "udp-support",
     ],
 )
 @pytest.mark.e2e

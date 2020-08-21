@@ -7,6 +7,7 @@ import json
 from pkgutil import get_data
 import yaml
 import logging
+import sys
 
 import kubernetes as k8s
 from illuminatio.host import ClusterHost, GenericClusterHost, Host
@@ -99,7 +100,7 @@ class NetworkTestOrchestrator:
             return yaml.safe_load(data_str.format(**kwargs))
         except yaml.YAMLError as exc:
             self.logger.error(exc)
-            exit(1)
+            sys.exit(1)
 
     def refresh_cluster_resources(self, api: k8s.client.CoreV1Api):
         """
@@ -169,16 +170,18 @@ class NetworkTestOrchestrator:
             return resp
         except k8s.client.rest.ApiException as api_exception:
             self.logger.error(api_exception)
-            exit(1)
+            sys.exit(1)
 
     def _rewrite_ports_for_host(self, port_list, services_for_host):
         self.logger.debug("Rewriting portList %s", port_list)
         if not services_for_host:
             # assign random port, a service with matching port will be created
+            # TODO add support for UDP for generated ports
             return {
                 p: "%s%s" % (("-" if "-" in p else ""), str(rand_port()))
                 for p in port_list
             }
+
         rewritten_ports = {}
         wild_card_ports = {p for p in port_list if "*" in p}
         numbered_ports = {p for p in port_list if "*" not in p}
@@ -187,10 +190,9 @@ class NetworkTestOrchestrator:
         for wildcard_port in wild_card_ports:
             prefix = "-" if "-" in wildcard_port else ""
             # choose any port for wildcard
-            rewritten_ports[wildcard_port] = "%s%s" % (
-                prefix,
-                str(service_ports[0].port),
-            )
+            rewritten_ports[
+                wildcard_port
+            ] = f"{prefix}{service_ports[0].protocol}/{service_ports[0].port}"
         for port in numbered_ports:
             prefix = "-" if "-" in port else ""
             port_int = int(port.replace("-", ""))
@@ -201,13 +203,13 @@ class NetworkTestOrchestrator:
             # resulting in test to 53 being written despite no service matching them existing.
             # That error should be handled in test generation, an exception here would be fine
             if service_ports_for_port:
-                rewritten_ports[port] = "%s%s" % (
-                    prefix,
-                    str(service_ports_for_port[0].port),
-                )
+                rewritten_ports[
+                    port
+                ] = f"{prefix}{service_ports_for_port[0].protocol}/{service_ports_for_port[0].port}"
             else:
                 # TODO change to exception, handle it higher up
                 rewritten_ports[port] = "err"
+
         return rewritten_ports
 
     def _get_target_names_creating_them_if_missing(
@@ -244,9 +246,14 @@ class NetworkTestOrchestrator:
             self.logger.debug("Rewritten ports: %s", rewritten_ports)
             port_dict_per_host[host_string] = rewritten_ports
             if not services_for_host:
+                # TODO if udp we need to also provide: "-u"
+                # TODO listen to both!
                 gen_name = "%s-test-target-pod-" % PROJECT_PREFIX
                 target_container = k8s.client.V1Container(
-                    image=self.oci_images["target"], name="runner"
+                    image=self.oci_images["target"],
+                    name="runner",
+                    command=["nc"],
+                    args=["-l", "0.0.0.0", "80"],
                 )
                 pod_labels_tuple = (ROLE_LABEL, "test_target_pod")
                 target_pod = create_pod_manifest(
@@ -301,6 +308,7 @@ class NetworkTestOrchestrator:
         from_host_mappings = {}
         to_host_mappings = {}
         port_mappings = {}
+
         for from_host_string, target_dict in cases_dict.items():
             from_host = Host.from_identifier(from_host_string)
             self.logger.debug("Searching pod for host %s", from_host)
@@ -325,9 +333,13 @@ class NetworkTestOrchestrator:
                     ROLE_LABEL: "from_host_dummy",
                     CLEANUP_LABEL: CLEANUP_ALWAYS,
                 }
-                # TODO replace 'dummy' with a more suitable name to prevent potential conflicts
+
+                # TODO listen on both TCP and UDP?
                 container = k8s.client.V1Container(
-                    image=self.oci_images["target"], name="dummy"
+                    image=self.oci_images["target"],
+                    name="dummy",
+                    command=["nc"],
+                    args=["-l", "-k", "-v", "0.0.0.0", "80"],
                 )
                 dummy = create_pod_manifest(
                     from_host, additional_labels, f"{PROJECT_PREFIX}-dummy-", container
@@ -335,7 +347,7 @@ class NetworkTestOrchestrator:
                 resp = api.create_namespaced_pod(dummy.metadata.namespace, dummy)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug(
-                        "Dummy pod %s created succesfully", resp.metadata.name
+                        "Dummy pod %s created successfully", resp.metadata.name
                     )
                     pods_for_host = [resp]
                     self._current_pods.append(resp)
@@ -421,6 +433,7 @@ class NetworkTestOrchestrator:
             port_mappings,
         ) = self._find_or_create_cluster_resources_for_cases(cases_dict, core_api)
         self.logger.debug("concreteCases: %s", concrete_cases)
+
         config_map_name = f"{PROJECT_PREFIX}-cases-cfgmap"
         self._create_or_update_case_config_map(
             config_map_name, concrete_cases, core_api

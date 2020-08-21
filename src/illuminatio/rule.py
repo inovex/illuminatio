@@ -105,13 +105,34 @@ class Rule:
         return cls(concerns, allowed)
 
 
+# TODO add test cases !
+def _generate_port_list(ports: list()) -> list():
+    if ports is not None:
+        port_list = list()
+        for port in ports:
+            protocol = "TCP"
+            target_port = MATCH_ALL_WILDCARD
+            if port.protocol is not None:
+                protocol = port.protocol
+
+            if port.port is not None:
+                target_port = port.port
+
+            port_list.append(f"{protocol}/{target_port}")
+    else:
+        port_list = [f"TCP/{MATCH_ALL_WILDCARD}"]
+
+    return port_list
+
+
 # helper function
 def build_connections(verb, target, ports):
     """
     Helper function to build Connection tuples
     """
     out = []
-    port_list = [p.port for p in ports] if (ports is not None) else [MATCH_ALL_WILDCARD]
+
+    port_list = _generate_port_list(ports)
     if target is not None:
         for item in target:
             if item.ip_block is not None:

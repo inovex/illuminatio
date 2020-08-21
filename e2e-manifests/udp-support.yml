@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: udp-support
+  labels:
+    illuminatio-e2e: udp-support
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bookstore
+    role: api
+    illuminatio-e2e: udp-support
+  name: apiserver
+  namespace: udp-support
+spec:
+  selector:
+    matchLabels:
+      app: bookstore
+      role: api
+  template:
+    metadata:
+      labels:
+        app: bookstore
+        role: api
+    spec:
+      containers:
+      - image: busybox
+        command:
+        - "nc"
+        args:
+        - "-l"
+        - "-u"
+        - "0.0.0.0"
+        - "80"
+        name: apiserver
+        ports:
+        - containerPort: 80
+          protocol: UDP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: bookstore
+    role: api
+    illuminatio-e2e: udp-support
+  name: apiserver
+  namespace: udp-support
+spec:
+  ports:
+  - port: 80
+    protocol: UDP
+    targetPort: 80
+  selector:
+    app: bookstore
+    role: api
+  type: ClusterIP
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: api-allow
+  labels:
+    illuminatio-e2e: udp-support
+  namespace: udp-support
+spec:
+  podSelector:
+    matchLabels:
+      app: bookstore
+      role: api
+  ingress:
+  - from:
+      - podSelector:
+          matchLabels:
+            app: bookstore
+    ports:
+      - protocol: UDP

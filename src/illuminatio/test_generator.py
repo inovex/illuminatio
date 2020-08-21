@@ -115,6 +115,7 @@ class NetworkTestCaseGenerator:
 
     # TODO: implement it also for outgoing test cases
     # TODO: divide this into submethods
+    # TODO: add support for UDP/TCP change
     def generate_negative_cases_for_incoming_cases(
         self, isolated_hosts, incoming_test_cases, other_hosts, namespaces
     ):
@@ -253,6 +254,7 @@ class NetworkTestCaseGenerator:
                 # => results from default deny policy
                 cases.append(NetworkTestCase(host, host, "*", False))
             runtimes["all"] = time.time() - start_time
+
         return cases, runtimes
 
     def get_overlapping_hosts(
