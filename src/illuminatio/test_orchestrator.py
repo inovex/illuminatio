@@ -262,21 +262,13 @@ class NetworkTestOrchestrator:
                     int(port.replace("-", ""))
                     for port in port_dict_per_host[host_string].values()
                 ]
-                # ToDo we should use the cluser ip instead of the DNS names
-                # so we don't need the lookups
-                service_name = "svc-%s" % convert_to_resource_name(host.to_identifier())
                 svc = create_service_manifest(
                     host,
                     {pod_labels_tuple[0]: pod_labels_tuple[1]},
                     {ROLE_LABEL: "test_target_svc", CLEANUP_LABEL: CLEANUP_ALWAYS},
-                    service_name,
                     target_ports,
                 )
                 target_pod_namespace = host.namespace
-                service_names_per_host[host_string] = "%s:%s" % (
-                    target_pod_namespace,
-                    service_name,
-                )
                 resp = api.create_namespaced_pod(
                     namespace=target_pod_namespace, body=target_pod
                 )
@@ -289,6 +281,7 @@ class NetworkTestOrchestrator:
                     self.logger.error("Failed to create pod! Resp: %s", resp)
                 resp = api.create_namespaced_service(namespace=host.namespace, body=svc)
                 if isinstance(resp, k8s.client.V1Service):
+                    service_names_per_host[host_string] = resp.spec.cluster_ip
                     self.logger.debug(
                         "Target svc %s created succesfully", resp.metadata.name
                     )
@@ -296,10 +289,9 @@ class NetworkTestOrchestrator:
                 else:
                     self.logger.error("Failed to create target svc! Resp: %s", resp)
             else:
-                service_names_per_host[host_string] = "%s:%s" % (
-                    services_for_host[0].metadata.namespace,
-                    services_for_host[0].metadata.name,
-                )
+                service_names_per_host[host_string] = services_for_host[
+                    0
+                ].spec.cluster_ip
         return service_names_per_host, port_dict_per_host
 
     def _find_or_create_cluster_resources_for_cases(

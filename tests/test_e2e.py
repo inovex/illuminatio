@@ -46,7 +46,11 @@ def clean_cluster(core_v1):
 
 @pytest.mark.parametrize(
     "e2e_test_case",
-    ["01-deny-all-traffic-to-an-application", "labels-with-all-legal-characters"],
+    [
+        "01-deny-all-traffic-to-an-application",
+        "labels-with-all-legal-characters",
+        "max-length-labels",
+    ],
 )
 @pytest.mark.e2e
 def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps_v1):

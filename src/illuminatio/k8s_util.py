@@ -89,12 +89,14 @@ def create_pod_manifest(host: Host, additional_labels, generate_name, container)
 
 
 def create_service_manifest(
-    host: Host, additional_selector_labels, svc_labels, name, port_nums
+    host: Host, additional_selector_labels, svc_labels, port_nums
 ):
     """
     Creates and returns a service manifest with given parameters
     """
-    svc_meta = k8s.client.V1ObjectMeta(name=name, namespace=host.namespace)
+    svc_meta = k8s.client.V1ObjectMeta(
+        generate_name="illuminatio-test-target", namespace=host.namespace
+    )
     svc = k8s.client.V1Service(api_version="v1", kind="Service", metadata=svc_meta)
     svc.spec = k8s.client.V1ServiceSpec()
     svc.spec.selector = {k: v for k, v in host.pod_labels.items()}
