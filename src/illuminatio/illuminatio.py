@@ -65,7 +65,7 @@ def cli(incluster, kubeconfig):
     "-o",
     "--outfile",
     default=STD_IDENTIFIER,
-    help="Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON",
+    help="Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON.",
 )
 def generate(outfile: str):
     """
@@ -85,32 +85,32 @@ def generate(outfile: str):
     "-o",
     "--outfile",
     default=None,
-    help="Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON",
+    help="Output file to write results to. Format is chosen according to file ending. Supported: YAML, JSON.",
 )
 @click.option(
     "-b/-w",
     "--brief/--wordy",
     "brief",
     default=True,
-    help="Output file wordiness, wordy includes string representation of results",
+    help="Output file wordiness, wordy includes string representation of results.",
 )
 @click.option(
     "-r",
     "--runner-image",
     default="inovex/illuminatio-runner:latest",
-    help="Runner image used by illuminatio",
+    help="Runner image used by illuminatio.",
 )
 @click.option(
     "-t",
     "--target-image",
     default="nginx:stable",
-    help="Target image that is used to generate pods (should have a webserver inside listening on port 80)",
+    help="Target image that is used to generate pods (should have a webserver inside listening on port 80).",
 )
 @click.option(
     "-c",
     "--cri-socket",
     default=None,
-    help="CRI socket used for the interaction with the container runtime",
+    help="CRI socket used for the interaction with the container runtime.",
 )
 def run(
     test_cases: str,
