@@ -29,6 +29,8 @@ COPY --from=builder /usr/local/bin/illuminatio /usr/local/bin/illuminatio
 COPY --from=builder /usr/local/bin/crictl /usr/local/bin/crictl
 
 ENV PYTHONPATH=/usr/local/lib/python3.8/site-packages
+# Home directory of root user is not recognized when using ~ (default: ~/.kube/config)
+ENV KUBECONFIG=/kubeconfig
 
 # Currently nmap is required for running the scans
 RUN apt-get update && \

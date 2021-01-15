@@ -168,8 +168,10 @@ Instead of installing the `illumnatio` cli on your machine you can also use our 
 You will need to provide the `kubeconfig` to the container and probably some certificates:
 
 ```bash
-docker run -ti -v ~/.kube:/home/illuminatio/.kube:ro inovex/illuminatio illuminatio clean run
+docker run -ti -v ~/.kube/config:/kubeconfig:ro inovex/illuminatio illuminatio clean run
 ```
+
+Please note that some external authentication mechanisms (e.g. GCP / gcloud CLI) don't work correctly inside the container.
 
 ### Minikube
 
