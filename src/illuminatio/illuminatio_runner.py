@@ -151,6 +151,9 @@ def run_tests_for_sender_pod(sender_pod, cases):
     # TODO check if network ns is None -> HostNetwork is set
     results = {}
     for target, ports in cases[from_host_string].items():
+        if target is None:
+            LOGGER.error("Target is none. Skipping")
+            continue
         start_time = time.time()
         results[target] = run_tests_for_target(network_ns, ports, target)
         runtimes[target] = time.time() - start_time

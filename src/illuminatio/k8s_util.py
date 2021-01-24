@@ -107,7 +107,9 @@ def create_service_manifest(
     validate_cleanup_in(svc.metadata.labels)
     # TODO: support for other protocols missing, target port might not work like that for multiple ports
     ports = [
-        k8s.client.V1ServicePort(protocol="TCP", port=portNum, target_port=80)
+        k8s.client.V1ServicePort(
+            protocol="TCP", port=portNum, target_port=80, name=f"{portNum}-name"
+        )
         for portNum in port_nums
     ]
     svc.spec.ports = ports
