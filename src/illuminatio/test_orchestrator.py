@@ -217,6 +217,12 @@ class NetworkTestOrchestrator:
                 )
             else:
                 # TODO change to exception, handle it higher up
+                self.logger.error(
+                    "No service port found for Host: %s Port: %s. Available services %s",
+                    host_string,
+                    port,
+                    service_ports,
+                )
                 rewritten_ports[port] = "err"
 
         for named_port in named_ports:
@@ -228,19 +234,37 @@ class NetworkTestOrchestrator:
 
             # Strip of the "-" and add it again after name has been resolved
             prefix = "-" if "-" in named_port else ""
-            port_without_prefix = named_port.replace("-", "")
+            named_port_without_prefix = named_port.replace("-", "")
 
             # We use a simple cache to avoid looking up the same pod-port combination twice for another test case
             key_hostname_port = f"{host_string}_{named_port}"
             if key_hostname_port not in self.portname_cache:
                 self.portname_cache[key_hostname_port] = resolve_port_name(
-                    namespace, label_selector_string, port_without_prefix
+                    namespace, label_selector_string, named_port_without_prefix
                 )
 
-            rewritten_ports[named_port] = "%s%d" % (
-                prefix,
-                self.portname_cache[key_hostname_port],
-            )
+            numerical_port_without_prefix = self.portname_cache[key_hostname_port]
+
+            service_ports_for_port = [
+                p
+                for p in service_ports
+                if p.target_port == numerical_port_without_prefix
+                or p.target_port == named_port_without_prefix
+            ]
+            if service_ports_for_port:
+                rewritten_ports[named_port] = "%s%s" % (
+                    prefix,
+                    str(service_ports_for_port[0].port),
+                )
+            else:
+                # TODO change to exception (explanation see above)
+                self.logger.error(
+                    "No service port found for Host: %s Port: %s. Available services %s",
+                    host_string,
+                    named_port,
+                    service_ports,
+                )
+                rewritten_ports[named_port] = "err"
 
         return rewritten_ports
 
