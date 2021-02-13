@@ -233,8 +233,12 @@ class NetworkTestOrchestrator:
             )
 
             # Strip of the "-" and add it again after name has been resolved
-            prefix = "-" if "-" in named_port else ""
-            named_port_without_prefix = named_port.replace("-", "")
+            potential_prefix = named_port[0:1]
+            prefix = ""
+            named_port_without_prefix = named_port
+            if potential_prefix == "-":
+                prefix = potential_prefix
+                named_port_without_prefix = named_port[1:]
 
             # We use a simple cache to avoid looking up the same pod-port combination twice for another test case
             key_hostname_port = f"{host_string}_{named_port}"
