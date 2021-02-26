@@ -11,8 +11,7 @@ minikube start \
     --cni=calico \
     --container-runtime=docker \
     --host-only-cidr=172.17.17.1/24 \
-    --kubernetes-version="${KUBERNETES_VERSION}" \
-    --insecure-registry=localhost:5000
+    --kubernetes-version="${KUBERNETES_VERSION}"
 
 # Setup the minikube docker registry
 minikube addons enable registry
