@@ -3,6 +3,7 @@ File with several useful functions for interacting with k8s
 """
 
 import kubernetes as k8s
+import logging
 from illuminatio.host import Host
 from illuminatio.util import (
     CLEANUP_LABEL,
@@ -106,7 +107,9 @@ def create_service_manifest(
     validate_cleanup_in(svc.metadata.labels)
     # TODO: support for other protocols missing, target port might not work like that for multiple ports
     ports = [
-        k8s.client.V1ServicePort(protocol="TCP", port=portNum, target_port=80)
+        k8s.client.V1ServicePort(
+            protocol="TCP", port=portNum, target_port=80, name=f"{portNum}-name"
+        )
         for portNum in port_nums
     ]
     svc.spec.ports = ports
@@ -122,3 +125,42 @@ def labels_to_string(labels):
         if labels
         else "*"
     )
+
+
+def resolve_port_name(namespace, pod_label_selector_string, portname):
+    api = k8s.client.CoreV1Api()
+
+    pods = api.list_namespaced_pod(
+        namespace=namespace, label_selector=pod_label_selector_string
+    )
+
+    numerical_port = resolve_port_from_candidates(pods, portname)
+    if numerical_port is None:
+        # TODO Evaluate how we could handle this properly
+        # e.g. Warning and ignore the whole port or policy if this is the only port?
+        logging.fatal(
+            f"Could not find port number for port {portname}. "
+            f"Have you specified the correct port name within the NetworkPolicy in namespace {namespace}?"
+        )
+
+    return numerical_port
+
+
+def resolve_port_from_candidates(pods, portname):
+    for pod in pods.items:
+        for container in pod.spec.containers:
+            if container.ports is None:
+                logging.debug(f"No ports specified for {pod.metadata.name}")
+                continue
+            for container_port_spec in container.ports:
+                if container_port_spec.name == portname:
+                    return container_port_spec.container_port
+    return None
+
+
+def is_numerical_port(port):
+    try:
+        int(port)
+        return True
+    except ValueError:
+        return False

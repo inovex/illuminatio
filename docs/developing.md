@@ -20,6 +20,13 @@ Now you can install the illuminatio client:
 python3 setup.py install
 ```
 
+## Debugging using PyCharm
+
+- Add `input("press Enter to continue")` to the `run()` method to block the process
+- Build and start the illuminatio cli in a shell
+- You are now able to attach the Python debugger to the process `Run -> Attach to Process...`
+- Let the client continue and use your breakpoints etc. within PyCharm
+
 ## Local development
 
 We will bootstrap a [Minikube VM](https://kubernetes.io/docs/setup/minikube/) for local development.
