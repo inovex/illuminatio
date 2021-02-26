@@ -17,8 +17,6 @@ from illuminatio.k8s_util import (
     create_service_manifest,
     labels_to_string,
     update_role_binding_manifest,
-    is_numerical_port,
-    resolve_port_name,
 )
 from illuminatio.test_case import merge_in_dict
 from illuminatio.util import (
@@ -74,7 +72,6 @@ class NetworkTestOrchestrator:
         self.current_namespaces = []
         self.runner_daemon_set = None
         self.oci_images = {}
-        self.portname_cache = {}
         self.logger = log
 
     def set_runner_image(self, runner_image):
@@ -174,7 +171,7 @@ class NetworkTestOrchestrator:
             self.logger.error(api_exception)
             exit(1)
 
-    def _rewrite_ports_for_host(self, host_string, port_list, services_for_host):
+    def _rewrite_ports_for_host(self, port_list, services_for_host):
         self.logger.debug("Rewriting portList %s", port_list)
         if not services_for_host:
             # assign random port, a service with matching port will be created
@@ -184,12 +181,9 @@ class NetworkTestOrchestrator:
             }
         rewritten_ports = {}
         wild_card_ports = {p for p in port_list if "*" in p}
-        numbered_ports = {p for p in port_list if is_numerical_port(p)}
-        # We assume that the other ports are named_ports
-        named_ports = set(port_list) - set(numbered_ports) - set(wild_card_ports)
+        numbered_ports = {p for p in port_list if "*" not in p}
         service_ports = [p for svc in services_for_host for p in svc.spec.ports]
         self.logger.debug("Svc ports: %s", service_ports)
-
         for wildcard_port in wild_card_ports:
             prefix = "-" if "-" in wildcard_port else ""
             # choose any port for wildcard
@@ -197,15 +191,11 @@ class NetworkTestOrchestrator:
                 prefix,
                 str(service_ports[0].port),
             )
-
         for port in numbered_ports:
             prefix = "-" if "-" in port else ""
             port_int = int(port.replace("-", ""))
             service_ports_for_port = [
-                p
-                for p in service_ports
-                # TODO Services could also contain named ports. We should cross-compare here (resvoledName == numerical)
-                if p.target_port == port_int
+                p for p in service_ports if p.target_port == port_int
             ]
             # TODO this was a hotfix for recipe 11, where ports 53 were allowed but not for any target,
             # resulting in test to 53 being written despite no service matching them existing.
@@ -217,59 +207,7 @@ class NetworkTestOrchestrator:
                 )
             else:
                 # TODO change to exception, handle it higher up
-                self.logger.error(
-                    "No service port found for Host: %s Port: %s. Available services %s",
-                    host_string,
-                    port,
-                    service_ports,
-                )
                 rewritten_ports[port] = "err"
-
-        for named_port in named_ports:
-            host_string_separated = str(host_string).split(":")
-            namespace = host_string_separated[0]
-            label_selector_string = (
-                host_string_separated[1] if host_string_separated[1] != "*" else ""
-            )
-
-            # Strip of the "-" and add it again after name has been resolved
-            potential_prefix = named_port[0:1]
-            prefix = ""
-            named_port_without_prefix = named_port
-            if potential_prefix == "-":
-                prefix = potential_prefix
-                named_port_without_prefix = named_port[1:]
-
-            # We use a simple cache to avoid looking up the same pod-port combination twice for another test case
-            key_hostname_port = f"{host_string}_{named_port}"
-            if key_hostname_port not in self.portname_cache:
-                self.portname_cache[key_hostname_port] = resolve_port_name(
-                    namespace, label_selector_string, named_port_without_prefix
-                )
-
-            numerical_port_without_prefix = self.portname_cache[key_hostname_port]
-
-            service_ports_for_port = [
-                p
-                for p in service_ports
-                if p.target_port == numerical_port_without_prefix
-                or p.target_port == named_port_without_prefix
-            ]
-            if service_ports_for_port:
-                rewritten_ports[named_port] = "%s%s" % (
-                    prefix,
-                    str(service_ports_for_port[0].port),
-                )
-            else:
-                # TODO change to exception (explanation see above)
-                self.logger.error(
-                    "No service port found for Host: %s Port: %s. Available services %s",
-                    host_string,
-                    named_port,
-                    service_ports,
-                )
-                rewritten_ports[named_port] = "err"
-
         return rewritten_ports
 
     def _get_target_names_creating_them_if_missing(
@@ -301,7 +239,7 @@ class NetworkTestOrchestrator:
                 host,
             )
             rewritten_ports = self._rewrite_ports_for_host(
-                host_string, target_dict[host_string], services_for_host,
+                target_dict[host_string], services_for_host
             )
             self.logger.debug("Rewritten ports: %s", rewritten_ports)
             port_dict_per_host[host_string] = rewritten_ports
@@ -336,7 +274,7 @@ class NetworkTestOrchestrator:
                 )
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug(
-                        "Target pod %s created successfully", resp.metadata.name
+                        "Target pod %s created succesfully", resp.metadata.name
                     )
                     self._current_pods.append(resp)
                 else:
@@ -345,7 +283,7 @@ class NetworkTestOrchestrator:
                 if isinstance(resp, k8s.client.V1Service):
                     service_names_per_host[host_string] = resp.spec.cluster_ip
                     self.logger.debug(
-                        "Target svc %s created successfully", resp.metadata.name
+                        "Target svc %s created succesfully", resp.metadata.name
                     )
                     self._current_services.append(resp)
                 else:
@@ -397,7 +335,7 @@ class NetworkTestOrchestrator:
                 resp = api.create_namespaced_pod(dummy.metadata.namespace, dummy)
                 if isinstance(resp, k8s.client.V1Pod):
                     self.logger.debug(
-                        "Dummy pod %s created successfully", resp.metadata.name
+                        "Dummy pod %s created succesfully", resp.metadata.name
                     )
                     pods_for_host = [resp]
                     self._current_pods.append(resp)
@@ -423,8 +361,6 @@ class NetworkTestOrchestrator:
             resolved_cases[pod_identifier] = {
                 names_per_host[t]: [port_names_per_host[t][p] for p in target_dict[t]]
                 for t in target_dict
-                # TODO This is just a sanity check to not add "None" ipaddresses
-                if names_per_host[t] != "None"
             }
         return resolved_cases, from_host_mappings, to_host_mappings, port_mappings
 
@@ -766,8 +702,7 @@ class NetworkTestOrchestrator:
                 resp = api.create_namespaced_service_account(namespace, service_account)
                 if isinstance(resp, k8s.client.V1ServiceAccount):
                     self.logger.debug(
-                        "Successfully created ServiceAccount for namespace %s",
-                        namespace,
+                        "Succesfully created ServiceAccount for namespace %s", namespace
                     )
                 else:
                     self.logger.error(

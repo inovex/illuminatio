@@ -48,14 +48,12 @@ def clean_cluster(core_v1):
     "e2e_test_case",
     [
         "01-deny-all-traffic-to-an-application",
-        "15-allow-traffic-to-named-port",
         "labels-with-all-legal-characters",
         "max-length-labels",
     ],
 )
 @pytest.mark.e2e
 def test__e2e__clean_setup__results_are_expected(e2e_test_case, api_client, apps_v1):
-    print(f"Executing e2e test case {e2e_test_case}")
     # get input and expected from test case name
     input_manifest = E2E_INPUT_MANIFEST.format(e2e_test_case)
     expected_yaml = E2E_EXPECTED_YAML.format(e2e_test_case)

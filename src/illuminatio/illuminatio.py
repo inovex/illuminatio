@@ -264,14 +264,6 @@ def transform_results(
                 LOGGER.debug("mapped_sender_pod: %s", mapped_sender_pod)
                 LOGGER.debug("mapped_receiver_pod: %s", mapped_receiver_pod)
                 LOGGER.debug("raw_results: %s", json.dumps(raw_results))
-                if mapped_receiver_pod not in raw_results[mapped_sender_pod]:
-                    LOGGER.error(
-                        "No results found for Sender: %s Receiver: %s",
-                        mapped_sender_pod,
-                        mapped_receiver_pod,
-                    )
-                    # TODO handle result
-                    continue
                 # FIXME: https://github.com/inovex/illuminatio/issues/98
                 if mapped_port in raw_results[mapped_sender_pod][mapped_receiver_pod]:
                     # fetch all requests from desired ports

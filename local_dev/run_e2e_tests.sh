@@ -22,7 +22,7 @@ while ! docker push "${ILLUMINATIO_IMAGE}" &> /dev/null; do
        echo "Error: could not push image \'${ILLUMINATIO_IMAGE}\" to registry"
        exit 1
   fi
-  echo "Wait for docker registry to become ready"
+  echo "Wait for docker regsitry to become ready"
   counter=$((counter+1))
   sleep 5
 done
