@@ -1,7 +1,7 @@
 requests>=2.20.0
 google-auth==1.5.1
 python-dateutil==2.7.3
-pyyaml==5.1.2
+pyyaml==5.4
 oauthlib==3.0.0
 kubernetes==10.0.1
 click==6.7
