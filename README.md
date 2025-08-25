@@ -1,5 +1,8 @@
 # illuminatio - The kubernetes network policy validator
 
+**Archived:** This project is no longer actively maintained, due to lack of community interest and resources.
+For alternatives consider [cyclonus](https://github.com/mattfenwick/cyclonus).
+
 [![Build Status](https://travis-ci.org/inovex/illuminatio.svg?branch=master)](https://travis-ci.org/inovex/illuminatio)
 [![codecov](https://codecov.io/gh/inovex/illuminatio/branch/master/graph/badge.svg)](https://codecov.io/gh/inovex/illuminatio)
 
