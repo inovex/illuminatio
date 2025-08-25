@@ -222,12 +222,6 @@ Presentation from [ContainerDays 2019](https://www.youtube.com/watch?v=eEkTvAez8
 
 There is also a blog post about the background of illuminatio: [illuminatio-kubernetes-network-policy-validator](https://www.inovex.de/blog/illuminatio-kubernetes-network-policy-validator/)
 
-## Contributing
-
-We are happy to read your [issues](https://github.com/inovex/illuminatio/issues) and accept your [Pull Requests.](https://github.com/inovex/illuminatio/compare)
-This project uses the [standard github flow](https://help.github.com/en/articles/creating-a-pull-request-from-a-fork).
-For more information on developing illuminatio refer to [the development docs](docs/developing.md).
-
 ## License
 
 This project excluding the logo is licensed under the terms of the Apache 2.0 license.
